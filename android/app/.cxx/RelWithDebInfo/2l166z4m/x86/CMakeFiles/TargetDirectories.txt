@@ -1,0 +1,2 @@
+/Users/admin/guidr/android/app/.cxx/RelWithDebInfo/2l166z4m/x86/CMakeFiles/edit_cache.dir
+/Users/admin/guidr/android/app/.cxx/RelWithDebInfo/2l166z4m/x86/CMakeFiles/rebuild_cache.dir
