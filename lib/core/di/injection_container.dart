@@ -1,4 +1,5 @@
 import 'package:get_it/get_it.dart';
+import 'package:guidr/features/coach_settings/domain/usecases/CoachDataUseCase.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -13,6 +14,11 @@ import '../../features/coach_settings/data/datasources/coach_remote_data_source.
 import '../../features/coach_settings/domain/repositories/coach_repository.dart';
 import '../../features/coach_settings/data/repositories/coach_repository_impl.dart';
 import '../../features/coach_settings/presentation/bloc/coach_profile_bloc.dart';
+
+import '../../features/needs_attention/data/datasources/needs_attention_remote_data_source.dart';
+import '../../features/needs_attention/domain/repositories/needs_attention_repository.dart';
+import '../../features/needs_attention/data/repositories/needs_attention_repository_impl.dart';
+import '../../features/needs_attention/domain/usecases/get_needs_attention_use_case.dart';
 
 import '../../features/trainees/data/datasources/trainees_remote_data_source.dart';
 import '../../features/trainees/domain/repositories/trainees_repository.dart';
@@ -67,6 +73,19 @@ Future<void> init() async {
 
   sl.registerFactory(() => CoachProfileBloc(repository: sl()));
 
+  //! Features - Needs Attention
+  sl.registerLazySingleton<NeedsAttentionRemoteDataSource>(
+    () => NeedsAttentionRemoteDataSourceImpl(apiClient: sl()),
+  );
+
+  sl.registerLazySingleton<NeedsAttentionRepository>(
+    () => NeedsAttentionRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  sl.registerFactory(
+    () => GetNeedsAttentionUseCase(sl()),
+  );
+
   //! Features - Trainees
   sl.registerLazySingleton<TraineesRemoteDataSource>(
     () => TraineesRemoteDataSourceImpl(apiClient: sl()),
@@ -91,7 +110,7 @@ Future<void> init() async {
   sl.registerLazySingleton<BuildersRemoteDataSource>(
     () => BuildersRemoteDataSourceImpl(apiClient: sl()),
   );
-
+sl.registerLazySingleton(() => GetCoachDataUseCase(sl()));
   sl.registerLazySingleton<BuildersRepository>(
     () => BuildersRepositoryImpl(remoteDataSource: sl()),
   );

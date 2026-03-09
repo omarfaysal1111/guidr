@@ -1,6 +1,9 @@
 import 'package:equatable/equatable.dart';
-import '../../domain/entities/coach_data.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guidr/features/coach_settings/domain/usecases/CoachDataUseCase.dart';
+import 'package:guidr/features/home/domain/entities/coach_data.dart';
+import 'package:guidr/features/needs_attention/domain/entities/attention_item.dart';
+import 'package:guidr/features/needs_attention/domain/usecases/get_needs_attention_use_case.dart';
 
 // Events
 abstract class HomeEvent extends Equatable {
@@ -44,26 +47,54 @@ class HomeError extends HomeState {
 
 // BLoC
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
-  HomeBloc() : super(HomeInitial()) {
+  final GetCoachDataUseCase getCoachDataUseCase;
+  final GetNeedsAttentionUseCase getNeedsAttentionUseCase;
+
+  HomeBloc(this.getCoachDataUseCase, this.getNeedsAttentionUseCase)
+      : super(HomeInitial()) {
     on<LoadHomeDataEvent>((event, emit) async {
       emit(HomeLoading());
       try {
-        // Simulate network delay
-        await Future.delayed(const Duration(milliseconds: 800));
-        
-        // Mock Data based on prototype
-        final mockData = CoachData(
-          name: 'Mahmoud',
-          dateString: 'Sunday, Feb 15',
-          sessionsToday: 3,
-          needsAttention: 4,
-          isPremium: false,
-          activeClients: 10,
-          maxClients: 3,
-          avgAdherence: 68,
+        final profile = await getCoachDataUseCase();
+        final now = DateTime.now();
+        final weekdays = [
+          'Monday', 'Tuesday', 'Wednesday', 'Thursday',
+          'Friday', 'Saturday', 'Sunday'
+        ];
+        final months = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        final dateString =
+            '${weekdays[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}';
+
+        final activeClients = profile.traineeCount ?? 0;
+        const maxClients = 3; // Free plan limit
+
+        List<AttentionItem> needsAttentionItems;
+        try {
+          needsAttentionItems = await getNeedsAttentionUseCase(
+            limit: 10,
+            offset: 0,
+          );
+        } catch (_) {
+          needsAttentionItems = [];
+        }
+        final needsAttentionCount = needsAttentionItems.length;
+
+        final coachHomeData = CoachData(
+          name: profile.fullName,
+          dateString: dateString,
+          sessionsToday: 0, // TODO: from sessions API when available
+          needsAttention: needsAttentionCount,
+          isPremium: false, // TODO: from subscription when available
+          activeClients: activeClients,
+          maxClients: maxClients,
+          avgAdherence: 0, // TODO: from analytics when available
+          needsAttentionItems: needsAttentionItems,
         );
-        
-        emit(HomeLoaded(mockData));
+
+        emit(HomeLoaded(coachHomeData));
       } catch (e) {
         emit(HomeError(e.toString()));
       }

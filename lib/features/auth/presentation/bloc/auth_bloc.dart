@@ -20,6 +20,25 @@ class LoginRequested extends AuthEvent {
   List<Object?> get props => [email, password];
 }
 
+class RegisterTraineeRequested extends AuthEvent {
+  final String fullName;
+  final String email;
+  final String password;
+  final String invitationToken;
+  final String fitnessGoal;
+
+  const RegisterTraineeRequested({
+    required this.fullName,
+    required this.email,
+    required this.password,
+    required this.invitationToken,
+    required this.fitnessGoal,
+  });
+
+  @override
+  List<Object?> get props => [fullName, email, password, invitationToken, fitnessGoal];
+}
+
 class LogoutRequested extends AuthEvent {}
 
 // States
@@ -82,7 +101,23 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final user = await authRepository.login(event.email, event.password);
         emit(Authenticated(user));
       } catch (e) {
-        emit(AuthError(e.toString()));
+        emit(AuthError(e.toString().replaceFirst('Exception: ', '')));
+      }
+    });
+
+    on<RegisterTraineeRequested>((event, emit) async {
+      emit(AuthLoading());
+      try {
+        final user = await authRepository.registerTrainee(
+          fullName: event.fullName,
+          email: event.email,
+          password: event.password,
+          invitationToken: event.invitationToken,
+          fitnessGoal: event.fitnessGoal,
+        );
+        emit(Authenticated(user));
+      } catch (e) {
+        emit(AuthError(e.toString().replaceFirst('Exception: ', '')));
       }
     });
 

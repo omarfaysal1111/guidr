@@ -15,7 +15,7 @@ class Invitation extends Equatable {
     return Invitation(
       id: json['id']?.toString() ?? '',
       email: json['email'] as String? ?? '',
-      token: json['token'] as String? ?? '',
+      token: json['token'] as String? ?? json['code'] as String? ?? '',
     );
   }
 

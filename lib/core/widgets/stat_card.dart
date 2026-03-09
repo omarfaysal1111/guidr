@@ -5,12 +5,13 @@ class StatCard extends StatelessWidget {
   final String value;
   final String label;
   final Color color;
+  final double fontsize;
 
   const StatCard({
     super.key,
     required this.value,
     required this.label,
-    this.color = AppColors.primary,
+    this.color = AppColors.primary, required this.fontsize,
   });
 
   @override
@@ -45,8 +46,8 @@ class StatCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label.toUpperCase(),
-              style: const TextStyle(
-                fontSize: 11,
+              style:  TextStyle(
+                fontSize: fontsize,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textMuted,
                 letterSpacing: 0.2,

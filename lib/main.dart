@@ -30,7 +30,7 @@ class FitCoachApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'FitCoach Pro',
+      title: 'Guider',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
       home: BlocBuilder<AuthBloc, AuthState>(

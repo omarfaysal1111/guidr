@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:guidr/features/needs_attention/domain/entities/attention_item.dart';
 
 class CoachData extends Equatable {
   final String name;
@@ -9,6 +10,7 @@ class CoachData extends Equatable {
   final int activeClients;
   final int maxClients;
   final int avgAdherence;
+  final List<AttentionItem> needsAttentionItems;
 
   const CoachData({
     required this.name,
@@ -19,6 +21,7 @@ class CoachData extends Equatable {
     required this.activeClients,
     required this.maxClients,
     required this.avgAdherence,
+    this.needsAttentionItems = const [],
   });
 
   @override
@@ -31,5 +34,6 @@ class CoachData extends Equatable {
         activeClients,
         maxClients,
         avgAdherence,
+        needsAttentionItems,
       ];
 }

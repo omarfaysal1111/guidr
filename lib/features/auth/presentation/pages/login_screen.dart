@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/theme/app_colors.dart';
+import 'register_trainee_screen.dart';
 import '../bloc/auth_bloc.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -261,6 +262,30 @@ class _LoginScreenState extends State<LoginScreen> {
               );
             },
           ),
+          if (_selectedRole == 'trainee') ...[
+            const SizedBox(height: 20),
+            TextButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RegisterTraineeScreen(),
+                  ),
+                );
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.white.withOpacity(0.8),
+              ),
+              child: const Text(
+                "Don't have an account? Register",
+                style: TextStyle(
+                  fontSize: 14,
+                  decoration: TextDecoration.underline,
+                  decorationColor: Colors.white54,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

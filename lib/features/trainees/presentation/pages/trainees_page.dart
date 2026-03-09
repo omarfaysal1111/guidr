@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/theme/app_colors.dart';
 import 'package:guidr/features/trainees/presentation/pages/trainee_profile_screen.dart';
+import 'package:guidr/features/trainees/presentation/widgets/invite_trainee_dialog.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
 import '../bloc/trainees_bloc.dart';
 
@@ -314,11 +315,24 @@ class TraineesView extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                     child: ElevatedButton.icon(
-                      onPressed: () {},
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => BlocProvider.value(
+                            value: context.read<TraineesBloc>(),
+                            child: const InviteTraineeDialog(),
+                          ),
+                        );
+                      },
                       icon: const Icon(Icons.person_add),
                       label: const Text('Invite Trainee'),
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 50),
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                     ),
                   ),

@@ -58,7 +58,8 @@ class CoachChatSystemScreen extends StatelessWidget {
                 if (isUnread)
                   Container(
                     margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.all(4),
+                    width: 8,
+                    height: 8,
                     decoration: const BoxDecoration(
                       color: AppColors.primary,
                       shape: BoxShape.circle,

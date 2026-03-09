@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guidr/core/di/injection_container.dart' as di;
 import 'package:guidr/core/theme/app_colors.dart';
 import 'package:guidr/core/widgets/progress_bar.dart';
 import 'package:guidr/core/widgets/stat_card.dart';
+import 'package:guidr/features/coach_settings/domain/repositories/coach_repository.dart';
+import 'package:guidr/features/coach_settings/domain/usecases/CoachDataUseCase.dart';
+import 'package:guidr/features/home/presentation/widgets/needs_attention_section.dart';
+import 'package:guidr/features/needs_attention/domain/usecases/get_needs_attention_use_case.dart';
 import '../bloc/home_bloc.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  final CoachRepository? repo;
+  const HomePage({super.key, this.repo});
 
   @override
   Widget build(BuildContext context) {
+    final repository = repo ?? di.sl<CoachRepository>();
     return BlocProvider(
-      create: (context) => HomeBloc()..add(LoadHomeDataEvent()),
+      create: (context) => HomeBloc(
+        GetCoachDataUseCase(repository),
+        di.sl<GetNeedsAttentionUseCase>(),
+      )..add(LoadHomeDataEvent()),
       child: const HomeView(),
     );
   }
@@ -24,7 +34,7 @@ class HomeView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('FitCoach Pro'),
+        title: const Text('Guider'),
         actions: [
           Stack(
             alignment: Alignment.center,
@@ -43,7 +53,7 @@ class HomeView extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: const Text(
-                    '2',
+                    '0',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 10,
@@ -258,11 +268,14 @@ class HomeView extends StatelessWidget {
                         value: data.activeClients.toString(),
                         label: 'Active',
                         color: AppColors.primary,
+                        fontsize: 11,
                       ),
                       const SizedBox(width: 10),
                       StatCard(
                         value: '${data.avgAdherence}%',
                         label: 'Avg Adherence',
+                        fontsize: 8,
+                         
                         color: AppColors.warning,
                       ),
                       const SizedBox(width: 10),
@@ -270,124 +283,27 @@ class HomeView extends StatelessWidget {
                         value: data.sessionsToday.toString(),
                         label: 'Sessions Today',
                         color: AppColors.textPrimary,
+                        fontsize: 8,
                       ),
                       const SizedBox(width: 10),
                       StatCard(
                         value: data.needsAttention.toString(),
                         label: 'Alerts',
                         color: AppColors.error,
+                        fontsize: 11,
                       ),
                     ],
                   ),
                   const SizedBox(height: 24),
 
-                  // Needs Attention section - placeholder
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.circle, color: AppColors.error, size: 10),
-                          SizedBox(width: 8),
-                          Text(
-                            'Needs Attention',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text(
-                          'View all',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Add a few placeholder cards for the list
-                  ...List.generate(
-                    3,
-                    (index) => Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color:
-                            [
-                              AppColors.errorLight,
-                              AppColors.warningLight,
-                              AppColors.errorLight,
-                            ][index],
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: [
-                            AppColors.error,
-                            AppColors.warning,
-                            AppColors.error,
-                          ][index].withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              ['S', 'A', 'N'][index],
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                                color:
-                                    [
-                                      AppColors.error,
-                                      AppColors.warning,
-                                      AppColors.error,
-                                    ][index],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  ['Sarah M.', 'Ahmed K.', 'Nadia H.'][index],
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                Text(
-                                  [
-                                    'Missed 2+ workouts this week',
-                                    'Nutrition adherence dropped to 40%',
-                                    'Missed 2+ workouts this week',
-                                  ][index],
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Icon(
-                            Icons.chevron_right,
-                            color: AppColors.textMuted,
-                          ),
-                        ],
-                      ),
-                    ),
+                  NeedsAttentionSection(
+                    items: data.needsAttentionItems,
+                    onViewAll: () {
+                      // TODO: Navigate to full needs attention list
+                    },
+                    onItemTap: (item) {
+                      // TODO: Navigate to trainee detail
+                    },
                   ),
                 ],
               ),

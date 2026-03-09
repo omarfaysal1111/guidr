@@ -1,7 +1,8 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../domain/entities/invitation.dart';
 import '../../domain/entities/trainee.dart';
 import '../../domain/repositories/trainees_repository.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 // Events
 abstract class TraineesEvent extends Equatable {
@@ -40,6 +41,17 @@ class ToggleSelectTraineeEvent extends TraineesEvent {
   List<Object?> get props => [traineeId];
 }
 
+class InviteTraineeEvent extends TraineesEvent {
+  final String email;
+
+  const InviteTraineeEvent(this.email);
+
+  @override
+  List<Object?> get props => [email];
+}
+
+class ClearInviteResultEvent extends TraineesEvent {}
+
 // States
 abstract class TraineesState extends Equatable {
   const TraineesState();
@@ -59,6 +71,9 @@ class TraineesLoaded extends TraineesState {
   final String searchQuery;
   final bool isBulkMode;
   final List<int> selectedIds;
+  final bool invitationLoading;
+  final Invitation? invitationResult;
+  final String? invitationError;
 
   const TraineesLoaded({
     required this.allTrainees,
@@ -67,6 +82,9 @@ class TraineesLoaded extends TraineesState {
     required this.searchQuery,
     required this.isBulkMode,
     required this.selectedIds,
+    this.invitationLoading = false,
+    this.invitationResult,
+    this.invitationError,
   });
 
   TraineesLoaded copyWith({
@@ -76,6 +94,11 @@ class TraineesLoaded extends TraineesState {
     String? searchQuery,
     bool? isBulkMode,
     List<int>? selectedIds,
+    bool? invitationLoading,
+    Invitation? invitationResult,
+    String? invitationError,
+    bool clearInviteResult = false,
+    bool clearInvitationError = false,
   }) {
     return TraineesLoaded(
       allTrainees: allTrainees ?? this.allTrainees,
@@ -84,6 +107,11 @@ class TraineesLoaded extends TraineesState {
       searchQuery: searchQuery ?? this.searchQuery,
       isBulkMode: isBulkMode ?? this.isBulkMode,
       selectedIds: selectedIds ?? this.selectedIds,
+      invitationLoading: invitationLoading ?? this.invitationLoading,
+      invitationResult: clearInviteResult ? null : (invitationResult ?? this.invitationResult),
+      invitationError: clearInviteResult || clearInvitationError
+          ? null
+          : (invitationError ?? this.invitationError),
     );
   }
 
@@ -95,6 +123,9 @@ class TraineesLoaded extends TraineesState {
         searchQuery,
         isBulkMode,
         selectedIds,
+        invitationLoading,
+        invitationResult,
+        invitationError,
       ];
 }
 
@@ -180,6 +211,37 @@ class TraineesBloc extends Bloc<TraineesEvent, TraineesState> {
           selectedIds.add(event.traineeId);
         }
         emit(currentState.copyWith(selectedIds: selectedIds));
+      }
+    });
+
+    on<InviteTraineeEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        final currentState = state as TraineesLoaded;
+        emit(currentState.copyWith(
+          invitationLoading: true,
+          clearInviteResult: true,
+        ));
+        try {
+          final invitation = await repository.createInvitation(event.email);
+          emit(currentState.copyWith(
+            invitationLoading: false,
+            invitationResult: invitation,
+            clearInvitationError: true,
+          ));
+        } catch (e) {
+          emit(currentState.copyWith(
+            invitationLoading: false,
+            invitationError: e.toString().replaceFirst('Exception: ', ''),
+            clearInviteResult: false,
+          ));
+        }
+      }
+    });
+
+    on<ClearInviteResultEvent>((event, emit) {
+      if (state is TraineesLoaded) {
+        final currentState = state as TraineesLoaded;
+        emit(currentState.copyWith(clearInviteResult: true));
       }
     });
   }
