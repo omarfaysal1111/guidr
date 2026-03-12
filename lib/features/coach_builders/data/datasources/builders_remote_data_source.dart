@@ -10,6 +10,14 @@ abstract class BuildersRemoteDataSource {
   Future<List<NutritionPlan>> getMyNutritionPlans();
   Future<ExercisePlan> createExercisePlan(Map<String, dynamic> payload);
   Future<List<ExercisePlan>> getMyExercisePlans();
+  Future<void> assignNutritionPlan({
+    required int planId,
+    required List<int> traineeIds,
+  });
+  Future<void> assignExercisePlan({
+    required int planId,
+    required List<int> traineeIds,
+  });
 }
 
 class BuildersRemoteDataSourceImpl implements BuildersRemoteDataSource {
@@ -57,5 +65,31 @@ class BuildersRemoteDataSourceImpl implements BuildersRemoteDataSource {
     final response = await apiClient.get('/coaches/exercise-plans');
     final data = response['data'] as List? ?? response as List;
     return data.map((e) => ExercisePlan.fromJson(e)).toList();
+  }
+
+  @override
+  Future<void> assignNutritionPlan({
+    required int planId,
+    required List<int> traineeIds,
+  }) async {
+    await apiClient.post(
+      '/coaches/nutrition-plans/$planId/assign',
+      body: {
+        'traineeIds': traineeIds,
+      },
+    );
+  }
+
+  @override
+  Future<void> assignExercisePlan({
+    required int planId,
+    required List<int> traineeIds,
+  }) async {
+    await apiClient.post(
+      '/coaches/exercise-plans/$planId/assign',
+      body: {
+        'traineeIds': traineeIds,
+      },
+    );
   }
 }

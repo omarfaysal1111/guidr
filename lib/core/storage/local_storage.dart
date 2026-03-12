@@ -7,6 +7,7 @@ class LocalStorage {
 
   LocalStorage(this._prefs);
 
+  // Auth token helpers
   Future<bool> saveToken(String token) async {
     return await _prefs.setString(_tokenKey, token);
   }
@@ -17,5 +18,26 @@ class LocalStorage {
 
   Future<bool> deleteToken() async {
     return await _prefs.remove(_tokenKey);
+  }
+
+  // Generic string helpers for local templates / drafts
+  Future<bool> saveString(String key, String value) async {
+    return _prefs.setString(key, value);
+  }
+
+  String? getString(String key) {
+    return _prefs.getString(key);
+  }
+
+  Future<bool> saveStringList(String key, List<String> values) async {
+    return _prefs.setStringList(key, values);
+  }
+
+  List<String> getStringList(String key) {
+    return _prefs.getStringList(key) ?? <String>[];
+  }
+
+  Future<bool> remove(String key) async {
+    return _prefs.remove(key);
   }
 }

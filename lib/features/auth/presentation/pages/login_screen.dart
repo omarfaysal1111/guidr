@@ -52,8 +52,8 @@ class _LoginScreenState extends State<LoginScreen> {
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+              end: Alignment.bottomRight,
+              colors: [AppColors.primaryDark, AppColors.primary],
             ),
           ),
           child: SafeArea(
@@ -353,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 24),
         const Text(
-          'FitCoach Pro',
+          'Guider.',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w900,

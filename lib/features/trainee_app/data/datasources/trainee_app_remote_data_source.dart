@@ -1,5 +1,8 @@
 import 'package:guidr/core/network/api_client.dart';
+import 'package:guidr/features/coach_builders/domain/entities/plans.dart';
 import '../../domain/entities/trainee_app_profile.dart';
+import '../../domain/entities/trainee_dashboard_today.dart';
+import '../../domain/entities/trainee_exercise_plan_detail.dart';
 import '../../../coach_settings/domain/entities/coach_profile.dart';
 
 abstract class TraineeAppRemoteDataSource {
@@ -9,6 +12,12 @@ abstract class TraineeAppRemoteDataSource {
     String? fitnessGoal,
   });
   Future<CoachProfile> getMyCoach();
+  Future<List<NutritionPlan>> getMyNutritionPlans();
+  Future<List<ExercisePlan>> getMyExercisePlans();
+  Future<TraineeDashboardToday> getDashboardToday();
+  Future<TraineeExercisePlanDetail> getExercisePlanDetail(int planId);
+  Future<void> completeWorkout(int workoutId);
+  Future<void> completeMeal(int mealId);
 }
 
 class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
@@ -45,5 +54,44 @@ class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
     final response = await apiClient.get('/trainees/coach');
     final data = response['data'] ?? response;
     return CoachProfile.fromJson(data);
+  }
+
+  @override
+  Future<List<NutritionPlan>> getMyNutritionPlans() async {
+    final response = await apiClient.get('/trainees/me/nutrition-plans');
+    final data = response['data'] as List? ?? response as List;
+    return data.map((e) => NutritionPlan.fromJson(e)).toList();
+  }
+
+  @override
+  Future<List<ExercisePlan>> getMyExercisePlans() async {
+    final response = await apiClient.get('/trainees/me/exercise-plans');
+    final data = response['data'] as List? ?? response as List;
+    return data.map((e) => ExercisePlan.fromJson(e)).toList();
+  }
+
+  @override
+  Future<TraineeDashboardToday> getDashboardToday() async {
+    final response = await apiClient.get('/trainees/me/dashboard-today');
+    final data = (response['data'] as Map<String, dynamic>?) ?? response;
+    return TraineeDashboardToday.fromJson(data);
+  }
+
+  @override
+  Future<TraineeExercisePlanDetail> getExercisePlanDetail(int planId) async {
+    final response =
+        await apiClient.get('/trainees/me/exercise-plans/$planId');
+    final data = (response['data'] as Map<String, dynamic>?) ?? response;
+    return TraineeExercisePlanDetail.fromJson(data);
+  }
+
+  @override
+  Future<void> completeWorkout(int workoutId) async {
+    await apiClient.post('/trainees/me/workouts/$workoutId/complete');
+  }
+
+  @override
+  Future<void> completeMeal(int mealId) async {
+    await apiClient.post('/trainees/me/meals/$mealId/complete');
   }
 }

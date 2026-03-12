@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
+import 'package:guidr/core/storage/local_storage.dart';
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/features/coach_builders/data/repositories/builders_repository_impl.dart';
+import 'package:guidr/features/coach_builders/domain/entities/ingredient.dart';
 import 'package:guidr/features/trainees/domain/entities/trainee.dart';
 import 'package:guidr/features/trainees/domain/repositories/trainees_repository.dart';
 
@@ -14,6 +18,9 @@ class NutritionPlanBuilderScreen extends StatefulWidget {
 }
 
 class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen> {
+  static const _nutritionTemplatesKey = 'coach_nutrition_templates';
+  static const _nutritionDraftsKey = 'coach_nutrition_drafts';
+
   int _currentStep = 1;
   List<Trainee> _allTrainees = [];
   List<Trainee> _filteredTrainees = [];
@@ -41,10 +48,18 @@ class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen>
   bool _remindBefore = true;
   bool _alertIfMissed = true;
 
+  // Data sources
+  final LocalStorage _localStorage = di.sl<LocalStorage>();
+  final BuildersRepository _buildersRepository = di.sl<BuildersRepository>();
+  List<Ingredient> _ingredientLibrary = [];
+  bool _ingredientLibraryLoading = false;
+  bool _ingredientLibraryLoaded = false;
+
   @override
   void initState() {
     super.initState();
     _loadTrainees();
+    _loadApiPlans();
   }
 
   Future<void> _loadTrainees() async {
@@ -63,6 +78,35 @@ class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen>
         _filteredTrainees = _allTrainees;
         _traineesLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadApiPlans() async {
+    try {
+      await _buildersRepository.getMyNutritionPlans();
+      await _loadIngredientLibrary();
+    } catch (_) {
+      // ignore API errors; UI falls back to local/static templates
+    }
+  }
+
+  Future<void> _loadIngredientLibrary() async {
+    if (_ingredientLibraryLoaded || _ingredientLibraryLoading) return;
+    setState(() {
+      _ingredientLibraryLoading = true;
+    });
+    try {
+      final ingredients = await _buildersRepository.getIngredients();
+      _ingredientLibrary = ingredients;
+      _ingredientLibraryLoaded = true;
+    } catch (_) {
+      _ingredientLibrary = [];
+    } finally {
+      if (mounted) {
+        setState(() {
+          _ingredientLibraryLoading = false;
+        });
+      }
     }
   }
 
@@ -212,6 +256,36 @@ class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen>
 
   List<Trainee> get _selectedTrainees =>
       _allTrainees.where((t) => _selectedTraineeIds.contains(t.id)).toList();
+
+  Future<void> _saveNutritionPlanToLocal({required bool isDraft}) async {
+    final title =
+        _planNameController.text.isEmpty ? 'Untitled plan' : _planNameController.text;
+    final data = <String, dynamic>{
+      'title': title,
+      'createdAt': DateTime.now().toIso8601String(),
+      'isDraft': isDraft,
+      'meals': _totalMeals,
+      'kcal': _estimatedKcal,
+    };
+    final key = isDraft ? _nutritionDraftsKey : _nutritionTemplatesKey;
+    final existing = _localStorage.getStringList(key);
+    existing.add(jsonEncode(data));
+    await _localStorage.saveStringList(key, existing);
+  }
+
+  Future<void> _createNutritionPlanOnServer() async {
+    try {
+      final title =
+          _planNameController.text.isEmpty ? 'Untitled plan' : _planNameController.text;
+      final payload = <String, dynamic>{
+        'title': title,
+        'description': 'Created from Nutrition Plan Builder',
+      };
+      await _buildersRepository.createNutritionPlan(payload);
+    } catch (_) {
+      // Ignore server errors; coach still has local draft/template
+    }
+  }
 
   int get _totalMeals =>
       _breakfastMeals.length + _lunchMeals.length + _dinnerMeals.length + _snackMeals.length;
@@ -1038,9 +1112,9 @@ class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen>
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: Icon(Icons.add, size: 18, color: AppColors.primary),
-                      label: Text(
+                      onPressed: () => _addCustomMeal(title, meals),
+                      icon: const Icon(Icons.add, size: 18, color: AppColors.primary),
+                      label: const Text(
                         'Add',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
@@ -1048,7 +1122,7 @@ class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen>
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.primary, style: BorderStyle.solid),
+                        side: const BorderSide(color: AppColors.primary, style: BorderStyle.solid),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -1058,9 +1132,9 @@ class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {},
-                      icon: Icon(Icons.search, size: 18, color: AppColors.textMuted),
-                      label: Text(
+                      onPressed: () => _openIngredientLibrarySheet(title, meals),
+                      icon: const Icon(Icons.search, size: 18, color: AppColors.textMuted),
+                      label: const Text(
                         'Library',
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
@@ -1068,7 +1142,7 @@ class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen>
                         ),
                       ),
                       style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: AppColors.border),
+                        side: const BorderSide(color: AppColors.border),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -1108,6 +1182,194 @@ class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen>
           ],
         ],
       ),
+    );
+  }
+
+  Future<void> _addCustomMeal(String sectionTitle, List<String> targetList) async {
+    final name = await _showTextInputDialog(
+      title: 'Add to $sectionTitle',
+      hintText: 'e.g. Greek yogurt with berries',
+    );
+    if (name == null) return;
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    setState(() {
+      targetList.add(trimmed);
+    });
+  }
+
+  Future<void> _openIngredientLibrarySheet(String sectionTitle, List<String> targetList) async {
+    await _loadIngredientLibrary();
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        List<Ingredient> visible = List.of(_ingredientLibrary);
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '$sectionTitle library',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.search, size: 18, color: AppColors.textMuted),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              decoration: const InputDecoration(
+                                hintText: 'Search ingredients...',
+                                border: InputBorder.none,
+                                isDense: true,
+                              ),
+                              onChanged: (q) {
+                                setModalState(() {
+                                  if (q.isEmpty) {
+                                    visible = List.of(_ingredientLibrary);
+                                  } else {
+                                    final lower = q.toLowerCase();
+                                    visible = _ingredientLibrary
+                                        .where((i) => i.name.toLowerCase().contains(lower))
+                                        .toList();
+                                  }
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_ingredientLibraryLoading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: CircularProgressIndicator(color: AppColors.primary),
+                        ),
+                      )
+                    else if (visible.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Text(
+                          'No ingredients available.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      )
+                    else
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: visible.length,
+                          itemBuilder: (ctx, index) {
+                            final ing = visible[index];
+                            return ListTile(
+                              title: Text(
+                                ing.name,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              subtitle: Text(
+                                '${ing.calories.toStringAsFixed(0)} kcal',
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                              onTap: () {
+                                setState(() {
+                                  targetList.add(ing.name);
+                                });
+                                Navigator.pop(ctx);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<String?> _showTextInputDialog({
+    required String title,
+    required String hintText,
+  }) async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: hintText,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(controller.text),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1551,7 +1813,9 @@ class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen>
           ),
           const SizedBox(height: 24),
           OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () async {
+              await _saveNutritionPlanToLocal(isDraft: false);
+            },
             icon: Icon(Icons.folder_outlined, color: AppColors.primary),
             label: Text(
               'Save as Template',
@@ -1573,7 +1837,10 @@ class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen>
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => widget.onBackPressed(),
+                  onPressed: () async {
+                    await _saveNutritionPlanToLocal(isDraft: true);
+                    widget.onBackPressed();
+                  },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.textPrimary,
                     side: BorderSide(color: AppColors.border),
@@ -1588,7 +1855,10 @@ class _NutritionPlanBuilderScreenState extends State<NutritionPlanBuilderScreen>
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => widget.onBackPressed(),
+                  onPressed: () async {
+                    await _createNutritionPlanOnServer();
+                    widget.onBackPressed();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,

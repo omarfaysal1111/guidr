@@ -1,6 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
+import 'package:guidr/core/storage/local_storage.dart';
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/features/coach_builders/data/repositories/builders_repository_impl.dart';
+import 'package:guidr/features/coach_builders/domain/entities/exercise.dart';
 import 'package:guidr/features/trainees/domain/entities/trainee.dart';
 import 'package:guidr/features/trainees/domain/repositories/trainees_repository.dart';
 
@@ -14,14 +18,14 @@ class WorkoutBuilderScreen extends StatefulWidget {
 }
 
 class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
+  static const _workoutTemplatesKey = 'coach_workout_templates';
+  static const _workoutDraftsKey = 'coach_workout_drafts';
+
   int _currentStep = 1;
   List<Trainee> _allTrainees = [];
   List<Trainee> _filteredTrainees = [];
   Set<int> _selectedTraineeIds = {};
   bool _traineesLoading = true;
-
-  // Step 2
-  String? _selectedTemplateId;
 
   // Step 3
   final _workoutNameController = TextEditingController();
@@ -42,10 +46,18 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
   bool _remindBefore = true;
   bool _alertIfMissed = true;
 
+  // Data sources
+  final LocalStorage _localStorage = di.sl<LocalStorage>();
+  final BuildersRepository _buildersRepository = di.sl<BuildersRepository>();
+  List<Exercise> _exerciseLibrary = [];
+  bool _exerciseLibraryLoading = false;
+  bool _exerciseLibraryLoaded = false;
+
   @override
   void initState() {
     super.initState();
     _loadTrainees();
+     _loadApiPlans();
   }
 
   Future<void> _loadTrainees() async {
@@ -64,6 +76,35 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
         _filteredTrainees = _allTrainees;
         _traineesLoading = false;
       });
+    }
+  }
+
+  Future<void> _loadApiPlans() async {
+    try {
+      await _buildersRepository.getMyExercisePlans();
+      await _loadExerciseLibrary();
+    } catch (_) {
+      // ignore API errors here; UI can fall back to local/static templates
+    }
+  }
+
+  Future<void> _loadExerciseLibrary() async {
+    if (_exerciseLibraryLoaded || _exerciseLibraryLoading) return;
+    setState(() {
+      _exerciseLibraryLoading = true;
+    });
+    try {
+      final exercises = await _buildersRepository.getExercises();
+      _exerciseLibrary = exercises;
+      _exerciseLibraryLoaded = true;
+    } catch (_) {
+      _exerciseLibrary = [];
+    } finally {
+      if (mounted) {
+        setState(() {
+          _exerciseLibraryLoading = false;
+        });
+      }
     }
   }
 
@@ -215,6 +256,35 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
 
   List<Trainee> get _selectedTrainees =>
       _allTrainees.where((t) => _selectedTraineeIds.contains(t.id)).toList();
+
+  Future<void> _saveWorkoutPlanToLocal({required bool isDraft}) async {
+    final title =
+        _workoutNameController.text.isEmpty ? 'Untitled workout' : _workoutNameController.text;
+    final data = <String, dynamic>{
+      'title': title,
+      'difficulty': _difficulty,
+      'createdAt': DateTime.now().toIso8601String(),
+      'isDraft': isDraft,
+    };
+    final key = isDraft ? _workoutDraftsKey : _workoutTemplatesKey;
+    final existing = _localStorage.getStringList(key);
+    existing.add(jsonEncode(data));
+    await _localStorage.saveStringList(key, existing);
+  }
+
+  Future<void> _createWorkoutPlanOnServer() async {
+    try {
+      final title =
+          _workoutNameController.text.isEmpty ? 'Untitled workout' : _workoutNameController.text;
+      final payload = <String, dynamic>{
+        'title': title,
+        'description': 'Created from Workout Builder',
+      };
+      await _buildersRepository.createExercisePlan(payload);
+    } catch (_) {
+      // Ignore server errors here; coach still keeps local draft/template
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -579,36 +649,6 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
   }
 
   Widget _buildStep2Template() {
-    final templates = [
-      {
-        'id': '1',
-        'title': 'Fat Burn — Lower Body',
-        'difficulty': 'Intermediate',
-        'difficultyColor': AppColors.success,
-        'desc': 'Legs + Cardio · 45 min',
-        'tags': ['Barbell Squat', 'Leg Press', 'Walking Lunge', 'Leg Curl', '+1 more'],
-        'count': '7 exercises',
-      },
-      {
-        'id': '2',
-        'title': 'Push Day — Chest & Shoulders',
-        'difficulty': 'Advanced',
-        'difficultyColor': AppColors.error,
-        'desc': 'Upper push · 50 min',
-        'tags': ['Bench Press', 'Incline Dumbbell Press', 'Cable Fly', 'Overhead Press', '+2 more'],
-        'count': '8 exercises',
-      },
-      {
-        'id': '3',
-        'title': 'Pull Day — Back & Biceps',
-        'difficulty': 'Intermediate',
-        'difficultyColor': AppColors.success,
-        'desc': 'Upper pull · 50 min',
-        'tags': ['Barbell Row', 'Pull-ups', 'Cable Row', 'Bicep Curl', '+2 more'],
-        'count': '7 exercises',
-      },
-    ];
-
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -616,7 +656,6 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
         children: [
           GestureDetector(
             onTap: () {
-              setState(() => _selectedTemplateId = null);
               setState(() => _currentStep = 3);
             },
             child: Container(
@@ -702,13 +741,48 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          ...templates.map((t) => _buildTemplateCard(t)),
+          ..._buildLocalWorkoutTemplates(),
         ],
       ),
     );
   }
 
-  Widget _buildTemplateCard(Map<String, dynamic> t) {
+  List<Widget> _buildLocalWorkoutTemplates() {
+    final stored = _localStorage.getStringList(_workoutTemplatesKey);
+    if (stored.isEmpty) {
+      return const [
+        Padding(
+          padding: EdgeInsets.only(top: 4),
+          child: Text(
+            "You don't have any saved templates",
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ];
+    }
+
+    return stored.map((raw) {
+      Map<String, dynamic> data;
+      try {
+        data = jsonDecode(raw) as Map<String, dynamic>;
+      } catch (_) {
+        data = const {};
+      }
+      return _buildLocalWorkoutTemplateCard(data);
+    }).toList();
+  }
+
+  Widget _buildLocalWorkoutTemplateCard(Map<String, dynamic> t) {
+    final title = (t['title'] as String?) ?? 'Untitled workout';
+    final difficulty = (t['difficulty'] as String?) ?? 'Custom';
+    final createdAt = (t['createdAt'] as String?);
+    final createdLabel = createdAt != null
+        ? 'Saved on ${DateTime.tryParse(createdAt)?.toLocal().toString().split(' ').first ?? ''}'
+        : '';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
@@ -724,7 +798,7 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
             children: [
               Expanded(
                 child: Text(
-                  t['title'] as String,
+                  title,
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -735,79 +809,36 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: (t['difficultyColor'] as Color).withOpacity(0.2),
+                  color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
-                  t['difficulty'] as String,
+                  difficulty,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: t['difficultyColor'] as Color,
+                    color: AppColors.primary,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 4),
-          Text(
-            t['desc'] as String,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
+          if (createdLabel.isNotEmpty) ...[
+            Text(
+              createdLabel,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textMuted,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: (t['tags'] as List<String>)
-                .map((tag) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        tag,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ))
-                .toList(),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            t['count'] as String,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textMuted,
-            ),
-          ),
-          const SizedBox(height: 8),
+            const SizedBox(height: 8),
+          ],
           Align(
             alignment: Alignment.centerRight,
-              child: GestureDetector(
+            child: GestureDetector(
               onTap: () {
-                setState(() {
-                  _selectedTemplateId = t['id'] as String;
-                  if (_selectedTemplateId == '1') {
-                    _warmUpExercises = ['Dynamic Warm-up', 'Leg swings'];
-                    _mainExercises = ['Barbell Squat', 'Leg Press', 'Walking Lunge', 'Leg Curl'];
-                    _coolDownExercises = ['Static stretch'];
-                  } else if (_selectedTemplateId == '2') {
-                    _warmUpExercises = ['Arm circles', 'Band pull-aparts'];
-                    _mainExercises = ['Bench Press', 'Incline Dumbbell Press', 'Cable Fly', 'Overhead Press'];
-                    _coolDownExercises = ['Chest stretch'];
-                  } else if (_selectedTemplateId == '3') {
-                    _warmUpExercises = ['Band rows', 'Scapular mobility'];
-                    _mainExercises = ['Barbell Row', 'Pull-ups', 'Cable Row', 'Bicep Curl'];
-                    _coolDownExercises = ['Back stretch'];
-                  }
-                  _currentStep = 3;
-                });
+                setState(() => _currentStep = 3);
               },
               child: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -1130,16 +1161,16 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
             ),
           ),
           if (expanded) ...[
-            if (title == 'Main Exercises')
+            if (showAddButtons)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 child: Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {},
-                        icon: Icon(Icons.add, size: 18, color: AppColors.primary),
-                        label: Text(
+                        onPressed: () => _addCustomExercise(exercises, title),
+                        icon: const Icon(Icons.add, size: 18, color: AppColors.primary),
+                        label: const Text(
                           'Add',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
@@ -1147,7 +1178,8 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppColors.primary, style: BorderStyle.solid),
+                          side: const BorderSide(
+                              color: AppColors.primary, style: BorderStyle.solid),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -1157,9 +1189,10 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: () {},
-                        icon: Icon(Icons.search, size: 18, color: AppColors.textMuted),
-                        label: Text(
+                        onPressed: () => _openExerciseLibrarySheet(exercises, title),
+                        icon: const Icon(Icons.search,
+                            size: 18, color: AppColors.textMuted),
+                        label: const Text(
                           'Library',
                           style: TextStyle(
                             fontWeight: FontWeight.w600,
@@ -1167,7 +1200,7 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
                           ),
                         ),
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: AppColors.border),
+                          side: const BorderSide(color: AppColors.border),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -1207,6 +1240,199 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
           ],
         ],
       ),
+    );
+  }
+
+  Future<void> _addCustomExercise(List<String> targetList, String sectionTitle) async {
+    final name = await _showTextInputDialog(
+      title: 'Add to $sectionTitle',
+      hintText: 'e.g. Dynamic Warm-up',
+    );
+    if (name == null) return;
+    final trimmed = name.trim();
+    if (trimmed.isEmpty) return;
+    setState(() {
+      targetList.add(trimmed);
+    });
+  }
+
+  Future<void> _openExerciseLibrarySheet(
+      List<String> targetList, String sectionTitle) async {
+    await _loadExerciseLibrary();
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        List<Exercise> visible = List.of(_exerciseLibrary);
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: const [
+                        Text(
+                          'Exercise library',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.search, size: 18, color: AppColors.textMuted),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: TextField(
+                              decoration: const InputDecoration(
+                                hintText: 'Search exercises...',
+                                border: InputBorder.none,
+                                isDense: true,
+                              ),
+                              onChanged: (q) {
+                                setModalState(() {
+                                  if (q.isEmpty) {
+                                    visible = List.of(_exerciseLibrary);
+                                  } else {
+                                    final lower = q.toLowerCase();
+                                    visible = _exerciseLibrary
+                                        .where((e) => e.name.toLowerCase().contains(lower))
+                                        .toList();
+                                  }
+                                });
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    if (_exerciseLibraryLoading)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Center(
+                          child: CircularProgressIndicator(color: AppColors.primary),
+                        ),
+                      )
+                    else if (visible.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 24),
+                        child: Text(
+                          'No exercises available.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      )
+                    else
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: visible.length,
+                          itemBuilder: (ctx, index) {
+                            final ex = visible[index];
+                            return ListTile(
+                              title: Text(
+                                ex.name,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              subtitle: ex.description != null && ex.description!.isNotEmpty
+                                  ? Text(
+                                      ex.description!,
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                    )
+                                  : null,
+                              onTap: () {
+                                setState(() {
+                                  targetList.add(ex.name);
+                                });
+                                Navigator.pop(ctx);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<String?> _showTextInputDialog({
+    required String title,
+    required String hintText,
+  }) async {
+    final controller = TextEditingController();
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: Text(title),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            decoration: InputDecoration(
+              hintText: hintText,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(null),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(ctx).pop(controller.text);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Add'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -1645,7 +1871,9 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
           ),
           const SizedBox(height: 24),
           OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () async {
+              await _saveWorkoutPlanToLocal(isDraft: false);
+            },
             icon: Icon(Icons.folder_outlined, color: AppColors.primary),
             label: Text(
               'Save as Template',
@@ -1667,7 +1895,10 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => widget.onBackPressed(),
+                  onPressed: () async {
+                    await _saveWorkoutPlanToLocal(isDraft: true);
+                    widget.onBackPressed();
+                  },
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.textPrimary,
                     side: BorderSide(color: AppColors.border),
@@ -1682,7 +1913,10 @@ class _WorkoutBuilderScreenState extends State<WorkoutBuilderScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => widget.onBackPressed(),
+                  onPressed: () async {
+                    await _createWorkoutPlanOnServer();
+                    widget.onBackPressed();
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,

@@ -10,6 +10,14 @@ abstract class BuildersRepository {
   Future<List<NutritionPlan>> getMyNutritionPlans();
   Future<ExercisePlan> createExercisePlan(Map<String, dynamic> payload);
   Future<List<ExercisePlan>> getMyExercisePlans();
+  Future<void> assignNutritionPlan({
+    required int planId,
+    required List<int> traineeIds,
+  });
+  Future<void> assignExercisePlan({
+    required int planId,
+    required List<int> traineeIds,
+  });
 }
 
 class BuildersRepositoryImpl implements BuildersRepository {
@@ -36,4 +44,26 @@ class BuildersRepositoryImpl implements BuildersRepository {
 
   @override
   Future<List<ExercisePlan>> getMyExercisePlans() => remoteDataSource.getMyExercisePlans();
+
+  @override
+  Future<void> assignNutritionPlan({
+    required int planId,
+    required List<int> traineeIds,
+  }) {
+    return remoteDataSource.assignNutritionPlan(
+      planId: planId,
+      traineeIds: traineeIds,
+    );
+  }
+
+  @override
+  Future<void> assignExercisePlan({
+    required int planId,
+    required List<int> traineeIds,
+  }) {
+    return remoteDataSource.assignExercisePlan(
+      planId: planId,
+      traineeIds: traineeIds,
+    );
+  }
 }

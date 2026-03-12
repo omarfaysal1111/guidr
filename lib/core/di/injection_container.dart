@@ -1,5 +1,7 @@
 import 'package:get_it/get_it.dart';
 import 'package:guidr/features/coach_settings/domain/usecases/CoachDataUseCase.dart';
+import 'package:guidr/features/home/data/datasources/home_remote_data_source.dart';
+import 'package:guidr/features/home/domain/usecases/get_coach_home_use_case.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -28,6 +30,8 @@ import '../../features/trainees/presentation/bloc/trainees_bloc.dart';
 import '../../features/trainee_app/data/datasources/trainee_app_remote_data_source.dart';
 import '../../features/trainee_app/domain/repositories/trainee_app_repository.dart';
 import '../../features/trainee_app/data/repositories/trainee_app_repository_impl.dart';
+
+import '../../features/trainee_today/presentation/bloc/trainee_today_cubit.dart';
 
 import '../../features/coach_builders/data/datasources/builders_remote_data_source.dart';
 import '../../features/coach_builders/data/repositories/builders_repository_impl.dart';
@@ -106,13 +110,23 @@ Future<void> init() async {
     () => TraineeAppRepositoryImpl(remoteDataSource: sl()),
   );
 
+  sl.registerFactory(() => TraineeTodayCubit(repository: sl()));
+
   //! Features - Coach Builders (Nutrition & Exercises)
   sl.registerLazySingleton<BuildersRemoteDataSource>(
     () => BuildersRemoteDataSourceImpl(apiClient: sl()),
   );
-sl.registerLazySingleton(() => GetCoachDataUseCase(sl()));
+  sl.registerLazySingleton(() => GetCoachDataUseCase(sl()));
   sl.registerLazySingleton<BuildersRepository>(
     () => BuildersRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  //! Features - Coach Home
+  sl.registerLazySingleton<HomeRemoteDataSource>(
+    () => HomeRemoteDataSource(apiClient: sl()),
+  );
+  sl.registerLazySingleton<GetCoachHomeUseCase>(
+    () => GetCoachHomeUseCase(sl()),
   );
 }
 
