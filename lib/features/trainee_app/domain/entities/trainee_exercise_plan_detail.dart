@@ -69,6 +69,7 @@ class TraineeExerciseItem extends Equatable {
   final String rest;
   final String muscleGroup;
   final String status;
+  final String? videoUrl;
 
   const TraineeExerciseItem({
     required this.order,
@@ -79,6 +80,7 @@ class TraineeExerciseItem extends Equatable {
     required this.rest,
     required this.muscleGroup,
     required this.status,
+    required this.videoUrl,
   });
 
   factory TraineeExerciseItem.fromJson(Map<String, dynamic> json) {
@@ -94,11 +96,12 @@ class TraineeExerciseItem extends Equatable {
       rest: json['rest']?.toString() ?? '',
       muscleGroup: json['muscleGroup'] ?? '',
       status: json['status'] ?? 'not_started',
+      videoUrl: json['videoUrl']?.toString(),
     );
   }
 
   @override
   List<Object?> get props =>
-      [order, name, sets, reps, load, rest, muscleGroup, status];
+      [order, name, sets, reps, load, rest, muscleGroup, status, videoUrl];
 }
 

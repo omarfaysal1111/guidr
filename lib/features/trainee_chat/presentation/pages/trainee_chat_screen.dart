@@ -18,9 +18,8 @@ class TraineeChatScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.more_vert),
             onPressed: () {
-              context.read<AuthBloc>().add(
-                LogoutRequested(),
-              );
+              context.read<AuthBloc>().add(LogoutRequested());
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
           ),
         ],

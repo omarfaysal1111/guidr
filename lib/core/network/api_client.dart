@@ -101,17 +101,20 @@ class ApiClient {
       }
       return {};
     } else {
-      // Try to parse error message
       String message = 'Unexpected error occurred.';
       try {
         final body = jsonDecode(response.body);
         if (body['message'] != null) {
           message = body['message'];
+        } else if (body['error'] != null) {
+          message = body['error'].toString();
         }
       } catch (_) {
         message = response.reasonPhrase ?? message;
       }
-      throw Exception(message);
+      debugPrint('API ERROR [${response.statusCode}] ${response.request?.url}: $message');
+      debugPrint('Response body: ${response.body}');
+      throw Exception('[${ response.statusCode}] $message');
     }
   }
 }

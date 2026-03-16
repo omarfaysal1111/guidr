@@ -1,4 +1,7 @@
 import 'package:get_it/get_it.dart';
+import 'package:guidr/features/coach_builders/data/repositories/builder_repository.dart';
+import 'package:guidr/features/coach_builders/presentation/bloc/workout_builder_bloc.dart';
+import 'package:guidr/features/coach_builders/presentation/bloc/nutrition_builder_bloc.dart';
 import 'package:guidr/features/coach_settings/domain/usecases/CoachDataUseCase.dart';
 import 'package:guidr/features/home/data/datasources/home_remote_data_source.dart';
 import 'package:guidr/features/home/domain/usecases/get_coach_home_use_case.dart';
@@ -120,7 +123,18 @@ Future<void> init() async {
   sl.registerLazySingleton<BuildersRepository>(
     () => BuildersRepositoryImpl(remoteDataSource: sl()),
   );
-
+sl.registerFactory(
+    () => WorkoutBuilderBloc(
+      buildersRepository: sl(), 
+      traineesRepository: sl(),
+    ),
+  );
+  sl.registerFactory(
+    () => NutritionBuilderBloc(
+      buildersRepository: sl(),
+      traineesRepository: sl(),
+    ),
+  );
   //! Features - Coach Home
   sl.registerLazySingleton<HomeRemoteDataSource>(
     () => HomeRemoteDataSource(apiClient: sl()),

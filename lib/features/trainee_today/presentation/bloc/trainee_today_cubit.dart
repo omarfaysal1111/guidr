@@ -66,22 +66,40 @@ class TraineeTodayCubit extends Cubit<TraineeTodayState> {
   Future<void> load() async {
     emit(state.copyWith(loading: true, clearError: true));
     try {
-      final results = await Future.wait([
-        repository.getMyProfile(),
-        repository.getMyCoach(),
-        repository.getMyExercisePlans(),
-        repository.getMyNutritionPlans(),
-        repository.getDashboardToday(),
-      ]);
+      // Profile is required; fail if this call fails.
+      final profile = await repository.getMyProfile();
+
+      CoachProfile? coach;
+      List<ExercisePlan> exercisePlans = const [];
+      List<NutritionPlan> nutritionPlans = const [];
+      TraineeDashboardToday? dashboard;
+
+      // Non-critical calls: if they fail (e.g. no coach, no dashboard yet),
+      // we keep going with fallbacks instead of breaking the whole screen.
+      try {
+        coach = await repository.getMyCoach();
+      } catch (_) {}
+
+      try {
+        exercisePlans = await repository.getMyExercisePlans();
+      } catch (_) {}
+
+      try {
+        nutritionPlans = await repository.getMyNutritionPlans();
+      } catch (_) {}
+
+      try {
+        dashboard = await repository.getDashboardToday();
+      } catch (_) {}
 
       emit(
         state.copyWith(
           loading: false,
-          profile: results[0] as TraineeAppProfile,
-          coach: results[1] as CoachProfile,
-          exercisePlans: results[2] as List<ExercisePlan>,
-          nutritionPlans: results[3] as List<NutritionPlan>,
-          dashboard: results[4] as TraineeDashboardToday,
+          profile: profile,
+          coach: coach,
+          exercisePlans: exercisePlans,
+          nutritionPlans: nutritionPlans,
+          dashboard: dashboard,
         ),
       );
     } catch (e) {

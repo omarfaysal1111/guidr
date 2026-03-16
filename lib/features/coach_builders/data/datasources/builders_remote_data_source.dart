@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:guidr/core/network/api_client.dart';
 import '../../domain/entities/exercise.dart';
 import '../../domain/entities/ingredient.dart';
@@ -18,6 +20,10 @@ abstract class BuildersRemoteDataSource {
     required int planId,
     required List<int> traineeIds,
   });
+  Future<void> saveExercisePlanTemplate(Map<String, dynamic> payload);
+  Future<void> saveExercisePlanDraft(Map<String, dynamic> payload);
+  Future<void> saveNutritionPlanTemplate(Map<String, dynamic> payload);
+  Future<void> saveNutritionPlanDraft(Map<String, dynamic> payload);
 }
 
 class BuildersRemoteDataSourceImpl implements BuildersRemoteDataSource {
@@ -55,6 +61,7 @@ class BuildersRemoteDataSourceImpl implements BuildersRemoteDataSource {
 
   @override
   Future<ExercisePlan> createExercisePlan(Map<String, dynamic> payload) async {
+    debugPrint('createExercisePlan payload: ${jsonEncode(payload)}');
     final response = await apiClient.post('/coaches/exercise-plans', body: payload);
     final data = response['data'] ?? response;
     return ExercisePlan.fromJson(data);
@@ -88,8 +95,28 @@ class BuildersRemoteDataSourceImpl implements BuildersRemoteDataSource {
     await apiClient.post(
       '/coaches/exercise-plans/$planId/assign',
       body: {
-        'traineeIds': traineeIds,
+        'traineeIds': traineeIds
       },
     );
+  }
+
+  @override
+  Future<void> saveExercisePlanTemplate(Map<String, dynamic> payload) async {
+    await apiClient.post('/coaches/exercise-plans/templates', body: payload);
+  }
+
+  @override
+  Future<void> saveExercisePlanDraft(Map<String, dynamic> payload) async {
+    await apiClient.post('/coaches/exercise-plans/drafts', body: payload);
+  }
+
+  @override
+  Future<void> saveNutritionPlanTemplate(Map<String, dynamic> payload) async {
+    await apiClient.post('/coaches/nutrition-plans/templates', body: payload);
+  }
+
+  @override
+  Future<void> saveNutritionPlanDraft(Map<String, dynamic> payload) async {
+    await apiClient.post('/coaches/nutrition-plans/drafts', body: payload);
   }
 }

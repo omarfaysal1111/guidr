@@ -59,7 +59,7 @@ class CoachHomeTrainee extends Equatable {
       fullName: json['fullName'] ?? '',
       email: json['email'] ?? '',
       fitnessGoal: json['fitnessGoal'],
-      adherence: parseAdherence(json['adherence']),
+      adherence: (json['adherencePrecent']),
     );
   }
 

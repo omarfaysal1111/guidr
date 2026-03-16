@@ -49,6 +49,7 @@ class CoachSettingsScreen extends StatelessWidget {
             ),
             onPressed: () {
               context.read<AuthBloc>().add(LogoutRequested());
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
             child: const Text('Log Out'),
           ),

@@ -47,7 +47,7 @@ class Trainee extends Equatable {
           : '?',
       goal: json['fitnessGoal'] as String? ?? 'General Fitness',
       level: 'Beginner', // Default for now
-      adherence: 0,
+      adherence: json['adherencePercent'],
       status: 'active',
       weight: '—',
       lastActivity: '—',

@@ -1,24 +1,11 @@
+import 'package:guidr/features/coach_builders/data/repositories/builder_repository.dart';
+
 import '../../domain/entities/exercise.dart';
 import '../../domain/entities/ingredient.dart';
 import '../../domain/entities/plans.dart';
 import '../datasources/builders_remote_data_source.dart';
 
-abstract class BuildersRepository {
-  Future<List<Exercise>> getExercises();
-  Future<List<Ingredient>> getIngredients();
-  Future<NutritionPlan> createNutritionPlan(Map<String, dynamic> payload);
-  Future<List<NutritionPlan>> getMyNutritionPlans();
-  Future<ExercisePlan> createExercisePlan(Map<String, dynamic> payload);
-  Future<List<ExercisePlan>> getMyExercisePlans();
-  Future<void> assignNutritionPlan({
-    required int planId,
-    required List<int> traineeIds,
-  });
-  Future<void> assignExercisePlan({
-    required int planId,
-    required List<int> traineeIds,
-  });
-}
+
 
 class BuildersRepositoryImpl implements BuildersRepository {
   final BuildersRemoteDataSource remoteDataSource;
@@ -66,4 +53,20 @@ class BuildersRepositoryImpl implements BuildersRepository {
       traineeIds: traineeIds,
     );
   }
+
+  @override
+  Future<void> saveExercisePlanTemplate(Map<String, dynamic> payload) =>
+      remoteDataSource.saveExercisePlanTemplate(payload);
+
+  @override
+  Future<void> saveExercisePlanDraft(Map<String, dynamic> payload) =>
+      remoteDataSource.saveExercisePlanDraft(payload);
+
+  @override
+  Future<void> saveNutritionPlanTemplate(Map<String, dynamic> payload) =>
+      remoteDataSource.saveNutritionPlanTemplate(payload);
+
+  @override
+  Future<void> saveNutritionPlanDraft(Map<String, dynamic> payload) =>
+      remoteDataSource.saveNutritionPlanDraft(payload);
 }

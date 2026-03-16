@@ -4,6 +4,7 @@ import 'package:guidr/core/theme/app_colors.dart';
 import 'package:guidr/features/coach_builders/domain/entities/plans.dart';
 import 'package:guidr/features/trainee_app/domain/entities/trainee_exercise_plan_detail.dart';
 import 'package:guidr/features/trainee_app/domain/repositories/trainee_app_repository.dart';
+import 'trainee_workout_runner_screen.dart';
 
 class TraineeExercisePlanScreen extends StatefulWidget {
   final ExercisePlan plan;
@@ -20,7 +21,6 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
   TraineeExercisePlanDetail? _detail;
   bool _loading = true;
   String? _error;
-  bool _completing = false;
 
   @override
   void initState() {
@@ -48,32 +48,8 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
     }
   }
 
-  Future<void> _completeWorkout() async {
-    if (_detail == null || _completing) return;
-    setState(() => _completing = true);
-    try {
-      await _repository.completeWorkout(_detail!.id);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Workout marked as completed')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              e.toString().replaceFirst('Exception: ', ''),
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _completing = false);
-      }
-    }
-  }
+  // Keeping _completing flag for potential future API integration when
+  // finishing the full workout from the runner screen.
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +172,19 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
                             SizedBox(
                               width: double.infinity,
                               child: ElevatedButton(
-                                onPressed: _completing ? null : _completeWorkout,
+                                onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (ctx) =>
+                                                TraineeWorkoutRunnerScreen(
+                                              detail: detail,
+                                            ),
+                                          ),
+                                        ).then((_) {
+                                          if (mounted) _loadDetail();
+                                        });
+                                      },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.white,
                                   foregroundColor: AppColors.primary,
@@ -211,9 +199,7 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                child: Text(
-                                  _completing ? 'Completing…' : 'Start Workout',
-                                ),
+                                child: const Text('Start Workout'),
                               ),
                             ),
                           ],
@@ -414,6 +400,126 @@ class _ExerciseRow extends StatelessWidget {
                     color: AppColors.textSecondary,
                   ),
                 ),
+                const SizedBox(height: 8),
+                // Visual sets row
+                Row(
+                  children: List.generate(
+                    item.sets,
+                    (index) => Container(
+                      margin: EdgeInsets.only(right: index == item.sets - 1 ? 0 : 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Set ${index + 1}',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                if (item.videoUrl != null && item.videoUrl!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        showModalBottomSheet(
+                          context: context,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(20),
+                            ),
+                          ),
+                          builder: (ctx) {
+                            return Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      const Text(
+                                        'Exercise Video Preview',
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.close),
+                                        onPressed: () => Navigator.pop(ctx),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    height: 180,
+                                    width: double.infinity,
+                                    decoration: BoxDecoration(
+                                      color: Colors.black,
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.play_circle_fill,
+                                            color: Colors.white,
+                                            size: 48,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Open video: ${item.videoUrl}',
+                                            textAlign: TextAlign.center,
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.white70,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: const [
+                          Icon(
+                            Icons.play_circle_outline,
+                            size: 18,
+                            color: AppColors.primary,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Preview video',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

@@ -64,16 +64,16 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
                 icon: Icons.fitness_center,
                 label: 'Exercises Plan',
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (ctx) => WorkoutBuilderScreen(
-                        onBackPressed: () => Navigator.pop(ctx),
-                      ),
-                    ),
-                  );
-                },
+    Navigator.pop(context); // Close the current bottom sheet/drawer
+    
+    // Call the clean static route
+    Navigator.push(
+      context,
+      WorkoutBuilderPage.route(
+        onBackPressed: () => Navigator.pop(context), 
+      ),
+    );
+  },
               ),
               const SizedBox(height: 8),
               _buildPlanOption(
@@ -84,10 +84,8 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (ctx) => NutritionPlanBuilderScreen(
-                        onBackPressed: () => Navigator.pop(ctx),
-                      ),
+                    NutritionPlanBuilderScreen.route(
+                      onBackPressed: () => Navigator.pop(context),
                     ),
                   );
                 },

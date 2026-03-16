@@ -32,23 +32,35 @@ class _TraineeWorkoutScreenState extends State<TraineeWorkoutScreen> {
     try {
       final dashboard = await repo.getDashboardToday();
       final summary = dashboard.todayWorkoutSummary;
-      if (summary.planId == 0) {
+
+      // Primary source: today's summary from dashboard API
+      if (summary.planId != 0) {
+        final plan = ExercisePlan(
+          id: summary.planId,
+          title: summary.title,
+          description: '',
+        );
         setState(() {
-          _plan = null;
+          _plan = plan;
           _loading = false;
         });
         return;
       }
-      // Minimal plan model; detail screen will fetch full data by id.
-      final plan = ExercisePlan(
-        id: summary.planId,
-        title: summary.title,
-        description: '',
-      );
-      setState(() {
-        _plan = plan;
-        _loading = false;
-      });
+
+      // Fallback: pull from assigned exercise plans list
+      final plans = await repo.getMyExercisePlans();
+      if (plans.isNotEmpty) {
+        // For now, take the first assigned plan as current
+        setState(() {
+          _plan = plans.first;
+          _loading = false;
+        });
+      } else {
+        setState(() {
+          _plan = null;
+          _loading = false;
+        });
+      }
     } catch (e) {
       setState(() {
         _error = e.toString().replaceFirst('Exception: ', '');

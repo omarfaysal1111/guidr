@@ -19,7 +19,7 @@ class LoadHomeDataEvent extends HomeEvent {}
 // States
 abstract class HomeState extends Equatable {
   const HomeState();
-  
+
   @override
   List<Object?> get props => [];
 }
@@ -42,8 +42,12 @@ class HomeLoaded extends HomeState {
   });
 
   @override
-  List<Object?> get props =>
-      [coachData, todaysSessions, topPerformers, pendingInvitations];
+  List<Object?> get props => [
+    coachData,
+    todaysSessions,
+    topPerformers,
+    pendingInvitations,
+  ];
 }
 
 class HomeError extends HomeState {
@@ -61,7 +65,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final GetNeedsAttentionUseCase getNeedsAttentionUseCase;
 
   HomeBloc(this.getCoachHomeUseCase, this.getNeedsAttentionUseCase)
-      : super(HomeInitial()) {
+    : super(HomeInitial()) {
     on<LoadHomeDataEvent>((event, emit) async {
       emit(HomeLoading());
       try {
@@ -69,12 +73,27 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         final trainees = home.trainees;
         final now = DateTime.now();
         final weekdays = [
-          'Monday', 'Tuesday', 'Wednesday', 'Thursday',
-          'Friday', 'Saturday', 'Sunday'
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+          'Sunday',
         ];
         final months = [
-          'January', 'February', 'March', 'April', 'May', 'June',
-          'July', 'August', 'September', 'October', 'November', 'December'
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December',
         ];
         final dateString =
             '${weekdays[now.weekday - 1]}, ${months[now.month - 1]} ${now.day}';
@@ -99,8 +118,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           final adherence = trainee.adherence;
           if (adherence != null && adherence < 50) {
             final traineeIdStr = trainee.id.toString();
-            final alreadyExists = combinedAttentionItems
-                .any((item) => item.traineeId == traineeIdStr);
+            final alreadyExists = combinedAttentionItems.any(
+              (item) => item.traineeId == traineeIdStr,
+            );
             if (!alreadyExists) {
               combinedAttentionItems.add(
                 AttentionItem(
@@ -119,9 +139,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
         final todaysSessions = trainees.take(2).toList();
         final topPerformers = trainees.take(3).toList();
-        final pendingInvitations = home.invitations
-            .where((inv) => inv.status.toUpperCase() == 'PENDING')
-            .toList();
+        final pendingInvitations =
+            home.invitations
+                .where((inv) => inv.status.toUpperCase() == 'PENDING')
+                .toList();
 
         final coachHomeData = CoachData(
           name: home.coach.fullName,
@@ -131,7 +152,20 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           isPremium: false, // TODO: from subscription when available
           activeClients: activeClients,
           maxClients: maxClients,
-          avgAdherence: 0, // TODO: from analytics when available
+          avgAdherence:
+              home.trainees.isEmpty
+                  ? 0
+                  : (home.trainees.fold<double>(
+                            0.0,
+                            (sum, trainee) =>
+                                sum +
+                                (num.tryParse(
+                                      trainee.adherence.toString(),
+                                    )?.toDouble() ??
+                                    0.0),
+                          ) /
+                          home.trainees.length)
+                      .round(),
           needsAttentionItems: combinedAttentionItems,
         );
 

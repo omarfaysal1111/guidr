@@ -378,7 +378,11 @@ body: RefreshIndicator(
                                     plan: workoutPlan,
                                   ),
                                 ),
-                              );
+                              ).then((_) {
+                                if (context.mounted) {
+                                  context.read<TraineeTodayCubit>().load();
+                                }
+                              });
                             },
                             child: const Text(
                               'View',

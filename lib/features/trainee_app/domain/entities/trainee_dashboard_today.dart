@@ -31,13 +31,16 @@ class TraineeDashboardToday extends Equatable {
           .map((e) => TraineeCoachGoal.fromJson(e as Map<String, dynamic>))
           .toList(),
       todayWorkoutSummary: TodayWorkoutSummary.fromJson(
-        json['todayWorkoutSummary'] as Map<String, dynamic>,
+        (json['todayWorkoutSummary'] as Map<String, dynamic>? ??
+            <String, dynamic>{}),
       ),
       todayNutritionSummary: TodayNutritionSummary.fromJson(
-        json['todayNutritionSummary'] as Map<String, dynamic>,
+        (json['todayNutritionSummary'] as Map<String, dynamic>? ??
+            <String, dynamic>{}),
       ),
-      weeklyGoals:
-          WeeklyGoals.fromJson(json['weeklyGoals'] as Map<String, dynamic>),
+      weeklyGoals: WeeklyGoals.fromJson(
+        (json['weeklyGoals'] as Map<String, dynamic>? ?? <String, dynamic>{}),
+      ),
       achievements: (json['achievements'] as List? ?? [])
           .map((e) => TraineeAchievement.fromJson(e as Map<String, dynamic>))
           .toList(),
