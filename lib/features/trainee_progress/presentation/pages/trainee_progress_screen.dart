@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../bloc/trainee_progress_bloc.dart';
+import '../bloc/trainee_progress_event.dart';
+import '../bloc/trainee_progress_state.dart';
 
 class TraineeProgressScreen extends StatelessWidget {
   const TraineeProgressScreen({super.key});
@@ -36,10 +40,37 @@ class TraineeProgressScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-        children: [
-          const SizedBox(height: 8),
+      body: BlocConsumer<TraineeProgressBloc, TraineeProgressState>(
+        listener: (context, state) {
+          if (state is TraineeProgressActionSuccess) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message)),
+            );
+          } else if (state is TraineeProgressError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message), backgroundColor: AppColors.error),
+            );
+          }
+        },
+        builder: (context, state) {
+          if (state is TraineeProgressLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final measurements = state is TraineeProgressLoaded ? state.measurements : [];
+          final pictures = state is TraineeProgressLoaded ? state.pictures : [];
+
+          // Sort measurements by date descending to get the latest
+          final sortedMeasurements = measurements.toList()
+            ..sort((a, b) => b.date.compareTo(a.date));
+          final latestWeight = sortedMeasurements.isNotEmpty
+              ? sortedMeasurements.first.weight?.toStringAsFixed(1) ?? '--'
+              : '--';
+
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            children: [
+              const SizedBox(height: 8),
           // Header + tabs
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -156,8 +187,8 @@ class TraineeProgressScreen extends StatelessWidget {
               Expanded(
                 child: _BigStatCard(
                   title: 'Current Weight',
-                  value: '74.5 kg',
-                  subtitle: '+1.7 kg total',
+                  value: '$latestWeight kg',
+                  subtitle: 'Latest logged',
                 ),
               ),
               const SizedBox(width: 10),
@@ -232,16 +263,16 @@ class TraineeProgressScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children:  [
                     Text(
-                      'Start: 76.2 kg',
+                      'Start: -- kg',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,
                       ),
                     ),
                     Text(
-                      'Now: 74.5 kg',
+                      'Now: $latestWeight kg',
                       style: TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,
@@ -261,7 +292,7 @@ class TraineeProgressScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: () => _showLogWeightDialog(context),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           side: const BorderSide(color: AppColors.primary),
@@ -282,7 +313,7 @@ class TraineeProgressScreen extends StatelessWidget {
                     const SizedBox(width: 10),
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () {},
+                        onPressed: () => _showLogMeasurementsDialog(context),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           side: const BorderSide(color: AppColors.primary),
@@ -368,7 +399,7 @@ class TraineeProgressScreen extends StatelessWidget {
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: const [
+                  children:  [
                     Text(
                       'Progress Photos',
                       style: TextStyle(
@@ -377,38 +408,59 @@ class TraineeProgressScreen extends StatelessWidget {
                         color: AppColors.textPrimary,
                       ),
                     ),
-                    Text(
-                      '+ Upload',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.primary,
+                    GestureDetector(
+                      onTap: () => _showAddProgressPictureDialog(context),
+                      child: const Text(
+                        '+ Upload',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: List.generate(
-                    4,
-                    (index) => Container(
-                      width: (MediaQuery.of(context).size.width - 20 * 2 - 10) /
-                          2.4,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.border),
+                pictures.isEmpty
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(20.0),
+                          child: Text(
+                            'No photos yet',
+                            style: TextStyle(color: AppColors.textSecondary),
+                          ),
+                        ),
+                      )
+                    : Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: List.generate(
+                          pictures.length > 4 ? 4 : pictures.length,
+                          (index) => Container(
+                            width: (MediaQuery.of(context).size.width - 20 * 2 - 10) /
+                                2.4,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: AppColors.border),
+                              image: pictures[index].frontPictureUrl != null
+                                  ? DecorationImage(
+                                      image: NetworkImage(pictures[index].frontPictureUrl!),
+                                      fit: BoxFit.cover,
+                                    )
+                                  : null,
+                            ),
+                            child: pictures[index].frontPictureUrl == null
+                                ? const Center(
+                                    child: Icon(Icons.camera_alt_outlined,
+                                        color: AppColors.textMuted),
+                                  )
+                                : null,
+                          ),
+                        ),
                       ),
-                      child: const Center(
-                        child: Icon(Icons.camera_alt_outlined,
-                            color: AppColors.textMuted),
-                      ),
-                    ),
-                  ),
-                ),
               ],
             ),
           ),
@@ -519,7 +571,7 @@ class TraineeProgressScreen extends StatelessWidget {
             ),
           ),
         ],
-      ),
+          );})
     );
   }
 
@@ -594,6 +646,185 @@ class TraineeProgressScreen extends StatelessWidget {
                 color: AppColors.textPrimary,
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogWeightDialog(BuildContext context) {
+    final weightController = TextEditingController();
+    final bloc = context.read<TraineeProgressBloc>();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log Weight'),
+        content: TextField(
+          controller: weightController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+            hintText: 'e.g. 75.0',
+            suffixText: 'kg',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final weight = double.tryParse(weightController.text.trim());
+              if (weight != null) {
+                final today = DateTime.now();
+                final date =
+                    '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+                bloc.add(AddMeasurement({'weight': weight, 'date': date}));
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLogMeasurementsDialog(BuildContext context) {
+    final weightCtrl = TextEditingController();
+    final bodyFatCtrl = TextEditingController();
+    final muscleMassCtrl = TextEditingController();
+    final chestCtrl = TextEditingController();
+    final waistCtrl = TextEditingController();
+    final armsCtrl = TextEditingController();
+    final hipsCtrl = TextEditingController();
+    final thighsCtrl = TextEditingController();
+    final bloc = context.read<TraineeProgressBloc>();
+
+    Widget field(TextEditingController ctrl, String label, String suffix) =>
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: TextField(
+            controller: ctrl,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            decoration: InputDecoration(
+              labelText: label,
+              suffixText: suffix,
+              isDense: true,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Log Measurements'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              field(weightCtrl, 'Weight', 'kg'),
+              field(bodyFatCtrl, 'Body Fat %', '%'),
+              field(muscleMassCtrl, 'Muscle Mass', 'kg'),
+              field(chestCtrl, 'Chest', 'cm'),
+              field(waistCtrl, 'Waist', 'cm'),
+              field(armsCtrl, 'Arms', 'cm'),
+              field(hipsCtrl, 'Hips', 'cm'),
+              field(thighsCtrl, 'Thighs', 'cm'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              double? parse(TextEditingController c) =>
+                  double.tryParse(c.text.trim());
+              final today = DateTime.now();
+              final date =
+                  '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+              final data = <String, dynamic>{'date': date};
+              if (parse(weightCtrl) != null) data['weight'] = parse(weightCtrl);
+              if (parse(bodyFatCtrl) != null) data['bodyFatPercentage'] = parse(bodyFatCtrl);
+              if (parse(muscleMassCtrl) != null) data['muscleMass'] = parse(muscleMassCtrl);
+              if (parse(chestCtrl) != null) data['chest'] = parse(chestCtrl);
+              if (parse(waistCtrl) != null) data['waist'] = parse(waistCtrl);
+              if (parse(armsCtrl) != null) data['arms'] = parse(armsCtrl);
+              if (parse(hipsCtrl) != null) data['hips'] = parse(hipsCtrl);
+              if (parse(thighsCtrl) != null) data['thighs'] = parse(thighsCtrl);
+
+              if (data.length > 1) {
+                bloc.add(AddMeasurement(data));
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddProgressPictureDialog(BuildContext context) {
+    final frontUrlCtrl = TextEditingController();
+    final sideUrlCtrl = TextEditingController();
+    final backUrlCtrl = TextEditingController();
+    final notesCtrl = TextEditingController();
+    final bloc = context.read<TraineeProgressBloc>();
+
+    Widget field(TextEditingController ctrl, String label, {int maxLines = 1}) =>
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: TextField(
+            controller: ctrl,
+            maxLines: maxLines,
+            decoration: InputDecoration(
+              labelText: label,
+              isDense: true,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        );
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add Progress Photo'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              field(frontUrlCtrl, 'Front Photo URL'),
+              field(sideUrlCtrl, 'Side Photo URL'),
+              field(backUrlCtrl, 'Back Photo URL'),
+              field(notesCtrl, 'Notes (optional)', maxLines: 2),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final today = DateTime.now();
+              final date =
+                  '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+              final data = <String, dynamic>{'date': date};
+              if (frontUrlCtrl.text.trim().isNotEmpty) data['frontPictureUrl'] = frontUrlCtrl.text.trim();
+              if (sideUrlCtrl.text.trim().isNotEmpty) data['sidePictureUrl'] = sideUrlCtrl.text.trim();
+              if (backUrlCtrl.text.trim().isNotEmpty) data['backPictureUrl'] = backUrlCtrl.text.trim();
+              if (notesCtrl.text.trim().isNotEmpty) data['notes'] = notesCtrl.text.trim();
+              bloc.add(AddProgressPicture(data));
+              Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
           ),
         ],
       ),

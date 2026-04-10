@@ -8,6 +8,7 @@ import 'package:guidr/features/home/presentation/widgets/needs_attention_section
 import 'package:guidr/features/home/presentation/bloc/home_bloc.dart';
 import 'package:guidr/features/home/domain/entities/coach_home_models.dart';
 import 'package:guidr/features/trainees/domain/entities/trainee.dart';
+import 'package:guidr/features/trainees/presentation/bloc/trainees_bloc.dart';
 import 'package:guidr/features/trainees/presentation/pages/trainee_profile_screen.dart';
 import 'package:guidr/features/needs_attention/domain/usecases/get_needs_attention_use_case.dart';
 import 'package:guidr/features/home/domain/usecases/get_coach_home_use_case.dart';
@@ -92,6 +93,18 @@ class HomeView extends StatelessWidget {
           } else if (state is HomeLoaded) {
             final data = state.coachData;
             final todaysSessions = state.todaysSessions;
+            final sessionsCompletedToday = todaysSessions
+                .where((t) => t.sessionCompletedToday)
+                .length;
+            final todaySessionsSubtitle =
+                todaysSessions.isEmpty
+                    ? 'None scheduled'
+                    : sessionsCompletedToday == todaysSessions.length
+                    ? 'All ${todaysSessions.length} completed'
+                    : sessionsCompletedToday == 0
+                    ? '${todaysSessions.length} scheduled'
+                    : '$sessionsCompletedToday of ${todaysSessions.length} completed';
+            final todaysSessionsPreview = todaysSessions.take(2).toList();
             final topPerformers = state.topPerformers;
             final pendingInvitations = state.pendingInvitations;
 
@@ -387,9 +400,8 @@ class HomeView extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _SectionHeader(
-                          title: "Today's Sessions",
-                          subtitle: '${todaysSessions.length} upcoming',
+                        _TodaysSessionsSectionHeader(
+                          summary: todaySessionsSubtitle,
                         ),
                         const SizedBox(height: 12),
                         if (todaysSessions.isEmpty)
@@ -398,17 +410,15 @@ class HomeView extends StatelessWidget {
                           )
                         else
                           Row(
-                            children: todaysSessions
-                                .take(2)
-                                .map(
-                                  (t) => Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: _TraineeSessionCard(trainee: t),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              for (var i = 0; i < todaysSessionsPreview.length; i++) ...[
+                                if (i > 0) const SizedBox(width: 8),
+                                _TraineeSessionCard(
+                                  trainee: todaysSessionsPreview[i],
+                                ),
+                              ],
+                            ],
                           ),
                       ],
                     ),
@@ -557,6 +567,63 @@ class HomeView extends StatelessWidget {
   }
 }
 
+class _TodaysSessionsSectionHeader extends StatelessWidget {
+  final String summary;
+
+  const _TodaysSessionsSectionHeader({required this.summary});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.primaryLight,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppColors.primary.withValues(alpha: 0.35),
+            ),
+          ),
+          child: const Icon(
+            Icons.calendar_month_outlined,
+            color: AppColors.primary,
+            size: 22,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Today's Sessions",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                summary,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _SectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -627,6 +694,9 @@ class _EmptyCard extends StatelessWidget {
 }
 
 class _TraineeSessionCard extends StatelessWidget {
+  static const double _cardWidth = 132;
+  static const double _cardHeight = 92;
+
   final CoachHomeTrainee trainee;
 
   const _TraineeSessionCard({required this.trainee});
@@ -636,84 +706,182 @@ class _TraineeSessionCard extends StatelessWidget {
     final initial = trainee.fullName.isNotEmpty
         ? trainee.fullName[0].toUpperCase()
         : '?';
-    return InkWell(
-      borderRadius: BorderRadius.circular(14),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (ctx) => TraineeProfileScreen(
-              trainee: Trainee(
-                id: trainee.id,
-                name: trainee.fullName,
-                email: trainee.email,
-                avatar: initial,
-                goal: trainee.fitnessGoal ?? 'General Fitness',
-                level: 'Beginner',
-                adherence: (trainee.adherence ?? 0).round(),
-                status: 'active',
-                weight: '—',
-                lastActivity: '—',
-                nextSession: '—',
-                joined: 'Recently',
-                alerts: const [],
-              ),
-              onBackPressed: () => Navigator.pop(ctx),
-            ),
-          ),
-        );
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.card,
+    final completed = trainee.sessionCompletedToday;
+    final w = trainee.assignedWorkoutName?.trim();
+    final g = trainee.fitnessGoal?.trim();
+    final workoutTitle =
+        (w != null && w.isNotEmpty)
+            ? w
+            : (g != null && g.isNotEmpty)
+            ? g
+            : 'Workout';
+
+    return SizedBox(
+      width: _cardWidth,
+      height: _cardHeight,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: AppColors.primaryLight,
-              child: Text(
-                initial,
-                style: const TextStyle(
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.bold,
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => BlocProvider(
+                  create: (_) => di.sl<TraineesBloc>(),
+                  child: TraineeProfileScreen(
+                    trainee: Trainee(
+                      id: trainee.id,
+                      name: trainee.fullName,
+                      email: trainee.email,
+                      avatar: initial,
+                      goal: trainee.fitnessGoal ?? 'General Fitness',
+                      level: 'Beginner',
+                      adherence: (trainee.adherence ?? 0).round(),
+                      status: 'active',
+                      weight: '—',
+                      lastActivity: '—',
+                      nextSession: '—',
+                      joined: 'Recently',
+                      alerts: const [],
+                    ),
+                    onBackPressed: () => Navigator.pop(context),
+                  ),
                 ),
               ),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.card,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            const SizedBox(width: 12),
-            Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 6),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    trainee.fullName,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: AppColors.primaryLight,
+                          child: Text(
+                            initial,
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                trainee.fullName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 11,
+                                  height: 1.2,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                workoutTitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  height: 1.2,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  if (trainee.fitnessGoal != null &&
-                      trainee.fitnessGoal!.isNotEmpty)
-                    Text(
-                      trainee.fitnessGoal!,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.center,
+                    child: _SessionCompletionTag(
+                      completed: completed,
+                      compact: false,
                     ),
+                  ),
                 ],
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: AppColors.textMuted,
-            ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _SessionCompletionTag extends StatelessWidget {
+  final bool completed;
+  final bool compact;
+
+  const _SessionCompletionTag({
+    required this.completed,
+    this.compact = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hPad = compact ? 5.0 : 8.0;
+    final vPad = compact ? 2.0 : 4.0;
+    final iconSize = compact ? 11.0 : 14.0;
+    final fontSize = compact ? 9.0 : 11.0;
+    final gap = compact ? 3.0 : 4.0;
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
+      decoration: BoxDecoration(
+        color: completed ? AppColors.successLight : AppColors.surface,
+        borderRadius: BorderRadius.circular(compact ? 10 : 20),
+        border: Border.all(
+          color:
+              completed ? AppColors.success.withValues(alpha: 0.35) : AppColors.border,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            completed ? Icons.check_circle_rounded : Icons.schedule_rounded,
+            size: iconSize,
+            color: completed ? AppColors.success : AppColors.textSecondary,
+          ),
+          SizedBox(width: gap),
+          Text(
+            completed ? 'Completed' : 'Pending',
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w700,
+              color: completed ? AppColors.success : AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
   }

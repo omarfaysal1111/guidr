@@ -44,27 +44,31 @@ class TraineesView extends StatelessWidget {
             );
           } else if (state is TraineesLoaded) {
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Filters
                 SingleChildScrollView(
+
                   scrollDirection: Axis.horizontal,
+                  
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
+                    // horizontal: 20,
                     vertical: 12,
                   ),
                   child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildFilterChip(context, 'All', 'all', state),
-                      const SizedBox(width: 8),
+                     // const SizedBox(width: 80),
                       _buildFilterChip(context, 'Active', 'active', state),
-                      const SizedBox(width: 8),
+                    //  const SizedBox(width: 80),
                       _buildFilterChip(
                         context,
                         'Attention',
                         'attention',
                         state,
                       ),
-                      const SizedBox(width: 8),
+                     // const SizedBox(width: 8),
                       _buildFilterChip(context, 'Pending', 'pending', state),
                     ],
                   ),
@@ -125,12 +129,13 @@ class TraineesView extends StatelessWidget {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder:
-                                    (_) => TraineeProfileScreen(
-                                      trainee: trainee,
-                                      onBackPressed:
-                                          () => Navigator.pop(context),
-                                    ),
+                                builder: (_) => BlocProvider.value(
+                                  value: context.read<TraineesBloc>(),
+                                  child: TraineeProfileScreen(
+                                    trainee: trainee,
+                                    onBackPressed: () => Navigator.pop(context),
+                                  ),
+                                ),
                               ),
                             );
                           }
@@ -197,6 +202,13 @@ class TraineesView extends StatelessWidget {
                                       children: [
                                         Text(
                                           trainee.name,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                         Text(
+                                          trainee.adherence.toString(),
                                           style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16,

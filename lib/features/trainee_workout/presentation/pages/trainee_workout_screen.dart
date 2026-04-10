@@ -34,7 +34,7 @@ class _TraineeWorkoutScreenState extends State<TraineeWorkoutScreen> {
       final summary = dashboard.todayWorkoutSummary;
 
       // Primary source: today's summary from dashboard API
-      if (summary.planId != 0) {
+      if (summary.planId.isNotEmpty) {
         final plan = ExercisePlan(
           id: summary.planId,
           title: summary.title,

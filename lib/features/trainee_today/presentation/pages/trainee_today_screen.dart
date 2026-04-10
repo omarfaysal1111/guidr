@@ -544,61 +544,31 @@ body: RefreshIndicator(
                       ),
                       const SizedBox(height: 14),
                       // Meals chips row
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildMealChip(
-                              label: 'Bkfast',
-                              kcal: _mealKcalText(
-                                dashboard,
-                                slotIndex: 0,
-                              ),
-                              isActive: true,
-                              onTap: () =>
-                                  _handleMealTap(context, dashboard),
-                            ),
+                      if (dashboard != null && dashboard.todayNutritionSummary.meals.isNotEmpty)
+                        SizedBox(
+                          height: 70,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: dashboard.todayNutritionSummary.meals.length,
+                            separatorBuilder: (context, index) => const SizedBox(width: 8),
+                            itemBuilder: (context, index) {
+                              final meal = dashboard.todayNutritionSummary.meals[index];
+                              return SizedBox(
+                                width: 80,
+                                child: _buildMealChip(
+                                  label: meal.name.isNotEmpty ? meal.name : 'Meal ${index + 1}',
+                                  kcal: '${meal.calories} kcal',
+                                  isActive: meal.completed,
+                                  onTap: () {
+                                    if (!meal.completed) {
+                                      _handleMealTap(context, meal.id);
+                                    }
+                                  },
+                                ),
+                              );
+                            },
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildMealChip(
-                              label: 'Lunch',
-                              kcal: _mealKcalText(
-                                dashboard,
-                                slotIndex: 1,
-                              ),
-                              isActive: false,
-                              onTap: () =>
-                                  _handleMealTap(context, dashboard),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildMealChip(
-                              label: 'Dinner',
-                              kcal: _mealKcalText(
-                                dashboard,
-                                slotIndex: 2,
-                              ),
-                              isActive: false,
-                              onTap: () =>
-                                  _handleMealTap(context, dashboard),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: _buildMealChip(
-                              label: 'Snack',
-                              kcal: _mealKcalText(
-                                dashboard,
-                                slotIndex: 3,
-                              ),
-                              isActive: false,
-                              onTap: () =>
-                                  _handleMealTap(context, dashboard),
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
                     ],
                   ),
                 ),
@@ -773,21 +743,11 @@ body: RefreshIndicator(
 
   Future<void> _handleMealTap(
     BuildContext context,
-    TraineeDashboardToday? dashboard,
+    int mealId,
   ) async {
-    if (dashboard == null ||
-        dashboard.todayNutritionSummary.planId == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No nutrition plan assigned yet.'),
-        ),
-      );
-      return;
-    }
-
     final repo = di.sl<TraineeAppRepository>();
     try {
-      await repo.completeMeal(dashboard.todayNutritionSummary.planId);
+      await repo.completeMeal(mealId);
       // Refresh dashboard to update calories/mealsLogged later if backend supports it
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(
@@ -795,6 +755,9 @@ body: RefreshIndicator(
           content: Text('Meal marked as completed.'),
         ),
       );
+      if (context.mounted) {
+        context.read<TraineeTodayCubit>().load();
+      }
     } catch (e) {
       // ignore: use_build_context_synchronously
       ScaffoldMessenger.of(context).showSnackBar(

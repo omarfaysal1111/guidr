@@ -4,6 +4,7 @@ import 'package:guidr/core/network/api_client.dart';
 import '../../domain/entities/exercise.dart';
 import '../../domain/entities/ingredient.dart';
 import '../../domain/entities/plans.dart';
+import '../../domain/entities/workout_plan_v1.dart';
 
 abstract class BuildersRemoteDataSource {
   Future<List<Exercise>> getExercises();
@@ -24,6 +25,29 @@ abstract class BuildersRemoteDataSource {
   Future<void> saveExercisePlanDraft(Map<String, dynamic> payload);
   Future<void> saveNutritionPlanTemplate(Map<String, dynamic> payload);
   Future<void> saveNutritionPlanDraft(Map<String, dynamic> payload);
+
+  Future<CreatedCoachWorkoutPlanV1> createWorkoutPlanV1({
+    required String title,
+    String? description,
+    required int coachId,
+  });
+
+  Future<CreatedPlanSessionV1> createPlanSessionV1({
+    required String planId,
+    required String title,
+    required int dayOrder,
+  });
+
+  Future<void> replacePlanSessionExercisesV1({
+    required String planSessionId,
+    required List<Map<String, dynamic>> lines,
+  });
+
+  Future<void> assignWorkoutPlanV1({
+    required String planId,
+    required int traineeId,
+    required String startDate,
+  });
 }
 
 class BuildersRemoteDataSourceImpl implements BuildersRemoteDataSource {
@@ -118,5 +142,66 @@ class BuildersRemoteDataSourceImpl implements BuildersRemoteDataSource {
   @override
   Future<void> saveNutritionPlanDraft(Map<String, dynamic> payload) async {
     await apiClient.post('/coaches/nutrition-plans/drafts', body: payload);
+  }
+
+  @override
+  Future<CreatedCoachWorkoutPlanV1> createWorkoutPlanV1({
+    required String title,
+    String? description,
+    required int coachId,
+  }) async {
+    final body = <String, dynamic>{
+      'title': title,
+      'coachId': coachId,
+    };
+    if (description != null && description.isNotEmpty) {
+      body['description'] = description;
+    }
+    final response = await apiClient.post('/v1/plans', body: body);
+    final data = (response['data'] as Map<String, dynamic>?) ?? response;
+    return CreatedCoachWorkoutPlanV1.fromJson(data);
+  }
+
+  @override
+  Future<CreatedPlanSessionV1> createPlanSessionV1({
+    required String planId,
+    required String title,
+    required int dayOrder,
+  }) async {
+    final response = await apiClient.post(
+      '/v1/plans/$planId/workouts',
+      body: {
+        'title': title,
+        'dayOrder': dayOrder,
+      },
+    );
+    final data = (response['data'] as Map<String, dynamic>?) ?? response;
+    return CreatedPlanSessionV1.fromJson(data);
+  }
+
+  @override
+  Future<void> replacePlanSessionExercisesV1({
+    required String planSessionId,
+    required List<Map<String, dynamic>> lines,
+  }) async {
+    await apiClient.postJson(
+      '/v1/workouts/$planSessionId/exercises',
+      body: lines,
+    );
+  }
+
+  @override
+  Future<void> assignWorkoutPlanV1({
+    required String planId,
+    required int traineeId,
+    required String startDate,
+  }) async {
+    await apiClient.post(
+      '/v1/plans/$planId/assign',
+      body: {
+        'traineeId': traineeId,
+        'startDate': startDate,
+      },
+    );
   }
 }

@@ -212,8 +212,7 @@ class _AssignmentSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalExercises =
-        state.warmUp.length + state.mainExercises.length + state.coolDown.length;
+    final totalExercises = state.totalExerciseCount;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(

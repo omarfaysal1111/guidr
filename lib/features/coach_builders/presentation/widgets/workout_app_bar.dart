@@ -14,7 +14,7 @@ class WorkoutBuilderAppBar extends StatelessWidget implements PreferredSizeWidge
   static const _titles = [
     'Workout Builder',
     'Choose Starting Point',
-    'Build Workout',
+    'Build plan',
     'When to assign',
     'Review',
   ];
@@ -22,7 +22,7 @@ class WorkoutBuilderAppBar extends StatelessWidget implements PreferredSizeWidge
   static const _subtitles = [
     'Step 1: Select trainees',
     'Step 2: Template or custom',
-    'Step 3: Add & customize exercises',
+    'Step 3: Plan title & sessions',
     'Step 4: When to assign',
     'Step 5: Final check',
   ];

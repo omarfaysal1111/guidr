@@ -8,7 +8,7 @@ class WorkoutStepIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const steps = ['Trainees', 'Template', 'Exercises', 'Schedule', 'Review'];
+    const steps = ['Trainees', 'Template', 'Plan', 'Schedule', 'Review'];
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),

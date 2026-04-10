@@ -75,6 +75,8 @@ class NutritionUpdateSchedule extends NutritionBuilderEvent {
 
 class NutritionAssignPlan extends NutritionBuilderEvent {}
 
-class NutritionSaveTemplate extends NutritionBuilderEvent {}
+class NutritionSaveTemplate extends NutritionBuilderEvent {
+  
+}
 
 class NutritionSaveDraft extends NutritionBuilderEvent {}

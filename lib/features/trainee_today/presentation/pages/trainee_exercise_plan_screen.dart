@@ -4,6 +4,7 @@ import 'package:guidr/core/theme/app_colors.dart';
 import 'package:guidr/features/coach_builders/domain/entities/plans.dart';
 import 'package:guidr/features/trainee_app/domain/entities/trainee_exercise_plan_detail.dart';
 import 'package:guidr/features/trainee_app/domain/repositories/trainee_app_repository.dart';
+import 'package:guidr/features/trainee_today/data/trainee_completed_plan_sessions_storage.dart';
 import 'trainee_workout_runner_screen.dart';
 
 class TraineeExercisePlanScreen extends StatefulWidget {
@@ -18,6 +19,7 @@ class TraineeExercisePlanScreen extends StatefulWidget {
 
 class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
   late final TraineeAppRepository _repository;
+  late final TraineeCompletedPlanSessionsStorage _completedLocal;
   TraineeExercisePlanDetail? _detail;
   bool _loading = true;
   String? _error;
@@ -26,21 +28,28 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
   void initState() {
     super.initState();
     _repository = di.sl<TraineeAppRepository>();
+    _completedLocal = di.sl<TraineeCompletedPlanSessionsStorage>();
     _loadDetail();
   }
 
-  Future<void> _loadDetail() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  Future<void> _loadDetail({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    } else {
+      setState(() => _error = null);
+    }
     try {
       final detail = await _repository.getExercisePlanDetail(widget.plan.id);
+      if (!mounted) return;
       setState(() {
         _detail = detail;
-        _loading = false;
+        if (!silent) _loading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e.toString().replaceFirst('Exception: ', '');
         _loading = false;
@@ -48,12 +57,69 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
     }
   }
 
-  // Keeping _completing flag for potential future API integration when
-  // finishing the full workout from the runner screen.
+  bool _sessionGroupDone(
+    TraineePlanSessionGroup group,
+    TraineeExercisePlanDetail plan,
+    Set<String> localCompletedPlanSessionIds,
+  ) {
+    final resolved = traineeResolvedPlanSessionId(group.sessionId, plan);
+    if (resolved.isNotEmpty) {
+      if (localCompletedPlanSessionIds.contains(resolved)) return true;
+      final backend = plan.sessionCompletionBySessionId[resolved];
+      if (backend == true) return true;
+      if (backend == false) return false;
+    }
+    return group.exercises.isNotEmpty &&
+        group.exercises
+            .every((e) => traineeExerciseStatusIndicatesDone(e.status));
+  }
+
+  int _remainingSessionCount(
+    List<TraineePlanSessionGroup> groups,
+    TraineeExercisePlanDetail plan,
+    Set<String> localCompletedPlanSessionIds,
+  ) {
+    var n = 0;
+    for (final g in groups) {
+      if (!_sessionGroupDone(g, plan, localCompletedPlanSessionIds)) n++;
+    }
+    return n;
+  }
+
+  void _startSession(TraineeExercisePlanDetail plan, String bucketSessionId) {
+    final slice = plan.sliceForSessionBucket(bucketSessionId);
+    final sid = slice.planSessionId;
+    if (sid == null || sid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'This session cannot be started (missing session id from server).',
+          ),
+        ),
+      );
+      return;
+    }
+    Navigator.push<void>(
+      context,
+      MaterialPageRoute<void>(
+        builder: (ctx) => TraineeWorkoutRunnerScreen(detail: slice),
+      ),
+    ).then((_) {
+      if (mounted) _loadDetail(silent: true);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final detail = _detail;
+    final localDoneIds = detail != null
+        ? _completedLocal.readCompletedPlanSessionIdsThisWeekSync(detail.id)
+        : <String>{};
+    final groups =
+        detail != null ? buildTraineePlanSessionGroups(detail) : <TraineePlanSessionGroup>[];
+    final remaining = detail != null
+        ? _remainingSessionCount(groups, detail, localDoneIds)
+        : 0;
 
     return Scaffold(
       appBar: AppBar(
@@ -125,11 +191,13 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
                     ],
                   ),
                 )
-              : ListView(
-                  padding: const EdgeInsets.all(20),
-                  children: [
+              : RefreshIndicator(
+                  onRefresh: () => _loadDetail(silent: true),
+                  child: ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(20),
+                    children: [
                     if (detail != null) ...[
-                      // Stats row card
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
@@ -139,75 +207,41 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            const Text(
+                              'Pick any day to train. Finished sessions stay done; you can complete the rest in any order. When your coach or schedule starts a new week, everything opens up again.',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                height: 1.35,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceAround,
                               children: [
                                 _StatBlock(
+                                  label: 'Sessions',
+                                  value: '${groups.length}',
+                                  icon: Icons.calendar_view_week,
+                                ),
+                                _StatBlock(
                                   label: 'Exercises',
-                                  value:
-                                      '${detail.exercisesTotal}',
+                                  value: '${detail.exercises.length}',
                                   icon: Icons.fitness_center,
                                 ),
                                 _StatBlock(
                                   label: 'Duration',
-                                  value:
-                                      '~${detail.durationMinutes} min',
+                                  value: '~${detail.durationMinutes} min',
                                   icon: Icons.timer_outlined,
                                 ),
-                                _StatBlock(
-                                  label: 'Calories',
-                                  value:
-                                      '~${detail.estimatedCalories} cal',
-                                  icon: Icons.local_fire_department_outlined,
-                                ),
-                                _StatBlock(
-                                  label: 'Sets',
-                                  value:
-                                      '${detail.setsTotal}',
-                                  icon: Icons.view_stream_outlined,
-                                ),
                               ],
-                            ),
-                            const SizedBox(height: 16),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (ctx) =>
-                                                TraineeWorkoutRunnerScreen(
-                                              detail: detail,
-                                            ),
-                                          ),
-                                        ).then((_) {
-                                          if (mounted) _loadDetail();
-                                        });
-                                      },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: AppColors.primary,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                  textStyle: const TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                child: const Text('Start Workout'),
-                              ),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      // Coach note
                       if (detail.coachNote.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.all(18),
@@ -215,7 +249,7 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
                             color: const Color(0xFFE8F5FF),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                             ),
                           ),
                           child: Row(
@@ -265,26 +299,41 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
                         const SizedBox(height: 20),
 
                       const Text(
-                        'Exercise Plan',
+                        'Sessions',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textSecondary,
                         ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
-                        '(${detail.exercises.length} exercises)',
+                        remaining == 0
+                            ? 'All sessions completed — great work.'
+                            : remaining == groups.length
+                                ? 'Tap any session below to start.'
+                                : '$remaining session${remaining == 1 ? '' : 's'} left — tap any unfinished one.',
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.textMuted,
                         ),
                       ),
                       const SizedBox(height: 12),
-
-                      // Exercise list
-                      ...detail.exercises.map(
-                        (e) => _ExerciseRow(item: e),
-                      ),
+                      ...groups.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final g = entry.value;
+                        final done =
+                            _sessionGroupDone(g, detail, localDoneIds);
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _PlanSessionCard(
+                            group: g,
+                            index: i,
+                            done: done,
+                            onStart: () => _startSession(detail, g.sessionId),
+                          ),
+                        );
+                      }),
                     ] else ...[
                       const Text(
                         'Unable to load workout details.',
@@ -295,6 +344,7 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
                       ),
                     ],
                   ],
+                  ),
                 ),
     );
   }
@@ -343,206 +393,149 @@ class _StatBlock extends StatelessWidget {
   }
 }
 
-class _ExerciseRow extends StatelessWidget {
-  final TraineeExerciseItem item;
+class _PlanSessionCard extends StatelessWidget {
+  final TraineePlanSessionGroup group;
+  final int index;
+  final bool done;
+  final VoidCallback onStart;
 
-  const _ExerciseRow({required this.item});
+  const _PlanSessionCard({
+    required this.group,
+    required this.index,
+    required this.done,
+    required this.onStart,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final preview = group.exercises.take(4).map((e) => e.name).join(' · ');
+    final more = group.exercises.length > 4
+        ? ' · +${group.exercises.length - 4} more'
+        : '';
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(
+          color: done
+              ? const Color(0xFF10B981).withValues(alpha: 0.45)
+              : AppColors.primary.withValues(alpha: 0.35),
+        ),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 28,
-            height: 28,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Text(
-              '${item.order}',
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.name,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: done
+                      ? const Color(0xFFD1FAE5)
+                      : AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '${item.sets} x ${item.reps}'
-                  '${item.load != null && item.load!.isNotEmpty ? ' · ${item.load}' : ''}'
-                  '${item.rest.isNotEmpty ? ' · Rest ${item.rest}' : ''}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Visual sets row
-                Row(
-                  children: List.generate(
-                    item.sets,
-                    (index) => Container(
-                      margin: EdgeInsets.only(right: index == item.sets - 1 ? 0 : 6),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        'Set ${index + 1}',
+                child: done
+                    ? const Icon(Icons.check_rounded,
+                        color: Color(0xFF059669), size: 22)
+                    : Text(
+                        '${index + 1}',
                         style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textSecondary,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: AppColors.primary,
                         ),
                       ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      group.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${group.exercises.length} exercises',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (done)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD1FAE5),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Done',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF047857),
                     ),
                   ),
                 ),
-                if (item.videoUrl != null && item.videoUrl!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8.0),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () {
-                        showModalBottomSheet(
-                          context: context,
-                          shape: const RoundedRectangleBorder(
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(20),
-                            ),
-                          ),
-                          builder: (ctx) {
-                            return Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      const Text(
-                                        'Exercise Video Preview',
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w700,
-                                          color: AppColors.textPrimary,
-                                        ),
-                                      ),
-                                      IconButton(
-                                        icon: const Icon(Icons.close),
-                                        onPressed: () => Navigator.pop(ctx),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    height: 180,
-                                    width: double.infinity,
-                                    decoration: BoxDecoration(
-                                      color: Colors.black,
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Center(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.play_circle_fill,
-                                            color: Colors.white,
-                                            size: 48,
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'Open video: ${item.videoUrl}',
-                                            textAlign: TextAlign.center,
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.white70,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: const [
-                          Icon(
-                            Icons.play_circle_outline,
-                            size: 18,
-                            color: AppColors.primary,
-                          ),
-                          SizedBox(width: 4),
-                          Text(
-                            'Preview video',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            ],
           ),
-          const SizedBox(width: 8),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.surface,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              item.muscleGroup,
+          if (preview.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              '$preview$more',
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
+                fontSize: 12,
+                color: AppColors.textMuted,
+                height: 1.3,
               ),
             ),
-          ),
+          ],
+          const SizedBox(height: 14),
+          if (done)
+            const SizedBox.shrink()
+          else
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: onStart,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  disabledBackgroundColor: AppColors.border,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Start session',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 }
-

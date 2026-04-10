@@ -35,6 +35,10 @@ class CoachHomeTrainee extends Equatable {
   final String email;
   final String? fitnessGoal;
   final double? adherence;
+  /// Workout / plan title scheduled for today (coach home API).
+  final String? assignedWorkoutName;
+  /// Whether the trainee has completed their scheduled session for today (coach home API).
+  final bool sessionCompletedToday;
 
   const CoachHomeTrainee({
     required this.id,
@@ -43,28 +47,88 @@ class CoachHomeTrainee extends Equatable {
     required this.email,
     this.fitnessGoal,
     this.adherence,
+    this.assignedWorkoutName,
+    this.sessionCompletedToday = false,
   });
 
-  factory CoachHomeTrainee.fromJson(Map<String, dynamic> json) {
-    double? parseAdherence(dynamic value) {
-      if (value == null) return null;
-      if (value is num) return value.toDouble();
-      if (value is String) return double.tryParse(value);
-      return null;
+  static bool _parseSessionCompletedToday(Map<String, dynamic> json) {
+    const keys = [
+      'todaySessionCompleted',
+      'sessionCompletedToday',
+      'sessionCompleted',
+      'todaySessionDone',
+      'completedToday',
+      'hasCompletedTodaySession',
+    ];
+    for (final key in keys) {
+      final v = json[key];
+      if (v is bool) return v;
+      if (v is String) {
+        final s = v.toLowerCase();
+        if (s == 'true' || s == 'completed' || s == 'done') return true;
+        if (s == 'false' || s == 'pending') return false;
+      }
+      if (v is num) return v != 0;
     }
+    return false;
+  }
 
+  static String? _parseAssignedWorkoutName(Map<String, dynamic> json) {
+    const topLevelKeys = [
+      'assignedWorkoutName',
+      'workoutName',
+      'todayWorkoutName',
+      'todayPlanName',
+      'exercisePlanName',
+      'workoutPlanName',
+      'planName',
+      'sessionWorkoutName',
+    ];
+    for (final key in topLevelKeys) {
+      final v = json[key];
+      if (v is String && v.trim().isNotEmpty) return v.trim();
+    }
+    const nestedKeys = [
+      'todayWorkout',
+      'assignedWorkout',
+      'workoutPlan',
+      'todaysWorkout',
+      'todaySession',
+    ];
+    for (final nk in nestedKeys) {
+      final n = json[nk];
+      if (n is Map<String, dynamic>) {
+        final name = n['name'] ?? n['title'] ?? n['planName'] ?? n['workoutName'];
+        if (name is String && name.trim().isNotEmpty) return name.trim();
+      }
+    }
+    return null;
+  }
+
+  factory CoachHomeTrainee.fromJson(Map<String, dynamic> json) {
     return CoachHomeTrainee(
       id: json['id'] as int? ?? 0,
       userId: json['userId'] as int? ?? 0,
       fullName: json['fullName'] ?? '',
       email: json['email'] ?? '',
       fitnessGoal: json['fitnessGoal'],
-      adherence: (json['adherencePrecent']),
+      adherence: double.parse(json['adherencePercent'].toString()),
+      assignedWorkoutName: _parseAssignedWorkoutName(json),
+      sessionCompletedToday: _parseSessionCompletedToday(json),
     );
   }
 
   @override
-  List<Object?> get props => [id, userId, fullName, email, fitnessGoal, adherence];
+  List<Object?> get props => [
+    id,
+    userId,
+    fullName,
+    email,
+    fitnessGoal,
+    adherence,
+    assignedWorkoutName,
+    sessionCompletedToday,
+  ];
 }
 
 class CoachHomeInvitation extends Equatable {

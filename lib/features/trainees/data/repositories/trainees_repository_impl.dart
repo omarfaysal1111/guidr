@@ -1,5 +1,6 @@
 import '../../domain/entities/trainee.dart';
 import '../../domain/entities/invitation.dart';
+import '../../domain/entities/coach_trainee_detail.dart';
 import '../../domain/repositories/trainees_repository.dart';
 import '../datasources/trainees_remote_data_source.dart';
 
@@ -21,5 +22,10 @@ class TraineesRepositoryImpl implements TraineesRepository {
   @override
   Future<Invitation> createInvitation(String email) async {
     return await remoteDataSource.createInvitation(email);
+  }
+
+  @override
+  Future<CoachTraineeDetail> getTraineeDetails(String id) async {
+    return await remoteDataSource.getTraineeDetails(id);
   }
 }

@@ -66,6 +66,22 @@ class ApiClient {
     return _processResponse(response);
   }
 
+  /// POST with a top-level JSON array or any encodable value (not only [Map]).
+  Future<Map<String, dynamic>> postJson(
+    String endpoint, {
+    required Object body,
+    bool requireAuth = true,
+  }) async {
+    final uri = Uri.parse('$_baseUrl$endpoint');
+    final response = await _client.post(
+      uri,
+      headers: _getHeaders(requireAuth: requireAuth),
+      body: jsonEncode(body),
+    );
+
+    return _processResponse(response);
+  }
+
   Future<Map<String, dynamic>> put(
     String endpoint, {
     Map<String, dynamic>? body,
@@ -104,10 +120,14 @@ class ApiClient {
       String message = 'Unexpected error occurred.';
       try {
         final body = jsonDecode(response.body);
-        if (body['message'] != null) {
-          message = body['message'];
-        } else if (body['error'] != null) {
-          message = body['error'].toString();
+        if (body is Map<String, dynamic>) {
+          if (body['message'] != null) {
+            message = body['message'].toString();
+          } else if (body['error'] != null) {
+            message = body['error'].toString();
+          } else if (body['detail'] != null) {
+            message = body['detail'].toString();
+          }
         }
       } catch (_) {
         message = response.reasonPhrase ?? message;

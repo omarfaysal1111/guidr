@@ -34,10 +34,16 @@ import '../../features/trainee_app/data/datasources/trainee_app_remote_data_sour
 import '../../features/trainee_app/domain/repositories/trainee_app_repository.dart';
 import '../../features/trainee_app/data/repositories/trainee_app_repository_impl.dart';
 
+import '../../features/trainee_today/data/trainee_completed_plan_sessions_storage.dart';
 import '../../features/trainee_today/presentation/bloc/trainee_today_cubit.dart';
 
 import '../../features/coach_builders/data/datasources/builders_remote_data_source.dart';
 import '../../features/coach_builders/data/repositories/builders_repository_impl.dart';
+
+import '../../features/trainee_progress/data/datasources/trainee_progress_remote_data_source.dart';
+import '../../features/trainee_progress/domain/repositories/trainee_progress_repository.dart';
+import '../../features/trainee_progress/data/repositories/trainee_progress_repository_impl.dart';
+import '../../features/trainee_progress/presentation/bloc/trainee_progress_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -49,6 +55,7 @@ Future<void> init() async {
 
   //! Core
   sl.registerLazySingleton(() => LocalStorage(sl()));
+  sl.registerLazySingleton(() => TraineeCompletedPlanSessionsStorage(sl()));
   sl.registerLazySingleton(() => ApiClient(localStorage: sl(), client: sl()));
 
   //! Features - Auth
@@ -125,8 +132,9 @@ Future<void> init() async {
   );
 sl.registerFactory(
     () => WorkoutBuilderBloc(
-      buildersRepository: sl(), 
+      buildersRepository: sl(),
       traineesRepository: sl(),
+      getCoachDataUseCase: sl(),
     ),
   );
   sl.registerFactory(
@@ -142,5 +150,16 @@ sl.registerFactory(
   sl.registerLazySingleton<GetCoachHomeUseCase>(
     () => GetCoachHomeUseCase(sl()),
   );
+
+  //! Features - Trainee Progress
+  sl.registerLazySingleton<TraineeProgressRemoteDataSource>(
+    () => TraineeProgressRemoteDataSourceImpl(apiClient: sl()),
+  );
+
+  sl.registerLazySingleton<TraineeProgressRepository>(
+    () => TraineeProgressRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  sl.registerFactory(() => TraineeProgressBloc(repository: sl()));
 }
 

@@ -24,7 +24,8 @@ class NutritionPlan extends Equatable {
 }
 
 class ExercisePlan extends Equatable {
-  final int id;
+  /// v1 plans use a UUID string; legacy numeric ids are parsed via [toString].
+  final String id;
   final String title;
   final String description;
 
@@ -36,7 +37,7 @@ class ExercisePlan extends Equatable {
 
   factory ExercisePlan.fromJson(Map<String, dynamic> json) {
     return ExercisePlan(
-      id: json['id'] as int? ?? 0,
+      id: json['id']?.toString() ?? '',
       title: json['title'] ?? '',
       description: json['description'] ?? '',
     );

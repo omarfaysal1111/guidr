@@ -1,5 +1,6 @@
 import '../../domain/entities/trainee_app_profile.dart';
 import '../../domain/entities/trainee_dashboard_today.dart';
+import '../../domain/entities/complete_workout_request.dart';
 import '../../domain/entities/trainee_exercise_plan_detail.dart';
 import '../../../coach_settings/domain/entities/coach_profile.dart';
 import 'package:guidr/features/coach_builders/domain/entities/plans.dart';
@@ -48,13 +49,19 @@ class TraineeAppRepositoryImpl implements TraineeAppRepository {
   }
 
   @override
-  Future<TraineeExercisePlanDetail> getExercisePlanDetail(int planId) {
+  Future<TraineeExercisePlanDetail> getExercisePlanDetail(String planId) {
     return remoteDataSource.getExercisePlanDetail(planId);
   }
 
   @override
-  Future<void> completeWorkout(int workoutId) {
-    return remoteDataSource.completeWorkout(workoutId);
+  Future<void> completePlanSessionWithLogs(
+    String planSessionId,
+    CompleteWorkoutRequest request,
+  ) {
+    return remoteDataSource.completePlanSessionWithLogs(
+      planSessionId,
+      request,
+    );
   }
 
   @override

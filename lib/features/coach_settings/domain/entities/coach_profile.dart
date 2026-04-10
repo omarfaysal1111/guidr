@@ -2,6 +2,8 @@ import 'package:equatable/equatable.dart';
 
 class CoachProfile extends Equatable {
   final String id;
+  /// Backend user id (Long); used for `coachId` on v1 coach APIs when present.
+  final int? userId;
   final String fullName;
   final String email;
   final String? specialisation;
@@ -20,6 +22,7 @@ class CoachProfile extends Equatable {
  */
   const CoachProfile({
     required this.id,
+    this.userId,
     required this.fullName,
     required this.email,
     this.specialisation,
@@ -28,8 +31,15 @@ class CoachProfile extends Equatable {
   });
 
   factory CoachProfile.fromJson(Map<String, dynamic> json) {
+    int? toUserId(dynamic v) {
+      if (v == null) return null;
+      if (v is num) return v.toInt();
+      return int.tryParse(v.toString());
+    }
+
     return CoachProfile(
       id: json['id']?.toString() ?? '',
+      userId: toUserId(json['userId']) ?? toUserId(json['id']),
       fullName: json['fullName'] ?? '',
       email: json['email'] ?? '',
       specialisation: json['specialisation'],
@@ -41,6 +51,7 @@ class CoachProfile extends Equatable {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      if (userId != null) 'userId': userId,
       'fullName': fullName,
       'email': email,
       'specialisation': specialisation,
@@ -50,5 +61,5 @@ class CoachProfile extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, fullName, email, specialisation, bio];
+  List<Object?> get props => [id, userId, fullName, email, specialisation, bio];
 }

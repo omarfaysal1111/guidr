@@ -156,7 +156,7 @@ class TraineeCoachGoal extends Equatable {
 }
 
 class TodayWorkoutSummary extends Equatable {
-  final int planId;
+  final String planId;
   final String title;
   final String difficulty;
   final int exercisesTotal;
@@ -179,7 +179,7 @@ class TodayWorkoutSummary extends Equatable {
         v is num ? v.toInt() : int.tryParse(v?.toString() ?? '') ?? 0;
 
     return TodayWorkoutSummary(
-      planId: _toInt(json['planId']),
+      planId: json['planId']?.toString() ?? '',
       title: json['title'] ?? '',
       difficulty: json['difficulty'] ?? '',
       exercisesTotal: _toInt(json['exercisesTotal']),
@@ -212,6 +212,7 @@ class TodayNutritionSummary extends Equatable {
   final int carbsTarget;
   final int fatGrams;
   final int fatTarget;
+  final List<DashboardMeal> meals;
 
   const TodayNutritionSummary({
     required this.planId,
@@ -224,6 +225,7 @@ class TodayNutritionSummary extends Equatable {
     required this.carbsTarget,
     required this.fatGrams,
     required this.fatTarget,
+    required this.meals,
   });
 
   factory TodayNutritionSummary.fromJson(Map<String, dynamic> json) {
@@ -241,6 +243,9 @@ class TodayNutritionSummary extends Equatable {
       carbsTarget: _toInt(json['carbsTarget']),
       fatGrams: _toInt(json['fatGrams']),
       fatTarget: _toInt(json['fatTarget']),
+      meals: (json['meals'] as List? ?? [])
+          .map((e) => DashboardMeal.fromJson(e as Map<String, dynamic>))
+          .toList(),
     );
   }
 
@@ -256,7 +261,36 @@ class TodayNutritionSummary extends Equatable {
         carbsTarget,
         fatGrams,
         fatTarget,
+        meals,
       ];
+}
+
+class DashboardMeal extends Equatable {
+  final int id;
+  final String name;
+  final int calories;
+  final bool completed;
+
+  const DashboardMeal({
+    required this.id,
+    required this.name,
+    required this.calories,
+    required this.completed,
+  });
+
+  factory DashboardMeal.fromJson(Map<String, dynamic> json) {
+    int _toInt(dynamic v) =>
+        v is num ? v.toInt() : int.tryParse(v?.toString() ?? '') ?? 0;
+    return DashboardMeal(
+      id: _toInt(json['id']),
+      name: json['name'] ?? '',
+      calories: _toInt(json['calories']),
+      completed: json['completed'] as bool? ?? false,
+    );
+  }
+
+  @override
+  List<Object?> get props => [id, name, calories, completed];
 }
 
 class WeeklyGoals extends Equatable {

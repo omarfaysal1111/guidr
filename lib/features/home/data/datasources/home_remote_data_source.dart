@@ -9,7 +9,7 @@ class HomeRemoteDataSource {
   Future<CoachHomeResponse> getCoachHome() async {
     final response = await apiClient.get('/coaches/home');
     final data =
-        (response['data'] as Map<String, dynamic>?) ?? (response as Map<String, dynamic>);
+        (response['data'] as Map<String, dynamic>?) ?? response;
     return CoachHomeResponse.fromJson(data);
   }
 }

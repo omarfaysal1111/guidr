@@ -1,11 +1,13 @@
 import 'package:guidr/core/network/api_client.dart';
 import '../../domain/entities/trainee.dart';
 import '../../domain/entities/invitation.dart';
+import '../../domain/entities/coach_trainee_detail.dart';
 
 abstract class TraineesRemoteDataSource {
   Future<List<Trainee>> getMyTrainees();
   Future<List<Invitation>> getMyInvitations();
   Future<Invitation> createInvitation(String email);
+  Future<CoachTraineeDetail> getTraineeDetails(String id);
 }
 
 class TraineesRemoteDataSourceImpl implements TraineesRemoteDataSource {
@@ -35,5 +37,12 @@ class TraineesRemoteDataSourceImpl implements TraineesRemoteDataSource {
     );
     final data = response['data'] ?? response;
     return Invitation.fromJson(data);
+  }
+
+  @override
+  Future<CoachTraineeDetail> getTraineeDetails(String id) async {
+    final response = await apiClient.get('/coaches/trainees/$id');
+    final data = response['data'] ?? response;
+    return CoachTraineeDetail.fromJson(data);
   }
 }

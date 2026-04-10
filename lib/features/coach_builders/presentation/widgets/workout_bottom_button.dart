@@ -20,7 +20,9 @@ class WorkoutBottomNavBar extends StatelessWidget {
 
         final bool canContinue = switch (state.currentStep) {
           1 => state.selectedTraineeIds.isNotEmpty,
-          3 => state.workoutName.isNotEmpty,
+          3 =>
+            state.planTitle.trim().isNotEmpty &&
+                state.totalExerciseCount > 0,
           _ => true,
         };
 

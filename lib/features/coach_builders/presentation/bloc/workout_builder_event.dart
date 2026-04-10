@@ -1,5 +1,4 @@
 import 'package:guidr/features/coach_builders/domain/entities/exercise.dart';
-import 'workout_builder_state.dart';
 
 abstract class WorkoutBuilderEvent {
   const WorkoutBuilderEvent();
@@ -25,45 +24,62 @@ class ToggleTrainee extends WorkoutBuilderEvent {
 class SelectAllTrainees extends WorkoutBuilderEvent {}
 
 class UpdateWorkoutMetadata extends WorkoutBuilderEvent {
-  final String? name;
+  final String? planTitle;
   final String? difficulty;
   final String? instructions;
   final String? caution;
-  const UpdateWorkoutMetadata({this.name, this.difficulty, this.instructions, this.caution});
+  const UpdateWorkoutMetadata({
+    this.planTitle,
+    this.difficulty,
+    this.instructions,
+    this.caution,
+  });
 }
 
-class ToggleSectionExpanded extends WorkoutBuilderEvent {
-  final BuilderSection section;
-  const ToggleSectionExpanded(this.section);
+class AddPlanSession extends WorkoutBuilderEvent {
+  const AddPlanSession();
 }
 
-class AddExercise extends WorkoutBuilderEvent {
-  final BuilderSection section;
-  final String? customName;
-  final Exercise? libraryExercise;
-
-  const AddExercise.custom(this.section, this.customName) : libraryExercise = null;
-  const AddExercise.fromLibrary(this.section, this.libraryExercise) : customName = null;
+class RemovePlanSession extends WorkoutBuilderEvent {
+  final int sessionIndex;
+  const RemovePlanSession(this.sessionIndex);
 }
 
-class RemoveExercise extends WorkoutBuilderEvent {
-  final BuilderSection section;
-  final int index;
-  const RemoveExercise(this.section, this.index);
+class UpdateSessionTitle extends WorkoutBuilderEvent {
+  final int sessionIndex;
+  final String title;
+  const UpdateSessionTitle(this.sessionIndex, this.title);
 }
 
-class UpdateExerciseDetails extends WorkoutBuilderEvent {
-  final BuilderSection section;
-  final int index;
+class ToggleSessionExpanded extends WorkoutBuilderEvent {
+  final int sessionIndex;
+  const ToggleSessionExpanded(this.sessionIndex);
+}
+
+class AddExerciseFromLibrary extends WorkoutBuilderEvent {
+  final int sessionIndex;
+  final Exercise libraryExercise;
+  const AddExerciseFromLibrary(this.sessionIndex, this.libraryExercise);
+}
+
+class RemoveSessionExercise extends WorkoutBuilderEvent {
+  final int sessionIndex;
+  final int exerciseIndex;
+  const RemoveSessionExercise(this.sessionIndex, this.exerciseIndex);
+}
+
+class UpdateSessionExerciseDetails extends WorkoutBuilderEvent {
+  final int sessionIndex;
+  final int exerciseIndex;
   final int? sets;
   final String? reps;
   final String? load;
   final String? rest;
   final String? videoUrl;
 
-  const UpdateExerciseDetails({
-    required this.section,
-    required this.index,
+  const UpdateSessionExerciseDetails({
+    required this.sessionIndex,
+    required this.exerciseIndex,
     this.sets,
     this.reps,
     this.load,
@@ -79,7 +95,12 @@ class UpdateSchedule extends WorkoutBuilderEvent {
   final String? recurrence;
   final bool? remindTrainee;
   final bool? alertIfMissed;
-  const UpdateSchedule({this.selectedDate, this.recurrence, this.remindTrainee, this.alertIfMissed});
+  const UpdateSchedule({
+    this.selectedDate,
+    this.recurrence,
+    this.remindTrainee,
+    this.alertIfMissed,
+  });
 }
 
 class AssignWorkout extends WorkoutBuilderEvent {}

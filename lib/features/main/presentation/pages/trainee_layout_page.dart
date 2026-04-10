@@ -5,7 +5,10 @@ import 'package:guidr/features/trainee_workout/presentation/pages/trainee_workou
 import 'package:guidr/features/trainee_nutrition/presentation/pages/trainee_nutrition_screen.dart';
 import 'package:guidr/features/trainee_progress/presentation/pages/trainee_progress_screen.dart';
 import 'package:guidr/features/trainee_chat/presentation/pages/trainee_chat_screen.dart';
-
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guidr/core/di/injection_container.dart' as di;
+import 'package:guidr/features/trainee_progress/presentation/bloc/trainee_progress_bloc.dart';
+import 'package:guidr/features/trainee_progress/presentation/bloc/trainee_progress_event.dart';
 class TraineeLayoutPage extends StatefulWidget {
   const TraineeLayoutPage({super.key});
 
@@ -16,13 +19,22 @@ class TraineeLayoutPage extends StatefulWidget {
 class _TraineeLayoutPageState extends State<TraineeLayoutPage> {
   int _currentIndex = 0;
 
-  final List<Widget> _pages = const [
-    TraineeTodayScreen(),
-    TraineeWorkoutScreen(),
-    TraineeNutritionScreen(),
-    TraineeProgressScreen(),
-    TraineeChatScreen(),
-  ];
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      const TraineeTodayScreen(),
+      const TraineeWorkoutScreen(),
+      const TraineeNutritionScreen(),
+      BlocProvider(
+        create: (_) => di.sl<TraineeProgressBloc>()..add(LoadTraineeProgress()),
+        child: const TraineeProgressScreen(),
+      ),
+      const TraineeChatScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

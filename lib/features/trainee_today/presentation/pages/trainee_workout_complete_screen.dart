@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:guidr/core/theme/app_colors.dart';
 import 'package:flutter/services.dart';
+import 'package:guidr/core/theme/app_colors.dart';
 
 class TraineeWorkoutCompleteScreen extends StatelessWidget {
   final int durationMinutes;
@@ -9,6 +9,7 @@ class TraineeWorkoutCompleteScreen extends StatelessWidget {
   final int exercisesDone;
   final int totalExercises;
   final int skippedSets;
+  final int missedSets;
 
   const TraineeWorkoutCompleteScreen({
     super.key,
@@ -18,6 +19,7 @@ class TraineeWorkoutCompleteScreen extends StatelessWidget {
     required this.exercisesDone,
     required this.totalExercises,
     required this.skippedSets,
+    this.missedSets = 0,
   });
 
   @override
@@ -107,8 +109,7 @@ class TraineeWorkoutCompleteScreen extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () async {
-                        final text =
-                            'Workout complete! $setsDone/$totalSets sets, $exercisesDone/$totalExercises exercises done in ${durationMinutes}min.';
+                        final text = _shareSummaryText();
                         await Clipboard.setData(ClipboardData(text: text));
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
@@ -136,6 +137,15 @@ class TraineeWorkoutCompleteScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _shareSummaryText() {
+    final parts = <String>[
+      'Workout complete! $setsDone/$totalSets sets, $exercisesDone/$totalExercises exercises in ${durationMinutes}min.',
+      if (skippedSets > 0) '$skippedSets set(s) skipped',
+      if (missedSets > 0) '$missedSets set(s) missed',
+    ];
+    return parts.join(' ');
   }
 
   Widget _buildSummaryCard() {
@@ -166,7 +176,7 @@ class TraineeWorkoutCompleteScreen extends StatelessWidget {
                   const Icon(Icons.timer, color: Colors.white, size: 18),
                   const SizedBox(width: 6),
                   Text(
-                    durationMinutes.toString().padLeft(2, '0') + ' min',
+                    '${durationMinutes.toString().padLeft(2, '0')} min',
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -213,6 +223,17 @@ class TraineeWorkoutCompleteScreen extends StatelessWidget {
                   color: Colors.white70,
                 ),
               ),
+              if (missedSets > 0) ...[
+                const SizedBox(height: 8),
+                Text(
+                  '$missedSets\nMissed',
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
             ],
           ),
         ],

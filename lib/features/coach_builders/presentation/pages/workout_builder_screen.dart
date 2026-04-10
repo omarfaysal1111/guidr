@@ -35,7 +35,7 @@ class WorkoutBuilderPage extends StatelessWidget {
         if (state.assignSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Workout assigned successfully!'),
+              content: Text('Plan assigned successfully!'),
               backgroundColor: Color(0xFF10B981),
             ),
           );

@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../domain/entities/invitation.dart';
 import '../../domain/entities/trainee.dart';
+import '../../domain/entities/coach_trainee_detail.dart';
 import '../../domain/repositories/trainees_repository.dart';
 
 // Events
@@ -52,6 +53,15 @@ class InviteTraineeEvent extends TraineesEvent {
 
 class ClearInviteResultEvent extends TraineesEvent {}
 
+class LoadTraineeDetailEvent extends TraineesEvent {
+  final String traineeId;
+
+  const LoadTraineeDetailEvent(this.traineeId);
+
+  @override
+  List<Object?> get props => [traineeId];
+}
+
 // States
 abstract class TraineesState extends Equatable {
   const TraineesState();
@@ -74,6 +84,8 @@ class TraineesLoaded extends TraineesState {
   final bool invitationLoading;
   final Invitation? invitationResult;
   final String? invitationError;
+  final CoachTraineeDetail? traineeDetail;
+  final bool traineeDetailLoading;
 
   const TraineesLoaded({
     required this.allTrainees,
@@ -85,6 +97,8 @@ class TraineesLoaded extends TraineesState {
     this.invitationLoading = false,
     this.invitationResult,
     this.invitationError,
+    this.traineeDetail,
+    this.traineeDetailLoading = false,
   });
 
   TraineesLoaded copyWith({
@@ -99,6 +113,8 @@ class TraineesLoaded extends TraineesState {
     String? invitationError,
     bool clearInviteResult = false,
     bool clearInvitationError = false,
+    CoachTraineeDetail? traineeDetail,
+    bool? traineeDetailLoading,
   }) {
     return TraineesLoaded(
       allTrainees: allTrainees ?? this.allTrainees,
@@ -112,6 +128,8 @@ class TraineesLoaded extends TraineesState {
       invitationError: clearInviteResult || clearInvitationError
           ? null
           : (invitationError ?? this.invitationError),
+      traineeDetail: traineeDetail ?? this.traineeDetail,
+      traineeDetailLoading: traineeDetailLoading ?? this.traineeDetailLoading,
     );
   }
 
@@ -126,6 +144,8 @@ class TraineesLoaded extends TraineesState {
         invitationLoading,
         invitationResult,
         invitationError,
+        traineeDetail,
+        traineeDetailLoading,
       ];
 }
 
@@ -145,6 +165,7 @@ class TraineesBloc extends Bloc<TraineesEvent, TraineesState> {
           searchQuery: '',
           isBulkMode: false,
           selectedIds: const [],
+          traineeDetailLoading: false,
         ));
       } catch (e) {
         // Fallback to empty list or handle error if needed
@@ -155,7 +176,24 @@ class TraineesBloc extends Bloc<TraineesEvent, TraineesState> {
           searchQuery: '',
           isBulkMode: false,
           selectedIds: [],
+          traineeDetailLoading: false,
         ));
+      }
+    });
+
+    on<LoadTraineeDetailEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        final currentState = state as TraineesLoaded;
+        emit(currentState.copyWith(traineeDetailLoading: true));
+        try {
+          final detail = await repository.getTraineeDetails(event.traineeId);
+          emit(currentState.copyWith(
+            traineeDetailLoading: false,
+            traineeDetail: detail,
+          ));
+        } catch (e) {
+          emit(currentState.copyWith(traineeDetailLoading: false));
+        }
       }
     });
 

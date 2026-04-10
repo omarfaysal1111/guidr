@@ -1,8 +1,6 @@
-import 'package:guidr/features/coach_builders/domain/entities/builder_exercise.dart';
 import 'package:guidr/features/coach_builders/domain/entities/exercise.dart';
+import 'package:guidr/features/coach_builders/domain/entities/workout_plan_session_draft.dart';
 import 'package:guidr/features/trainees/domain/entities/trainee.dart';
-
-enum BuilderSection { warmUp, main, coolDown }
 
 class WorkoutBuilderState {
   final int currentStep;
@@ -13,32 +11,21 @@ class WorkoutBuilderState {
   final bool draftSaved;
   final String? error;
 
-  // Trainee data
   final List<Trainee> allTrainees;
   final List<Trainee> filteredTrainees;
   final Set<int> selectedTraineeIds;
 
-  // Workout metadata
-  final String workoutName;
+  /// Top-level plan name (v1 `POST /v1/plans` title).
+  final String planTitle;
   final String difficulty;
   final String instructions;
   final String caution;
 
-  // Workout content
-  final List<BuilderExercise> warmUp;
-  final List<BuilderExercise> mainExercises;
-  final List<BuilderExercise> coolDown;
+  final List<WorkoutPlanSessionDraft> sessions;
 
-  // UI expansion state
-  final bool warmUpExpanded;
-  final bool mainExpanded;
-  final bool coolDownExpanded;
-
-  // Library exercises
   final List<Exercise> libraryExercises;
   final bool libraryLoading;
 
-  // Schedule
   final DateTime? selectedDate;
   final String recurrence;
   final bool remindTrainee;
@@ -54,16 +41,11 @@ class WorkoutBuilderState {
     required this.assignSuccess,
     required this.templateSaved,
     required this.draftSaved,
-    required this.workoutName,
+    required this.planTitle,
     required this.difficulty,
     required this.instructions,
     required this.caution,
-    required this.warmUp,
-    required this.mainExercises,
-    required this.coolDown,
-    required this.warmUpExpanded,
-    required this.mainExpanded,
-    required this.coolDownExpanded,
+    required this.sessions,
     required this.libraryExercises,
     required this.libraryLoading,
     required this.selectedDate,
@@ -73,7 +55,10 @@ class WorkoutBuilderState {
     this.error,
   });
 
-  factory WorkoutBuilderState.initial() => const WorkoutBuilderState(
+  int get totalExerciseCount =>
+      sessions.fold(0, (sum, s) => sum + s.exercises.length);
+
+  factory WorkoutBuilderState.initial() => WorkoutBuilderState(
         currentStep: 1,
         allTrainees: [],
         filteredTrainees: [],
@@ -83,16 +68,13 @@ class WorkoutBuilderState {
         assignSuccess: false,
         templateSaved: false,
         draftSaved: false,
-        workoutName: '',
+        planTitle: '',
         difficulty: 'Easy',
         instructions: '',
         caution: '',
-        warmUp: [BuilderExercise(name: 'Dynamic Warm-up')],
-        mainExercises: [],
-        coolDown: [],
-        warmUpExpanded: true,
-        mainExpanded: true,
-        coolDownExpanded: false,
+        sessions: const [
+          WorkoutPlanSessionDraft(title: '', exercises: [], expanded: true),
+        ],
         libraryExercises: [],
         libraryLoading: false,
         selectedDate: null,
@@ -112,16 +94,11 @@ class WorkoutBuilderState {
     bool? assignSuccess,
     bool? templateSaved,
     bool? draftSaved,
-    String? workoutName,
+    String? planTitle,
     String? difficulty,
     String? instructions,
     String? caution,
-    List<BuilderExercise>? warmUp,
-    List<BuilderExercise>? mainExercises,
-    List<BuilderExercise>? coolDown,
-    bool? warmUpExpanded,
-    bool? mainExpanded,
-    bool? coolDownExpanded,
+    List<WorkoutPlanSessionDraft>? sessions,
     List<Exercise>? libraryExercises,
     bool? libraryLoading,
     DateTime? selectedDate,
@@ -141,16 +118,11 @@ class WorkoutBuilderState {
       assignSuccess: assignSuccess ?? this.assignSuccess,
       templateSaved: templateSaved ?? this.templateSaved,
       draftSaved: draftSaved ?? this.draftSaved,
-      workoutName: workoutName ?? this.workoutName,
+      planTitle: planTitle ?? this.planTitle,
       difficulty: difficulty ?? this.difficulty,
       instructions: instructions ?? this.instructions,
       caution: caution ?? this.caution,
-      warmUp: warmUp ?? this.warmUp,
-      mainExercises: mainExercises ?? this.mainExercises,
-      coolDown: coolDown ?? this.coolDown,
-      warmUpExpanded: warmUpExpanded ?? this.warmUpExpanded,
-      mainExpanded: mainExpanded ?? this.mainExpanded,
-      coolDownExpanded: coolDownExpanded ?? this.coolDownExpanded,
+      sessions: sessions ?? this.sessions,
       libraryExercises: libraryExercises ?? this.libraryExercises,
       libraryLoading: libraryLoading ?? this.libraryLoading,
       selectedDate: selectedDate ?? this.selectedDate,

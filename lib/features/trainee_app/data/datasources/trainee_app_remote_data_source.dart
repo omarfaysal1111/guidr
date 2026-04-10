@@ -2,6 +2,7 @@ import 'package:guidr/core/network/api_client.dart';
 import 'package:guidr/features/coach_builders/domain/entities/plans.dart';
 import '../../domain/entities/trainee_app_profile.dart';
 import '../../domain/entities/trainee_dashboard_today.dart';
+import '../../domain/entities/complete_workout_request.dart';
 import '../../domain/entities/trainee_exercise_plan_detail.dart';
 import '../../../coach_settings/domain/entities/coach_profile.dart';
 
@@ -15,8 +16,11 @@ abstract class TraineeAppRemoteDataSource {
   Future<List<NutritionPlan>> getMyNutritionPlans();
   Future<List<ExercisePlan>> getMyExercisePlans();
   Future<TraineeDashboardToday> getDashboardToday();
-  Future<TraineeExercisePlanDetail> getExercisePlanDetail(int planId);
-  Future<void> completeWorkout(int workoutId);
+  Future<TraineeExercisePlanDetail> getExercisePlanDetail(String planId);
+  Future<void> completePlanSessionWithLogs(
+    String planSessionId,
+    CompleteWorkoutRequest request,
+  );
   Future<void> completeMeal(int mealId);
 }
 
@@ -78,7 +82,7 @@ class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
   }
 
   @override
-  Future<TraineeExercisePlanDetail> getExercisePlanDetail(int planId) async {
+  Future<TraineeExercisePlanDetail> getExercisePlanDetail(String planId) async {
     final response =
         await apiClient.get('/trainees/me/exercise-plans/$planId');
     final data = (response['data'] as Map<String, dynamic>?) ?? response;
@@ -86,12 +90,21 @@ class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
   }
 
   @override
-  Future<void> completeWorkout(int workoutId) async {
-    await apiClient.post('/trainees/me/workouts/$workoutId/complete');
+  Future<void> completePlanSessionWithLogs(
+    String planSessionId,
+    CompleteWorkoutRequest request,
+  ) async {
+    await apiClient.post(
+      '/trainees/me/plan-sessions/$planSessionId/complete-with-logs',
+      body: request.toJson(),
+    );
   }
 
   @override
   Future<void> completeMeal(int mealId) async {
-    await apiClient.post('/trainees/me/meals/$mealId/complete');
+    await apiClient.post(
+      '/trainees/me/meals/$mealId/complete',
+      body: <String, dynamic>{},
+    );
   }
 }

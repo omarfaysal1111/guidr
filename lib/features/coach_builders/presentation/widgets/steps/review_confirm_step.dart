@@ -13,8 +13,7 @@ class ReviewConfirmStep extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<WorkoutBuilderBloc, WorkoutBuilderState>(
       builder: (context, state) {
-        final totalExercises =
-            state.warmUp.length + state.mainExercises.length + state.coolDown.length;
+        final totalExercises = state.totalExerciseCount;
 
         return ListView(
           padding: const EdgeInsets.all(20),
@@ -60,31 +59,37 @@ class ReviewConfirmStep extends StatelessWidget {
             _ReviewCard(
               icon: Icons.fitness_center,
               iconColor: AppColors.primary,
-              title: 'Exercises',
+              title: 'Plan & sessions',
               onEdit: () =>
                   context.read<WorkoutBuilderBloc>().add(const SetStep(3)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (state.warmUp.isNotEmpty) ...[
-                    _ExerciseGroupHeader(
-                        label: 'Warm-up', count: state.warmUp.length),
-                    ...state.warmUp.map((e) => _ExerciseReviewRow(exercise: e)),
-                    const SizedBox(height: 8),
-                  ],
-                  if (state.mainExercises.isNotEmpty) ...[
-                    _ExerciseGroupHeader(
-                        label: 'Main', count: state.mainExercises.length),
-                    ...state.mainExercises
-                        .map((e) => _ExerciseReviewRow(exercise: e)),
-                    const SizedBox(height: 8),
-                  ],
-                  if (state.coolDown.isNotEmpty) ...[
-                    _ExerciseGroupHeader(
-                        label: 'Cool-down', count: state.coolDown.length),
-                    ...state.coolDown
-                        .map((e) => _ExerciseReviewRow(exercise: e)),
-                  ],
+                  Text(
+                    state.planTitle.isEmpty ? 'Untitled plan' : state.planTitle,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  ...state.sessions.asMap().entries.expand((e) {
+                    final i = e.key;
+                    final s = e.value;
+                    final label = s.title.trim().isEmpty
+                        ? 'Session ${i + 1}'
+                        : s.title.trim();
+                    return [
+                      _ExerciseGroupHeader(
+                        label: label,
+                        count: s.exercises.length,
+                      ),
+                      ...s.exercises.map(
+                        (ex) => _ExerciseReviewRow(exercise: ex),
+                      ),
+                      const SizedBox(height: 8),
+                    ];
+                  }),
                 ],
               ),
             ),
@@ -240,7 +245,7 @@ class _HeaderBanner extends StatelessWidget {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  state.workoutName.isEmpty ? 'New Workout' : state.workoutName,
+                  state.planTitle.isEmpty ? 'New plan' : state.planTitle,
                   style: const TextStyle(
                       color: Colors.white,
                       fontSize: 22,
