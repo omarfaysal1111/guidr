@@ -13,6 +13,8 @@ class Trainee extends Equatable {
   final String lastActivity;
   final String nextSession;
   final String joined;
+  final int missedWorkoutCount; // New field for missed workouts
+  final int missedMealCount;    // New field for missed meals
   final List<String> alerts; // 'missed', 'nutrition', 'noLogin', 'plateau'
   /// Optional coach/internal notes (settings & profile APIs).
   final String? notes;
@@ -31,6 +33,8 @@ class Trainee extends Equatable {
     required this.nextSession,
     required this.joined,
     required this.alerts,
+    required this.missedWorkoutCount,
+    required this.missedMealCount,
     this.notes,
   });
 
@@ -74,6 +78,8 @@ class Trainee extends Equatable {
       id: _parseIntField(json['id']),
       name: json['fullName'] as String? ?? 'Unknown',
       email: json['email'] as String? ?? '',
+      missedMealCount: json['missedMealsCount'] ?? 0,
+      missedWorkoutCount: json['missedWorkoutsCount'] ?? 0,
       avatar: (json['fullName'] as String?)?.isNotEmpty == true
           ? (json['fullName'] as String).substring(0, 1).toUpperCase()
           : '?',

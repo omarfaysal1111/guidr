@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+
 import 'coach_trainee_plans_data.dart';
 import 'coach_trainee_progress_extra.dart';
 import 'coach_trainee_workout_completion_history.dart';
@@ -45,15 +46,22 @@ class CoachTraineeDetail extends Equatable {
   final String? coachNotesToTrainee;
   final String? coachCautionNotes;
   final TraineeHealthHistory healthHistory;
+  
   /// Optional per-day session breakdown (exercises, sets) from API.
   final List<CoachTraineeWorkoutDaySession> workoutDaySessions;
   final List<CoachTraineeSkippedSetRecord> recentSkippedSets;
+  
   /// Trainee comment on the current plan (Plans tab callout).
   final String? traineeNoteOnPlan;
+  
   /// Pre-formatted range, e.g. from API; otherwise UI may derive current week.
   final String? workoutWeekRangeLabel;
+  
   /// Logged session completions with per-set detail (`workoutCompletionHistory` on API).
   final List<CoachTraineeWorkoutCompletionRecord> workoutCompletionHistory;
+  
+  final int missedWorkoutCount;
+  final int missedMealCount;
 
   const CoachTraineeDetail({
     required this.profile,
@@ -71,8 +79,12 @@ class CoachTraineeDetail extends Equatable {
     this.recentSkippedSets = const [],
     this.traineeNoteOnPlan,
     this.workoutWeekRangeLabel,
-    this.workoutCompletionHistory = const [],
+    this.workoutCompletionHistory = const [], 
+    required this.missedWorkoutCount, 
+    required this.missedMealCount,
   });
+
+  // --- Helper Methods ---
 
   static String _calendarDayKey(DateTime day) {
     final y = day.year;
@@ -81,17 +93,42 @@ class CoachTraineeDetail extends Equatable {
     return '$y-$m-$d';
   }
 
+  static String? _pickString(Map<String, dynamic>? m, List<String> keys) {
+    if (m == null) return null;
+    for (final k in keys) {
+      final v = m[k];
+      if (v is String && v.trim().isNotEmpty) return v.trim();
+    }
+    return null;
+  }
+
+  static Map<String, dynamic> _plansSection(Map<String, dynamic> json) {
+    final tab = json['plansTab'];
+    if (tab is Map<String, dynamic>) return tab;
+    return json;
+  }
+
+  static bool _hasWeekList(Map<String, dynamic>? j) {
+    if (j == null || j.isEmpty) return false;
+    final d = j['weekDays'] ?? j['days'] ?? j['daily'];
+    return d is List && d.isNotEmpty;
+  }
+
+  // --- Core Methods ---
+
   /// Latest completion on [day] (local calendar date), or null.
   CoachTraineeWorkoutCompletionRecord? bestCompletionForCalendarDay(DateTime day) {
     final key = _calendarDayKey(DateTime(day.year, day.month, day.day));
-    final matches =
-        workoutCompletionHistory.where((c) => c.completionDate == key).toList();
+    final matches = workoutCompletionHistory.where((c) => c.completionDate == key).toList();
+    
     if (matches.isEmpty) return null;
+    
     matches.sort((a, b) {
       final ta = a.completedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
       final tb = b.completedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return tb.compareTo(ta);
+      return tb.compareTo(ta); // Descending order
     });
+    
     return matches.first;
   }
 
@@ -111,68 +148,45 @@ class CoachTraineeDetail extends Equatable {
         skippedSets: recentSkippedSets,
       );
 
-  static Map<String, dynamic> _plansSection(Map<String, dynamic> json) {
-    final tab = json['plansTab'];
-    if (tab is Map<String, dynamic>) return tab;
-    return json;
-  }
-
-  static bool _hasWorkoutWeekList(Map<String, dynamic>? j) {
-    if (j == null || j.isEmpty) return false;
-    final d = j['weekDays'] ?? j['days'] ?? j['daily'];
-    return d is List && d.isNotEmpty;
-  }
-
-  static bool _hasNutritionWeekList(Map<String, dynamic>? j) {
-    if (j == null || j.isEmpty) return false;
-    final d = j['weekDays'] ?? j['days'] ?? j['daily'];
-    return d is List && d.isNotEmpty;
-  }
+  // --- Factory Constructor ---
 
   factory CoachTraineeDetail.fromJson(Map<String, dynamic> json) {
     final section = _plansSection(json);
+    
     final profileRaw = json['profile'];
     final profileMap = profileRaw is Map<String, dynamic> ? profileRaw : <String, dynamic>{};
 
-    final workoutJson =
-        (section['workoutProgress'] ?? json['workoutProgress']) as Map<String, dynamic>?;
-    final nutritionJson =
-        (section['nutritionProgress'] ?? json['nutritionProgress']) as Map<String, dynamic>?;
+    final workoutJson = (section['workoutProgress'] ?? json['workoutProgress']) as Map<String, dynamic>?;
+    final nutritionJson = (section['nutritionProgress'] ?? json['nutritionProgress']) as Map<String, dynamic>?;
+    
     final plansList = section['workoutPlans'] ?? json['workoutPlans'];
     final plans = plansList is List
         ? plansList.whereType<Map<String, dynamic>>().map(CoachTraineeWorkoutPlanRow.fromJson).toList()
         : <CoachTraineeWorkoutPlanRow>[];
 
-    final workoutProgress = _hasWorkoutWeekList(workoutJson)
-        ? CoachTraineeWorkoutProgress.fromJson(workoutJson)
+    final workoutProgress = _hasWeekList(workoutJson)
+        ? CoachTraineeWorkoutProgress.fromJson(workoutJson!)
         : CoachTraineeWorkoutProgress.fromCoachProfileMap(profileMap);
 
-    final nutritionProgress = _hasNutritionWeekList(nutritionJson)
-        ? CoachTraineeNutritionProgress.fromJson(nutritionJson)
+    final nutritionProgress = _hasWeekList(nutritionJson)
+        ? CoachTraineeNutritionProgress.fromJson(nutritionJson!)
         : CoachTraineeNutritionProgress.fromCoachProfileMap(profileMap);
 
     final feedbackRaw = json['traineeFeedback'] ??
         json['feedback'] ??
         profileMap['traineeFeedback'] ??
         profileMap['feedback'];
-    final goalsRaw =
-        json['goals'] ?? profileMap['goals'] ?? profileMap['traineeGoals'];
+        
+    final goalsRaw = json['goals'] ?? profileMap['goals'] ?? profileMap['traineeGoals'];
 
-    String? pickString(Map<String, dynamic> m, List<String> keys) {
-      for (final k in keys) {
-        final v = m[k];
-        if (v is String && v.trim().isNotEmpty) return v.trim();
-      }
-      return null;
-    }
-
-    final coachNotes = pickString(profileMap, [
+    final coachNotes = _pickString(profileMap, [
       'coachNotesToTrainee',
       'coachNotes',
       'coachFeedback',
       'feedbackForTrainee',
     ]);
-    final caution = pickString(profileMap, [
+    
+    final caution = _pickString(profileMap, [
       'cautionNotes',
       'medicalNotes',
       'coachCautionNotes',
@@ -189,32 +203,34 @@ class CoachTraineeDetail extends Equatable {
         workoutJson?['sessions'] ??
         profileMap['workoutDaySessions'] ??
         profileMap['workoutSessions'];
+        
     final skippedRaw = json['recentSkippedSets'] ??
         section['recentSkippedSets'] ??
         profileMap['recentSkippedSets'];
-    final planNote = pickString(profileMap, [
+        
+    final planNote = _pickString(profileMap, [
       'traineeNoteOnPlan',
       'traineePlanNote',
       'workoutPlanNote',
       'planNoteFromTrainee',
     ]);
+    
     const weekRangeKeys = [
       'workoutWeekRange',
       'workoutWeekRangeLabel',
       'weekRangeLabel',
       'weekRange',
     ];
-    String? weekRange = pickString(profileMap, weekRangeKeys) ??
-        (workoutJson != null ? pickString(workoutJson, weekRangeKeys) : null) ??
-        pickString(section, weekRangeKeys) ??
-        pickString(json, weekRangeKeys);
+    
+    String? weekRange = _pickString(profileMap, weekRangeKeys) ??
+        _pickString(workoutJson, weekRangeKeys) ??
+        _pickString(section, weekRangeKeys) ??
+        _pickString(json, weekRangeKeys);
+        
     if (weekRange == null) {
       final ws = workoutJson?['weekStart'] ?? profileMap['workoutWeekStart'];
       final we = workoutJson?['weekEnd'] ?? profileMap['workoutWeekEnd'];
-      if (ws is String &&
-          we is String &&
-          ws.trim().isNotEmpty &&
-          we.trim().isNotEmpty) {
+      if (ws is String && we is String && ws.trim().isNotEmpty && we.trim().isNotEmpty) {
         weekRange = '${ws.trim()} to ${we.trim()}';
       }
     }
@@ -242,6 +258,8 @@ class CoachTraineeDetail extends Equatable {
       traineeNoteOnPlan: planNote,
       workoutWeekRangeLabel: weekRange,
       workoutCompletionHistory: completionHistory,
+      missedMealCount: (json['missedMealCount'] as num?)?.toInt() ?? 0,
+      missedWorkoutCount: (json['missedWorkoutCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -263,5 +281,7 @@ class CoachTraineeDetail extends Equatable {
         traineeNoteOnPlan,
         workoutWeekRangeLabel,
         workoutCompletionHistory,
+        missedWorkoutCount, // Fixed: Added to Equatable props
+        missedMealCount,    // Fixed: Added to Equatable props
       ];
 }

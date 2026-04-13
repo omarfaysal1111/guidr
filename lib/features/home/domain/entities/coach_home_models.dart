@@ -37,6 +37,8 @@ class CoachHomeTrainee extends Equatable {
   final double? adherence;
   /// Workout / plan title scheduled for today (coach home API).
   final String? assignedWorkoutName;
+  final int missedWorkoutCount; // New field for missed workouts
+  final int missedMealCount;    // New field for missed meals
   /// Whether the trainee has completed their scheduled session for today (coach home API).
   final bool sessionCompletedToday;
 
@@ -48,6 +50,8 @@ class CoachHomeTrainee extends Equatable {
     this.fitnessGoal,
     this.adherence,
     this.assignedWorkoutName,
+    this.missedWorkoutCount = 0,
+    this.missedMealCount = 0,
     this.sessionCompletedToday = false,
   });
 
