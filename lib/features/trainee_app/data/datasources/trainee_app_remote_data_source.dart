@@ -4,6 +4,8 @@ import '../../domain/entities/trainee_app_profile.dart';
 import '../../domain/entities/trainee_dashboard_today.dart';
 import '../../domain/entities/complete_workout_request.dart';
 import '../../domain/entities/trainee_exercise_plan_detail.dart';
+import '../../domain/entities/nutrition_plan_detail.dart';
+import '../../domain/entities/ingredient_library_item.dart';
 import '../../../coach_settings/domain/entities/coach_profile.dart';
 
 abstract class TraineeAppRemoteDataSource {
@@ -14,6 +16,7 @@ abstract class TraineeAppRemoteDataSource {
   });
   Future<CoachProfile> getMyCoach();
   Future<List<NutritionPlan>> getMyNutritionPlans();
+  Future<List<NutritionPlanDetail>> getMyNutritionPlanDetails();
   Future<List<ExercisePlan>> getMyExercisePlans();
   Future<TraineeDashboardToday> getDashboardToday();
   Future<TraineeExercisePlanDetail> getExercisePlanDetail(String planId);
@@ -22,6 +25,10 @@ abstract class TraineeAppRemoteDataSource {
     CompleteWorkoutRequest request,
   );
   Future<void> completeMeal(int mealId);
+  Future<void> skipMeal(int mealId);
+  Future<void> skipIngredient(int mealId, int ingredientId);
+  Future<void> swapIngredient(int mealId, int ingredientId, int newIngredientId);
+  Future<List<IngredientLibraryItem>> searchIngredients(String query);
 }
 
 class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
@@ -45,10 +52,7 @@ class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
     if (fullName != null) body['fullName'] = fullName;
     if (fitnessGoal != null) body['fitnessGoal'] = fitnessGoal;
 
-    final response = await apiClient.put(
-      '/trainees/me',
-      body: body,
-    );
+    final response = await apiClient.put('/trainees/me', body: body);
     final data = response['data'] ?? response;
     return TraineeAppProfile.fromJson(data);
   }
@@ -65,6 +69,15 @@ class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
     final response = await apiClient.get('/trainees/me/nutrition-plans');
     final data = response['data'] as List? ?? response as List;
     return data.map((e) => NutritionPlan.fromJson(e)).toList();
+  }
+
+  @override
+  Future<List<NutritionPlanDetail>> getMyNutritionPlanDetails() async {
+    final response = await apiClient.get('/trainees/me/nutrition-plans');
+    final data = response['data'] as List? ?? response as List;
+    return data
+        .map((e) => NutritionPlanDetail.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   @override
@@ -106,5 +119,41 @@ class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
       '/trainees/me/meals/$mealId/complete',
       body: <String, dynamic>{},
     );
+  }
+
+  @override
+  Future<void> skipMeal(int mealId) async {
+    await apiClient.post(
+      '/trainees/me/meals/$mealId/skip',
+      body: <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<void> skipIngredient(int mealId, int ingredientId) async {
+    await apiClient.post(
+      '/trainees/me/meals/$mealId/ingredients/$ingredientId/skip',
+      body: <String, dynamic>{},
+    );
+  }
+
+  @override
+  Future<void> swapIngredient(
+      int mealId, int ingredientId, int newIngredientId) async {
+    await apiClient.post(
+      '/trainees/me/meals/$mealId/ingredients/$ingredientId/swap',
+      body: {'newIngredientId': newIngredientId},
+    );
+  }
+
+  @override
+  Future<List<IngredientLibraryItem>> searchIngredients(String query) async {
+    final response =
+        await apiClient.get('/ingredients?search=${Uri.encodeComponent(query)}');
+    final data = response['data'] as List? ?? response as List? ?? [];
+    return (data as List)
+        .map((e) =>
+            IngredientLibraryItem.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }
