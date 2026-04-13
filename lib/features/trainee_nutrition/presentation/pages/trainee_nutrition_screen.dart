@@ -4,6 +4,91 @@ import 'package:guidr/features/trainee_app/domain/entities/trainee_dashboard_tod
 import 'package:guidr/features/trainee_app/domain/repositories/trainee_app_repository.dart';
 import '../../../../core/theme/app_colors.dart';
 
+// ---------------------------------------------------------------------------
+// Data models for static meal content
+// ---------------------------------------------------------------------------
+
+class _FoodItem {
+  final String name;
+  final String portion;
+  final int calories;
+  const _FoodItem(this.name, this.portion, this.calories);
+}
+
+class _MealData {
+  final String title;
+  final String time;
+  final int totalCalories;
+  final int mealId;
+  final List<_FoodItem> items;
+  final String? instruction;
+  final String? caution;
+  const _MealData({
+    required this.title,
+    required this.time,
+    required this.totalCalories,
+    required this.mealId,
+    required this.items,
+    this.instruction,
+    this.caution,
+  });
+}
+
+const List<_MealData> _kMeals = [
+  _MealData(
+    title: 'Breakfast',
+    time: '07:30',
+    totalCalories: 480,
+    mealId: 1,
+    items: [
+      _FoodItem('Oatmeal', '80g', 240),
+      _FoodItem('Banana', '1 medium', 105),
+      _FoodItem('Whey Protein Shake', '1 scoop', 135),
+    ],
+    instruction: 'Eat within 20 minutes of waking up. Drink a full glass of water first.',
+  ),
+  _MealData(
+    title: 'Lunch',
+    time: '12:30',
+    totalCalories: 500,
+    mealId: 2,
+    items: [
+      _FoodItem('Grilled Chicken Breast', '180g', 280),
+      _FoodItem('Brown Rice', '150g', 180),
+      _FoodItem('Steamed Broccoli', '120g', 40),
+    ],
+    instruction: 'Eat slowly and chew thoroughly. Have this meal within 30 min after training.',
+    caution: 'Avoid adding extra sauces or dressing — they add hidden calories.',
+  ),
+  _MealData(
+    title: 'Snack',
+    time: '16:00',
+    totalCalories: 170,
+    mealId: 3,
+    items: [
+      _FoodItem('Greek Yogurt', '200g', 130),
+      _FoodItem('Mixed Berries', '80g', 40),
+    ],
+    caution: 'Do not replace with flavored yogurt — too much sugar.',
+  ),
+  _MealData(
+    title: 'Dinner',
+    time: '19:30',
+    totalCalories: 700,
+    mealId: 4,
+    items: [
+      _FoodItem('Salmon Fillet', '200g', 400),
+      _FoodItem('Sweet Potato', '200g', 180),
+      _FoodItem('Mixed Salad + Olive Oil', '1 bowl', 120),
+    ],
+    instruction: 'Eat this at least 2 hours before sleeping.',
+  ),
+];
+
+// ---------------------------------------------------------------------------
+// Main widget
+// ---------------------------------------------------------------------------
+
 class TraineeNutritionScreen extends StatefulWidget {
   const TraineeNutritionScreen({super.key});
 
@@ -21,6 +106,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
     'Snack': false,
     'Dinner': false,
   };
+  int? _expandedMealIndex;
 
   @override
   void initState() {
@@ -39,7 +125,6 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
       setState(() {
         _dashboard = dashboard;
         _loading = false;
-        // Initialize completion from calories (very rough heuristic)
         final c = dashboard.todayNutritionSummary.caloriesConsumed;
         _mealCompleted['Breakfast'] = c > 0;
       });
@@ -48,6 +133,36 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
         _error = e.toString().replaceFirst('Exception: ', '');
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _toggleMeal(String key, int mealId) async {
+    final current = _mealCompleted[key] ?? false;
+    setState(() {
+      _mealCompleted[key] = !current;
+    });
+
+    try {
+      final repo = di.sl<TraineeAppRepository>();
+      await repo.completeMeal(mealId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            !current ? 'Meal marked as completed.' : 'Meal marked as not completed.',
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _mealCompleted[key] = current;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+        ),
+      );
     }
   }
 
@@ -60,6 +175,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
     final caloriesTarget = summary?.caloriesTarget ?? 0;
     final caloriesRemaining =
         caloriesTarget > 0 ? (caloriesTarget - caloriesConsumed).clamp(0, caloriesTarget) : 0;
+    final mealsLogged = _mealCompleted.values.where((v) => v).length;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -124,14 +240,14 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                     ],
                   )
                 : ListView(
-                    padding:
-                        const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
                     children: [
                       const SizedBox(height: 8),
-                      // Header
-                      Text(
+
+                      // ── Header ──────────────────────────────────────────
+                      const Text(
                         "Today's Nutrition",
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
@@ -148,16 +264,16 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      const Text(
-                        '1/4 meals logged',
-                        style: TextStyle(
+                      Text(
+                        '$mealsLogged/4 meals logged',
+                        style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 16),
 
-                      // Main nutrition card
+                      // ── Main Calorie Card ────────────────────────────────
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
@@ -169,7 +285,9 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
+                                // Circular calorie progress
                                 SizedBox(
                                   width: 80,
                                   height: 80,
@@ -186,8 +304,8 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                       ),
                                       CircularProgressIndicator(
                                         value: caloriesTarget > 0
-                                            ? caloriesConsumed /
-                                                caloriesTarget
+                                            ? (caloriesConsumed / caloriesTarget)
+                                                .clamp(0.0, 1.0)
                                             : 0,
                                         strokeWidth: 8,
                                         backgroundColor: Colors.transparent,
@@ -202,7 +320,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                             Text(
                                               '$caloriesConsumed',
                                               style: const TextStyle(
-                                                fontSize: 20,
+                                                fontSize: 18,
                                                 fontWeight: FontWeight.w800,
                                                 color: AppColors.textPrimary,
                                               ),
@@ -210,9 +328,8 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                             Text(
                                               '/${caloriesTarget > 0 ? caloriesTarget : 0} cal',
                                               style: const TextStyle(
-                                                fontSize: 11,
-                                                color:
-                                                    AppColors.textSecondary,
+                                                fontSize: 10,
+                                                color: AppColors.textSecondary,
                                               ),
                                             ),
                                           ],
@@ -222,33 +339,32 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 16),
+                                // Macro bars
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      _MacroLegendRow(
+                                      _MacroBarRow(
                                         label: 'Protein',
-                                        value: summary != null
-                                            ? '${summary.proteinGrams}/${summary.proteinTarget}g'
-                                            : '—',
-                                        color: Colors.purple,
+                                        consumed: summary?.proteinGrams ?? 0,
+                                        target: summary?.proteinTarget ?? 0,
+                                        color: const Color(0xFF8B5CF6),
                                       ),
-                                      _MacroLegendRow(
+                                      const SizedBox(height: 8),
+                                      _MacroBarRow(
                                         label: 'Carbs',
-                                        value: summary != null
-                                            ? '${summary.carbsGrams}/${summary.carbsTarget}g'
-                                            : '—',
-                                        color: Colors.orange,
+                                        consumed: summary?.carbsGrams ?? 0,
+                                        target: summary?.carbsTarget ?? 0,
+                                        color: const Color(0xFFF97316),
                                       ),
-                                      _MacroLegendRow(
+                                      const SizedBox(height: 8),
+                                      _MacroBarRow(
                                         label: 'Fat',
-                                        value: summary != null
-                                            ? '${summary.fatGrams}/${summary.fatTarget}g'
-                                            : '—',
-                                        color: Colors.redAccent,
+                                        consumed: summary?.fatGrams ?? 0,
+                                        target: summary?.fatTarget ?? 0,
+                                        color: const Color(0xFFEF4444),
                                       ),
-                                      const SizedBox(height: 6),
+                                      const SizedBox(height: 8),
                                       Text(
                                         '$caloriesRemaining cal remaining',
                                         style: const TextStyle(
@@ -262,51 +378,69 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
 
-                            // Water intake
-                            Text(
-                              'Water Intake',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 16),
+                            const Divider(color: AppColors.border, height: 1),
+                            const SizedBox(height: 14),
+
+                            // ── Water Intake ─────────────────────────────
                             Row(
                               children: [
-                                Wrap(
-                                  spacing: 6,
-                                  children: List.generate(
-                                    8,
-                                    (index) => Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: BoxDecoration(
-                                        color: index < 5
-                                            ? AppColors.primaryLight
-                                            : AppColors.surface,
-                                        borderRadius:
-                                            BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        Icons.local_drink,
-                                        size: 16,
-                                        color: index < 5
-                                            ? AppColors.primary
-                                            : AppColors.textSecondary,
+                                const Text(
+                                  'Water Intake',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  '5/8 glasses',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children: List.generate(
+                                      8,
+                                      (index) => Container(
+                                        width: 28,
+                                        height: 28,
+                                        decoration: BoxDecoration(
+                                          color: index < 5
+                                              ? AppColors.primaryLight
+                                              : AppColors.surface,
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                        child: Icon(
+                                          Icons.water_drop,
+                                          size: 16,
+                                          color: index < 5
+                                              ? AppColors.primary
+                                              : AppColors.textMuted,
+                                        ),
                                       ),
                                     ),
                                   ),
                                 ),
-                                const Spacer(),
+                                const SizedBox(width: 8),
                                 TextButton(
                                   onPressed: () {},
                                   style: TextButton.styleFrom(
                                     backgroundColor: AppColors.primaryLight,
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 6),
+                                        horizontal: 14, vertical: 8),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
                                     ),
@@ -314,7 +448,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                   child: const Text(
                                     '+250ml',
                                     style: TextStyle(
-                                      fontSize: 11,
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.primary,
                                     ),
@@ -326,57 +460,47 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
 
-                      // Meals list (structure only, using total calories)
+                      // ── Meals header ──────────────────────────────────────
                       const Text(
                         'Meals',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 10),
-                      _mealCard(
-                        title: 'Breakfast',
-                        description: 'Oatmeal, Banana, Whey Protein Shake',
-                        kcal: caloriesConsumed > 0
-                            ? '$caloriesConsumed cal'
-                            : '0 cal',
-                        logged: _mealCompleted['Breakfast'] ?? false,
-                        onToggle: () => _toggleMeal('Breakfast', 1),
-                      ),
-                      const SizedBox(height: 10),
-                      _mealCard(
-                        title: 'Lunch',
-                        description:
-                            'Grilled Chicken Breast, Brown Rice, Steamed Broccoli',
-                        kcal: '0 cal',
-                        logged: _mealCompleted['Lunch'] ?? false,
-                        onToggle: () => _toggleMeal('Lunch', 2),
-                      ),
-                      const SizedBox(height: 10),
-                      _mealCard(
-                        title: 'Snack',
-                        description: 'Greek Yogurt, Mixed Berries',
-                        kcal: '0 cal',
-                        logged: _mealCompleted['Snack'] ?? false,
-                        onToggle: () => _toggleMeal('Snack', 3),
-                      ),
-                      const SizedBox(height: 10),
-                      _mealCard(
-                        title: 'Dinner',
-                        description:
-                            'Salmon Fillet, Sweet Potato, Mixed Salad + Olive Oil',
-                        kcal: '0 cal',
-                        logged: _mealCompleted['Dinner'] ?? false,
-                        onToggle: () => _toggleMeal('Dinner', 4),
-                      ),
+
+                      // ── Meal cards ────────────────────────────────────────
+                      ...List.generate(_kMeals.length, (index) {
+                        final meal = _kMeals[index];
+                        final isExpanded = _expandedMealIndex == index;
+                        final isCompleted =
+                            _mealCompleted[meal.title] ?? false;
+                        return Padding(
+                          padding: EdgeInsets.only(
+                              bottom: index < _kMeals.length - 1 ? 10 : 0),
+                          child: _ExpandableMealCard(
+                            meal: meal,
+                            isExpanded: isExpanded,
+                            isCompleted: isCompleted,
+                            onTap: () {
+                              setState(() {
+                                _expandedMealIndex =
+                                    isExpanded ? null : index;
+                              });
+                            },
+                            onToggle: () =>
+                                _toggleMeal(meal.title, meal.mealId),
+                          ),
+                        );
+                      }),
 
                       const SizedBox(height: 24),
 
-                      // Coach Notes & Tips (static scaffolding)
+                      // ── Coach Notes & Tips ────────────────────────────────
                       Container(
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
@@ -390,28 +514,125 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                             const Text(
                               'Coach Notes & Tips',
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 10),
-                            _tipRow(
-                              icon: Icons.lightbulb_outline,
-                              label: 'Daily Tip',
-                              text:
-                                  'Try to spread protein intake across all meals for better absorption. Aim for 30–40g per meal.',
-                              color: AppColors.primary,
-                            ),
-                            const SizedBox(height: 8),
-                            _tipRow(
-                              icon: Icons.notifications_none_outlined,
-                              label: 'Reminder',
-                              text:
-                                  'Avoid dairy within 1 hour of iron-rich meals for better nutrient absorption.',
-                              color: AppColors.warning,
-                            ),
                             const SizedBox(height: 12),
+
+                            // Daily Tip box
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryLight,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.primary.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                      Icons.lightbulb_outline,
+                                      size: 16,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: const [
+                                        Text(
+                                          'Daily Tip',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.primary,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'Try to spread protein intake across all meals for better absorption. Aim for 30–40g per meal.',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            // Reminder box
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: AppColors.warningLight,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: AppColors.warning.withOpacity(0.3),
+                                ),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: BoxDecoration(
+                                      color:
+                                          AppColors.warning.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: const Icon(
+                                      Icons.notifications_none_outlined,
+                                      size: 16,
+                                      color: AppColors.warning,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: const [
+                                        Text(
+                                          'Reminder',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w700,
+                                            color: AppColors.warning,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'Avoid dairy within 1 hour of iron-rich meals for better nutrient absorption.',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 14),
                             const Text(
                               'Your Notes',
                               style: TextStyle(
@@ -420,19 +641,36 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: AppColors.border),
+                            const SizedBox(height: 8),
+                            TextField(
+                              maxLines: 3,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textPrimary,
                               ),
-                              child: const Text(
-                                'Add a note about today’s meals…',
-                                style: TextStyle(
+                              decoration: InputDecoration(
+                                hintText: 'Add a note about today\u2019s meals\u2026',
+                                hintStyle: const TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.textSecondary,
+                                  color: AppColors.textMuted,
+                                ),
+                                filled: true,
+                                fillColor: AppColors.surface,
+                                contentPadding: const EdgeInsets.all(12),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide:
+                                      const BorderSide(color: AppColors.border),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide:
+                                      const BorderSide(color: AppColors.border),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(
+                                      color: AppColors.primary),
                                 ),
                               ),
                             ),
@@ -442,7 +680,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
 
                       const SizedBox(height: 20),
 
-                      // Logging streak + badges section (using real streak where available)
+                      // ── Logging streak + badges ──────────────────────────
                       if (dashboard != null) ...[
                         Container(
                           padding: const EdgeInsets.all(18),
@@ -477,9 +715,8 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                   value: 0.8,
                                   minHeight: 6,
                                   backgroundColor: AppColors.surface,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(
-                                          AppColors.primary),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppColors.primary),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -526,17 +763,19 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                 ),
                               ),
                               const SizedBox(height: 10),
-                              Row(
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
                                 children: [
-                                  _badgeChip('Clean Eater', earned: true),
-                                  _badgeChip('Protein Pro', earned: true),
-                                  _badgeChip('On Target', earned: false),
-                                  _badgeChip('Hydrated', earned: false),
+                                  _BadgeChip('Clean Eater', earned: true),
+                                  _BadgeChip('Protein Pro', earned: true),
+                                  _BadgeChip('On Target', earned: false),
+                                  _BadgeChip('Hydrated', earned: false),
                                 ],
                               ),
                               const SizedBox(height: 10),
                               const Text(
-                                '3 meals left to log — you’ve got this!',
+                                '3 meals left to log — you\'ve got this!',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
@@ -552,118 +791,356 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
       ),
     );
   }
+}
 
-  Widget _mealCard({
-    required String title,
-    required String description,
-    required String kcal,
-    required bool logged,
-    required VoidCallback onToggle,
-  }) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: onToggle,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
+// ---------------------------------------------------------------------------
+// Macro bar row widget
+// ---------------------------------------------------------------------------
+
+class _MacroBarRow extends StatelessWidget {
+  final String label;
+  final int consumed;
+  final int target;
+  final Color color;
+
+  const _MacroBarRow({
+    required this.label,
+    required this.consumed,
+    required this.target,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress =
+        target > 0 ? (consumed / target).clamp(0.0, 1.0) : 0.0;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
           children: [
-            Icon(
-              logged ? Icons.check_circle : Icons.radio_button_unchecked,
-              color: logged ? AppColors.success : AppColors.textSecondary,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
               ),
             ),
-            const SizedBox(width: 8),
+            const Spacer(),
             Text(
-              kcal,
+              '${consumed}g/${target}g',
               style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
                 color: AppColors.textPrimary,
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _tipRow({
-    required IconData icon,
-    required String label,
-    required String text,
-    required Color color,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, size: 18, color: color),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                text,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ],
+        const SizedBox(height: 4),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(999),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 5,
+            backgroundColor: AppColors.surface,
+            valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _badgeChip(String label, {required bool earned}) {
+// ---------------------------------------------------------------------------
+// Expandable meal card widget
+// ---------------------------------------------------------------------------
+
+class _ExpandableMealCard extends StatelessWidget {
+  final _MealData meal;
+  final bool isExpanded;
+  final bool isCompleted;
+  final VoidCallback onTap;
+  final VoidCallback onToggle;
+
+  const _ExpandableMealCard({
+    required this.meal,
+    required this.isExpanded,
+    required this.isCompleted,
+    required this.onTap,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: isCompleted
+              ? AppColors.primary.withOpacity(0.4)
+              : AppColors.border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Collapsed header — tapping the body expands, tapping checkbox toggles
+          InkWell(
+            borderRadius: isExpanded
+                ? const BorderRadius.vertical(top: Radius.circular(18))
+                : BorderRadius.circular(18),
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  // Meal icon placeholder
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: isCompleted
+                          ? AppColors.successLight
+                          : AppColors.surface,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      _mealIcon(meal.title),
+                      size: 20,
+                      color: isCompleted
+                          ? AppColors.success
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Title + time
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          meal.title,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          meal.time,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Calorie count
+                  Text(
+                    '${meal.totalCalories} cal',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Expand chevron
+                  Icon(
+                    isExpanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: AppColors.textMuted,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 6),
+                  // Completion checkbox — stops propagation via GestureDetector
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () {
+                      onToggle();
+                    },
+                    child: Icon(
+                      isCompleted
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
+                      color: isCompleted
+                          ? AppColors.success
+                          : AppColors.textSecondary,
+                      size: 24,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Expanded body
+          if (isExpanded) ...[
+            const Divider(color: AppColors.border, height: 1),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Food items
+                  ...meal.items.map(
+                    (item) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              item.name,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            item.portion,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${item.calories} cal',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Coach instruction box
+                  if (meal.instruction != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.successLight,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.success.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 14,
+                            color: AppColors.success,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              meal.instruction!,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
+                  // Coach caution box
+                  if (meal.caution != null) ...[
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.warningLight,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: AppColors.warning.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(
+                            Icons.warning_amber_outlined,
+                            size: 14,
+                            color: AppColors.warning,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              meal.caution!,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  IconData _mealIcon(String title) {
+    switch (title) {
+      case 'Breakfast':
+        return Icons.wb_sunny_outlined;
+      case 'Lunch':
+        return Icons.lunch_dining_outlined;
+      case 'Snack':
+        return Icons.apple_outlined;
+      case 'Dinner':
+        return Icons.nightlight_round;
+      default:
+        return Icons.restaurant_outlined;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Badge chip widget
+// ---------------------------------------------------------------------------
+
+class _BadgeChip extends StatelessWidget {
+  final String label;
+  final bool earned;
+
+  const _BadgeChip(this.label, {required this.earned});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: earned ? AppColors.primaryLight : AppColors.surface,
         borderRadius: BorderRadius.circular(14),
@@ -678,88 +1155,6 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
           fontWeight: FontWeight.w600,
           color: earned ? AppColors.primary : AppColors.textSecondary,
         ),
-      ),
-    );
-  }
-
-  Future<void> _toggleMeal(String key, int mealId) async {
-    final current = _mealCompleted[key] ?? false;
-    // Optimistic update
-    setState(() {
-      _mealCompleted[key] = !current;
-    });
-
-    try {
-      final repo = di.sl<TraineeAppRepository>();
-      await repo.completeMeal(mealId);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            !current ? 'Meal marked as completed.' : 'Meal marked as not completed.',
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      // Revert on error
-      setState(() {
-        _mealCompleted[key] = current;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.toString().replaceFirst('Exception: ', ''),
-          ),
-        ),
-      );
-    }
-  }
-}
-
-class _MacroLegendRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color color;
-
-  const _MacroLegendRow({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
-      child: Row(
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-        ],
       ),
     );
   }

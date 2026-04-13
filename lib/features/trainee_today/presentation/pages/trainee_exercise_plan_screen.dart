@@ -121,6 +121,21 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
         ? _remainingSessionCount(groups, detail, localDoneIds)
         : 0;
 
+    // Difficulty badge colors
+    Color difficultyBg;
+    Color difficultyFg;
+    final d = detail?.difficulty.toLowerCase() ?? '';
+    if (d == 'easy') {
+      difficultyBg = AppColors.successLight;
+      difficultyFg = AppColors.success;
+    } else if (d == 'hard') {
+      difficultyBg = AppColors.errorLight;
+      difficultyFg = AppColors.error;
+    } else {
+      difficultyBg = AppColors.warningLight;
+      difficultyFg = AppColors.warning;
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -144,15 +159,15 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: const Color(0xFFFFF4E0),
+                color: difficultyBg,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 _capitalize(detail.difficulty),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  color: difficultyFg,
                 ),
               ),
             ),
@@ -198,44 +213,67 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
                     padding: const EdgeInsets.all(20),
                     children: [
                     if (detail != null) ...[
+                      // Overview card with green gradient and decorative circle
                       Container(
-                        padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: AppColors.primary,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF34D399), Color(0xFF2BC48A)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                           borderRadius: BorderRadius.circular(22),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Stack(
                           children: [
-                            const Text(
-                              'Pick any day to train. Finished sessions stay done; you can complete the rest in any order. When your coach or schedule starts a new week, everything opens up again.',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 13,
-                                height: 1.35,
-                                fontWeight: FontWeight.w500,
+                            Positioned(
+                              top: -20,
+                              right: -20,
+                              child: Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white.withOpacity(0.06),
+                                ),
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              children: [
-                                _StatBlock(
-                                  label: 'Sessions',
-                                  value: '${groups.length}',
-                                  icon: Icons.calendar_view_week,
-                                ),
-                                _StatBlock(
-                                  label: 'Exercises',
-                                  value: '${detail.exercises.length}',
-                                  icon: Icons.fitness_center,
-                                ),
-                                _StatBlock(
-                                  label: 'Duration',
-                                  value: '~${detail.durationMinutes} min',
-                                  icon: Icons.timer_outlined,
-                                ),
-                              ],
+                            Padding(
+                              padding: const EdgeInsets.all(18),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Pick any day to train. Finished sessions stay done; you can complete the rest in any order. When your coach or schedule starts a new week, everything opens up again.',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      height: 1.35,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                    children: [
+                                      _StatBlock(
+                                        label: 'Sessions',
+                                        value: '${groups.length}',
+                                        icon: Icons.calendar_view_week,
+                                      ),
+                                      _StatBlock(
+                                        label: 'Exercises',
+                                        value: '${detail.exercises.length}',
+                                        icon: Icons.fitness_center,
+                                      ),
+                                      _StatBlock(
+                                        label: 'Duration',
+                                        value: '~${detail.durationMinutes} min',
+                                        icon: Icons.timer_outlined,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
@@ -246,10 +284,10 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
                         Container(
                           padding: const EdgeInsets.all(18),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE8F5FF),
+                            color: AppColors.primaryLight,
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
-                              color: AppColors.primary.withValues(alpha: 0.1),
+                              color: AppColors.primary.withOpacity(0.2),
                             ),
                           ),
                           child: Row(
@@ -258,7 +296,7 @@ class _TraineeExercisePlanScreenState extends State<TraineeExercisePlanScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: AppColors.primaryLight,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: const Icon(
@@ -423,6 +461,13 @@ class _PlanSessionCard extends StatelessWidget {
               ? const Color(0xFF10B981).withValues(alpha: 0.45)
               : AppColors.primary.withValues(alpha: 0.35),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,27 +475,49 @@ class _PlanSessionCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: done
-                      ? const Color(0xFFD1FAE5)
-                      : AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: done
-                    ? const Icon(Icons.check_rounded,
-                        color: Color(0xFF059669), size: 22)
-                    : Text(
-                        '${index + 1}',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          color: AppColors.primary,
+              Stack(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: done
+                          ? const Color(0xFFD1FAE5)
+                          : AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: done
+                        ? const Icon(Icons.check_rounded,
+                            color: Color(0xFF059669), size: 22)
+                        : Text(
+                            '${index + 1}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                  ),
+                  if (done)
+                    Positioned(
+                      bottom: -2,
+                      right: -2,
+                      child: Container(
+                        width: 14,
+                        height: 14,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF059669),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          size: 10,
+                          color: Colors.white,
                         ),
                       ),
+                    ),
+                ],
               ),
               const SizedBox(width: 12),
               Expanded(

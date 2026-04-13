@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
 import 'package:guidr/core/theme/app_colors.dart';
@@ -28,6 +29,16 @@ class _TraineeWorkoutRunnerScreenState
   final DateTime _startTime = DateTime.now();
   bool _finishing = false;
 
+  // Live timer
+  int _elapsedSeconds = 0;
+  Timer? _timer;
+
+  // Video tab state
+  int _selectedVideoTab = 0;
+
+  // Reps counter state
+  int _repsCount = 0;
+
   int _loggedFor(int exerciseIndex) => _setLogs[exerciseIndex].length;
 
   int _completedFor(int exerciseIndex) =>
@@ -40,6 +51,21 @@ class _TraineeWorkoutRunnerScreenState
   int _missedFor(int exerciseIndex) =>
       _setLogs[exerciseIndex].where((e) => e.outcome == SetLogOutcome.missed).length;
 
+  String get _formattedTime {
+    final m = _elapsedSeconds ~/ 60;
+    final s = _elapsedSeconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  int _finishedExercisesCount() {
+    final exercises = widget.detail.exercises;
+    var count = 0;
+    for (var i = 0; i < exercises.length; i++) {
+      if (_loggedFor(i) >= exercises[i].sets) count++;
+    }
+    return count;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -50,8 +76,19 @@ class _TraineeWorkoutRunnerScreenState
       (_) => <_RunnerSetLog>[],
     );
     if (widget.detail.exercises.isNotEmpty) {
-      _weightText = widget.detail.exercises.first.load ?? '60 kg';
+      final first = widget.detail.exercises.first;
+      _weightText = first.load ?? '60 kg';
+      _repsCount = first.reps;
     }
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() => _elapsedSeconds++);
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -64,6 +101,7 @@ class _TraineeWorkoutRunnerScreenState
 
     final current = exercises[_currentExerciseIndex];
     final currentCompleted = _loggedFor(_currentExerciseIndex);
+    final allDone = exercises.every((e) => _loggedFor(exercises.indexOf(e)) >= e.sets);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -72,103 +110,178 @@ class _TraineeWorkoutRunnerScreenState
           children: [
             Column(
               children: [
-            // Header timer + sets summary
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new,
-                        size: 20, color: AppColors.textPrimary),
-                    onPressed:
-                        _finishing ? null : () => Navigator.pop(context),
+                // Header: Back | Timer | Pause + sets
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new,
+                            size: 20, color: AppColors.textPrimary),
+                        onPressed:
+                            _finishing ? null : () => Navigator.pop(context),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Text(
+                              'WORKOUT TIME',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _formattedTime,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.pause_rounded,
+                              color: AppColors.textPrimary,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '$completedSets/$totalSets sets',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 4),
+                    ],
                   ),
-                  const SizedBox(width: 4),
-                  Expanded(
+                ),
+                // Progress bar
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      minHeight: 5,
+                      value: totalSets == 0 ? 0 : completedSets / totalSets,
+                      backgroundColor: AppColors.surface,
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: const [
-                        Text(
-                          'WORKOUT TIME',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
-                            letterSpacing: 0.5,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildCurrentExerciseCard(
+                          context,
+                          current,
+                          currentCompleted,
+                          totalSets: totalSets,
+                          completedSets: completedSets,
+                        ),
+                        const SizedBox(height: 24),
+                        _buildAllExercisesList(exercises),
+                        const SizedBox(height: 24),
+                        _buildWorkoutNotes(),
+                        const SizedBox(height: 16),
+                        // Finish / End Early button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.check_circle_outline,
+                                size: 20),
+                            label: Text(
+                              allDone
+                                  ? 'Finish Workout'
+                                  : 'End Workout Early (${_finishedExercisesCount()}/${exercises.length} done)',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                              ),
+                            ),
+                            onPressed: _finishing
+                                ? null
+                                : () async {
+                                    if (!allDone) {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(16),
+                                          ),
+                                          title: const Text('End workout early?'),
+                                          content: const Text(
+                                            'You have not completed all exercises. Your progress so far will still be saved.',
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            ElevatedButton(
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor:
+                                                    AppColors.success,
+                                                foregroundColor: Colors.white,
+                                              ),
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, true),
+                                              child: const Text('End Anyway'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm != true) return;
+                                    }
+                                    await _finishWorkout();
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.success,
+                              foregroundColor: Colors.white,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 2,
+                            ),
                           ),
                         ),
-                        SizedBox(height: 4),
-                        Text(
-                          '00:03',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.pause,
-                            color: AppColors.textPrimary),
-                        onPressed: () {},
-                      ),
-                      Text(
-                        '$completedSets/$totalSets sets',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 4),
-            // Progress bar under header
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: LinearProgressIndicator(
-                  minHeight: 4,
-                  value: totalSets == 0 ? 0 : completedSets / totalSets,
-                  backgroundColor: AppColors.surface,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    AppColors.primary,
-                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildCurrentExerciseCard(
-                      context,
-                      current,
-                      currentCompleted,
-                      totalSets: totalSets,
-                      completedSets: completedSets,
-                    ),
-                    const SizedBox(height: 24),
-                    _buildAllExercisesList(exercises),
-                    const SizedBox(height: 24),
-                    _buildWorkoutNotes(),
-                  ],
-                ),
-              ),
-            ),
               ],
             ),
+            // Loading overlay
             if (_finishing)
               Positioned.fill(
                 child: AbsorbPointer(
@@ -176,14 +289,26 @@ class _TraineeWorkoutRunnerScreenState
                     color: Colors.black26,
                     child: Center(
                       child: Card(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                         child: Padding(
-                          padding: const EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(28),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: const [
-                              CircularProgressIndicator(),
+                              CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.primary),
+                              ),
                               SizedBox(height: 16),
-                              Text('Saving session…'),
+                              Text(
+                                'Saving session…',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -207,19 +332,27 @@ class _TraineeWorkoutRunnerScreenState
   }) {
     final exerciseNumber = _currentExerciseIndex + 1;
     final totalExercises = widget.detail.exercises.length;
+    final videoTabs = ['Front View', 'Side View', 'Close-up', 'Slow-mo'];
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Video / image placeholder + muscle group
+            // Video / image placeholder
             Container(
               height: 160,
               decoration: BoxDecoration(
@@ -231,7 +364,7 @@ class _TraineeWorkoutRunnerScreenState
                   icon: const Icon(
                     Icons.play_circle_filled,
                     color: AppColors.primary,
-                    size: 40,
+                    size: 46,
                   ),
                   onPressed: () {
                     if ((current.videoUrl ?? '').isEmpty) return;
@@ -305,12 +438,52 @@ class _TraineeWorkoutRunnerScreenState
                 ),
               ),
             ),
+            const SizedBox(height: 8),
+            // Video angle tabs
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: videoTabs.asMap().entries.map((e) {
+                  final isSelected = _selectedVideoTab == e.key;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedVideoTab = e.key),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.primary
+                            : AppColors.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.primary
+                              : AppColors.border,
+                        ),
+                      ),
+                      child: Text(
+                        e.value,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: isSelected
+                              ? Colors.white
+                              : AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
             const SizedBox(height: 12),
+            // Muscle group chip
             Align(
-              alignment: Alignment.centerRight,
+              alignment: Alignment.centerLeft,
               child: Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(999),
@@ -325,7 +498,8 @@ class _TraineeWorkoutRunnerScreenState
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
+            // Exercise counter label
             Text(
               'EXERCISE $exerciseNumber OF $totalExercises',
               style: const TextStyle(
@@ -336,6 +510,7 @@ class _TraineeWorkoutRunnerScreenState
               ),
             ),
             const SizedBox(height: 4),
+            // Exercise name
             Text(
               current.name,
               style: const TextStyle(
@@ -352,204 +527,531 @@ class _TraineeWorkoutRunnerScreenState
                 color: AppColors.textSecondary,
               ),
             ),
+            const SizedBox(height: 10),
+            // Exercise description
+            const Text(
+              'Perform this exercise with proper form and full range of motion.',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
             const SizedBox(height: 12),
             // Set buttons
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: List.generate(current.sets, (index) {
                 final setNumber = index + 1;
                 final isDone = setNumber <= currentCompleted;
                 final isActive = setNumber == currentCompleted + 1;
                 Color bg;
                 Color fg;
+                Color borderColor;
                 if (isDone) {
                   bg = AppColors.primary;
                   fg = Colors.white;
+                  borderColor = AppColors.primary;
                 } else if (isActive) {
                   bg = Colors.white;
                   fg = AppColors.primary;
+                  borderColor = AppColors.primary;
                 } else {
                   bg = AppColors.surface;
                   fg = AppColors.textSecondary;
+                  borderColor = AppColors.border;
                 }
-                return Padding(
-                  padding: EdgeInsets.only(right: index == current.sets - 1 ? 0 : 8),
-                  child: OutlinedButton(
-                    onPressed: () {},
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(0, 34),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 6,
+                return Container(
+                  decoration: BoxDecoration(
+                    color: bg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: borderColor, width: isActive ? 1.5 : 1),
+                    boxShadow: isDone
+                        ? [
+                            BoxShadow(
+                              color: AppColors.primary.withOpacity(0.25),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 7),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isDone) ...[
+                        const Icon(Icons.check_rounded,
+                            size: 13, color: Colors.white),
+                        const SizedBox(width: 4),
+                      ],
+                      Text(
+                        'Set $setNumber',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: fg,
+                        ),
                       ),
-                      side: BorderSide(
-                        color: isDone
-                            ? AppColors.primary
-                            : AppColors.border,
-                      ),
-                      backgroundColor: bg,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    child: Text(
-                      'Set $setNumber',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: fg,
-                      ),
-                    ),
+                    ],
                   ),
                 );
               }),
             ),
-            const SizedBox(height: 12),
-            // Simple notes + controls (static text for now)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: AppColors.successLight,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text(
-                'Focus on depth — full ROM today',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.success,
-                  fontWeight: FontWeight.w600,
+            const SizedBox(height: 14),
+            // Coach focus tip (from coachNote if available)
+            if ((current.coachNote ?? '').isNotEmpty)
+              Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.successLight,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.tips_and_updates_outlined,
+                        size: 15, color: AppColors.success),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Coach's Focus",
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.success,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            current.coachNote!,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppColors.success,
+                              fontWeight: FontWeight.w500,
+                              height: 1.3,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
-            const SizedBox(height: 6),
+            // Static form tip
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 6),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.warningLight,
                 borderRadius: BorderRadius.circular(12),
+                border:
+                    Border.all(color: AppColors.warning.withOpacity(0.3)),
               ),
-              child: const Text(
-                'Keep chest up, don’t round lower back',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.warning,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Icon(Icons.warning_amber_rounded,
+                      size: 15, color: AppColors.warning),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Keep chest up, maintain proper form',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.warning,
+                        fontWeight: FontWeight.w500,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
+            // Weight row with +/- buttons
+            _buildWeightRow(),
+            const SizedBox(height: 10),
+            // Reps row with +/- buttons
+            _buildRepsRow(),
+            const SizedBox(height: 16),
+            // Skip or miss | Complete Set buttons
             Row(
               children: [
-                OutlinedButton(
+                OutlinedButton.icon(
                   onPressed: () {
                     _showSkipSetSheet(context, current);
                   },
+                  icon: const Icon(Icons.close, size: 15),
+                  label: const Text(
+                    'Skip or miss',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 10,
-                    ),
-                    foregroundColor: AppColors.textPrimary,
-                    side: const BorderSide(color: AppColors.border),
+                        horizontal: 14, vertical: 11),
+                    foregroundColor: AppColors.warning,
+                    side: const BorderSide(color: AppColors.warning, width: 1.5),
+                    backgroundColor: AppColors.warningLight,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
-                  child: const Text(
-                    'Skip or miss',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await _markSetCompleted(
-                        current,
-                        outcome: SetLogOutcome.completed,
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    child: Text(
-                      'Complete Set ${currentCompleted + 1 > current.sets ? current.sets : currentCompleted + 1}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () async {
-                await _skipEntireExercise(current);
-              },
-              child: const Text(
-                'Skip Entire Exercise',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Weight row
-            Row(
-              children: [
-                const Text(
-                  'Weight:',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
+                  child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF34D399), Color(0xFF2BC48A)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          _weightText,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const Icon(
-                          Icons.edit_outlined,
-                          size: 16,
-                          color: AppColors.textMuted,
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.35),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
                         ),
                       ],
                     ),
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        await _markSetCompleted(
+                          current,
+                          outcome: SetLogOutcome.completed,
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        padding:
+                            const EdgeInsets.symmetric(vertical: 13),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      ),
+                      child: Text(
+                        'Complete Set ${currentCompleted + 1 > current.sets ? current.sets : currentCompleted + 1}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 4),
+            Center(
+              child: TextButton(
+                onPressed: () async {
+                  await _skipEntireExercise(current);
+                },
+                child: const Text(
+                  'Skip Entire Exercise',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildWeightRow() {
+    return Row(
+      children: [
+        const SizedBox(
+          width: 52,
+          child: Text(
+            'Weight:',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                // Minus button
+                _squareIconBtn(
+                  icon: Icons.remove,
+                  onTap: () {
+                    setState(() {
+                      final numMatch =
+                          RegExp(r'(\d+(?:\.\d+)?)').firstMatch(_weightText);
+                      if (numMatch != null) {
+                        final val =
+                            double.tryParse(numMatch.group(1) ?? '') ?? 0;
+                        final newVal = (val - 2.5).clamp(0, 999);
+                        _weightText = _weightText.replaceFirst(
+                          numMatch.group(0)!,
+                          newVal % 1 == 0
+                              ? newVal.toInt().toString()
+                              : newVal.toStringAsFixed(1),
+                        );
+                      }
+                    });
+                  },
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      _weightText,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+                // Plus button
+                _squareIconBtn(
+                  icon: Icons.add,
+                  onTap: () {
+                    setState(() {
+                      final numMatch =
+                          RegExp(r'(\d+(?:\.\d+)?)').firstMatch(_weightText);
+                      if (numMatch != null) {
+                        final val =
+                            double.tryParse(numMatch.group(1) ?? '') ?? 0;
+                        final newVal = val + 2.5;
+                        _weightText = _weightText.replaceFirst(
+                          numMatch.group(0)!,
+                          newVal % 1 == 0
+                              ? newVal.toInt().toString()
+                              : newVal.toStringAsFixed(1),
+                        );
+                      }
+                    });
+                  },
+                ),
+                const SizedBox(width: 2),
+                // Edit button
+                GestureDetector(
+                  onTap: () => _showWeightEditDialog(),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.edit_outlined,
+                        size: 16, color: AppColors.primary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRepsRow() {
+    return Row(
+      children: [
+        const SizedBox(
+          width: 52,
+          child: Text(
+            'Reps:',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                _squareIconBtn(
+                  icon: Icons.remove,
+                  onTap: () {
+                    setState(() {
+                      if (_repsCount > 0) _repsCount--;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      '$_repsCount',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+                _squareIconBtn(
+                  icon: Icons.add,
+                  onTap: () {
+                    setState(() => _repsCount++);
+                  },
+                ),
+                const SizedBox(width: 2),
+                GestureDetector(
+                  onTap: () => _showRepsEditDialog(),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.edit_outlined,
+                        size: 16, color: AppColors.primary),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _squareIconBtn({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
+        margin: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Icon(icon, size: 18, color: AppColors.textPrimary),
+      ),
+    );
+  }
+
+  void _showWeightEditDialog() {
+    final controller = TextEditingController(text: _weightText);
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Set Weight'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            hintText: 'e.g. 80 kg',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              final val = controller.text.trim();
+              if (val.isNotEmpty) {
+                setState(() => _weightText = val);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Set'),
+          ),
+        ],
+      ),
+    ).whenComplete(controller.dispose);
+  }
+
+  void _showRepsEditDialog() {
+    final controller =
+        TextEditingController(text: _repsCount.toString());
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Set Reps'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            hintText: 'e.g. 12',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () {
+              final parsed = int.tryParse(controller.text.trim());
+              if (parsed != null && parsed >= 0) {
+                setState(() => _repsCount = parsed);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Set'),
+          ),
+        ],
+      ),
+    ).whenComplete(controller.dispose);
   }
 
   Widget _buildAllExercisesList(List<TraineeExerciseItem> exercises) {
@@ -578,6 +1080,7 @@ class _TraineeWorkoutRunnerScreenState
               setState(() {
                 _currentExerciseIndex = index;
                 _weightText = e.load ?? _weightText;
+                _repsCount = e.reps;
               });
             },
             child: Container(
@@ -585,7 +1088,7 @@ class _TraineeWorkoutRunnerScreenState
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: isCurrent ? AppColors.primaryLight : Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: isCurrent ? AppColors.primary : AppColors.border,
                   width: isCurrent ? 1.5 : 1,
@@ -594,19 +1097,21 @@ class _TraineeWorkoutRunnerScreenState
               child: Row(
                 children: [
                   Container(
-                    width: 28,
-                    height: 28,
+                    width: 30,
+                    height: 30,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: isCurrent ? AppColors.primary : AppColors.surface,
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(15),
                     ),
                     child: Text(
                       '${index + 1}',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: isCurrent ? Colors.white : AppColors.textSecondary,
+                        color: isCurrent
+                            ? Colors.white
+                            : AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -639,6 +1144,27 @@ class _TraineeWorkoutRunnerScreenState
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
+                  // Mini set progress dots
+                  Row(
+                    children: List.generate(e.sets, (si) => Container(
+                      width: 5,
+                      height: 5,
+                      margin: const EdgeInsets.only(left: 2),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: si < _loggedFor(index)
+                            ? AppColors.success
+                            : AppColors.surface,
+                        border: Border.all(
+                          color: si < _loggedFor(index)
+                              ? AppColors.success
+                              : AppColors.border,
+                          width: 0.8,
+                        ),
+                      ),
+                    )),
+                  ),
                 ],
               ),
             ),
@@ -666,7 +1192,7 @@ class _TraineeWorkoutRunnerScreenState
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(color: AppColors.border),
           ),
           child: const TextField(
@@ -674,6 +1200,10 @@ class _TraineeWorkoutRunnerScreenState
             decoration: InputDecoration(
               hintText: 'How are you feeling? Any adjustments?',
               border: InputBorder.none,
+              hintStyle: TextStyle(
+                fontSize: 13,
+                color: AppColors.textMuted,
+              ),
             ),
           ),
         ),
@@ -722,8 +1252,7 @@ class _TraineeWorkoutRunnerScreenState
       var next = _loggedFor(i);
       while (next < planned) {
         next++;
-        _setLogs[i]
-            .add(_RunnerSetLog.skipped('Entire exercise skipped'));
+        _setLogs[i].add(_RunnerSetLog.skipped('Entire exercise skipped'));
       }
     });
     await _advanceToNextOrFinish();
@@ -742,6 +1271,7 @@ class _TraineeWorkoutRunnerScreenState
       setState(() {
         _currentExerciseIndex++;
         _weightText = exercises[_currentExerciseIndex].load ?? _weightText;
+        _repsCount = exercises[_currentExerciseIndex].reps;
       });
     }
   }
@@ -912,7 +1442,7 @@ class _TraineeWorkoutRunnerScreenState
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         var selectedReason = '';
@@ -924,13 +1454,25 @@ class _TraineeWorkoutRunnerScreenState
               padding: EdgeInsets.only(
                 left: 20,
                 right: 20,
-                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
-                top: 16,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+                top: 20,
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Drag handle
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -938,19 +1480,27 @@ class _TraineeWorkoutRunnerScreenState
                         child: Text(
                           'Log set outcome',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 17,
                             fontWeight: FontWeight.w700,
                             color: AppColors.textPrimary,
                           ),
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(ctx),
+                      GestureDetector(
+                        onTap: () => Navigator.pop(ctx),
+                        child: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.close,
+                              size: 18, color: AppColors.textSecondary),
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     '${current.name} — Set $setNumber',
                     style: const TextStyle(
@@ -958,24 +1508,42 @@ class _TraineeWorkoutRunnerScreenState
                       color: AppColors.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
                   SegmentedButton<SetLogOutcome>(
                     segments: const [
                       ButtonSegment<SetLogOutcome>(
                         value: SetLogOutcome.skipped,
                         label: Text('Skipped'),
+                        icon: Icon(Icons.skip_next_rounded, size: 16),
                       ),
                       ButtonSegment<SetLogOutcome>(
                         value: SetLogOutcome.missed,
                         label: Text('Missed'),
+                        icon: Icon(Icons.close_rounded, size: 16),
                       ),
                     ],
                     selected: {skipKind},
                     onSelectionChanged: (next) {
                       setSheet(() => skipKind = next.first);
                     },
+                    style: ButtonStyle(
+                      backgroundColor:
+                          WidgetStateProperty.resolveWith<Color>((states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return AppColors.primary;
+                        }
+                        return AppColors.surface;
+                      }),
+                      foregroundColor:
+                          WidgetStateProperty.resolveWith<Color>((states) {
+                        if (states.contains(WidgetState.selected)) {
+                          return Colors.white;
+                        }
+                        return AppColors.textSecondary;
+                      }),
+                    ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Text(
                     skipKind == SetLogOutcome.skipped
                         ? 'Skipped: you chose not to do this set (e.g. equipment, time).'
@@ -986,7 +1554,7 @@ class _TraineeWorkoutRunnerScreenState
                       height: 1.3,
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
@@ -998,30 +1566,42 @@ class _TraineeWorkoutRunnerScreenState
                       'Other',
                     ].map((reason) {
                       final selected = selectedReason == reason;
-                      return ChoiceChip(
-                        label: Text(
-                          reason,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: selected
-                                ? Colors.white
-                                : AppColors.textSecondary,
-                          ),
-                        ),
-                        selected: selected,
-                        selectedColor: AppColors.primary,
-                        backgroundColor: AppColors.surface,
-                        onSelected: (_) {
+                      return GestureDetector(
+                        onTap: () {
                           setSheet(() => selectedReason = reason);
                         },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: selected
+                                ? AppColors.primary
+                                : AppColors.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: selected
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                            ),
+                          ),
+                          child: Text(
+                            reason,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: selected
+                                  ? Colors.white
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
                       );
                     }).toList(),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                     decoration: BoxDecoration(
                       color: AppColors.surface,
                       borderRadius: BorderRadius.circular(12),
@@ -1033,6 +1613,10 @@ class _TraineeWorkoutRunnerScreenState
                       decoration: const InputDecoration(
                         hintText: 'Reason (required for skipped / missed)',
                         border: InputBorder.none,
+                        hintStyle: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     ),
                   ),
@@ -1060,15 +1644,16 @@ class _TraineeWorkoutRunnerScreenState
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(14),
                         ),
                       ),
                       child: const Text(
                         'Confirm',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
+                          fontSize: 15,
                         ),
                       ),
                     ),
@@ -1097,4 +1682,3 @@ class _RunnerSetLog {
 
   bool get isCompleted => outcome == SetLogOutcome.completed;
 }
-
