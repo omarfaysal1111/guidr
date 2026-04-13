@@ -734,6 +734,8 @@ class _TraineeSessionCard extends StatelessWidget {
                       id: trainee.id,
                       name: trainee.fullName,
                       email: trainee.email,
+                      missedMealCount: trainee.missedMealCount,
+                      missedWorkoutCount: trainee.missedWorkoutCount,
                       avatar: initial,
                       goal: trainee.fitnessGoal ?? 'General Fitness',
                       level: 'Beginner',

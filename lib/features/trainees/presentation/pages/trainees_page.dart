@@ -25,7 +25,10 @@ class TraineesView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Trainees'),
+        title: const Text(
+          'Trainees',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+        ),
         actions: [
           IconButton(icon: const Icon(Icons.search), onPressed: () {}),
           IconButton(
@@ -48,27 +51,19 @@ class TraineesView extends StatelessWidget {
               children: [
                 // Filters
                 SingleChildScrollView(
-
                   scrollDirection: Axis.horizontal,
-                  
                   padding: const EdgeInsets.symmetric(
-                    // horizontal: 20,
+                    horizontal: 20,
                     vertical: 12,
                   ),
                   child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       _buildFilterChip(context, 'All', 'all', state),
-                     // const SizedBox(width: 80),
+                      const SizedBox(width: 12),
                       _buildFilterChip(context, 'Active', 'active', state),
-                    //  const SizedBox(width: 80),
-                      _buildFilterChip(
-                        context,
-                        'Attention',
-                        'attention',
-                        state,
-                      ),
-                     // const SizedBox(width: 8),
+                      const SizedBox(width: 12),
+                      _buildFilterChip(context, 'Attention', 'attention', state),
+                      const SizedBox(width: 12),
                       _buildFilterChip(context, 'Pending', 'pending', state),
                     ],
                   ),
@@ -88,6 +83,7 @@ class TraineesView extends StatelessWidget {
                         style: const TextStyle(
                           color: AppColors.textMuted,
                           fontSize: 13,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                       TextButton.icon(
@@ -114,10 +110,10 @@ class TraineesView extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final trainee = state.filteredTrainees[index];
                       final isSelected = state.selectedIds.contains(trainee.id);
-                      final hasAlerts = trainee.alerts.isNotEmpty;
+                      final hasAlerts = trainee.alerts.isNotEmpty || 
+                                        trainee.missedMealCount > 0 || 
+                                        trainee.missedWorkoutCount > 0;
                       final isPending = trainee.status == 'pending';
-
-                      // ... (in the TraineesView build method inside ListView.builder)
 
                       return GestureDetector(
                         onTap: () {
@@ -145,174 +141,154 @@ class TraineesView extends StatelessWidget {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color:
-                                isSelected
-                                    ? AppColors.primaryLight
-                                    : AppColors.card,
+                            color: isSelected
+                                ? AppColors.primaryLight
+                                : AppColors.card,
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color:
-                                  isSelected
-                                      ? AppColors.primary
-                                      : hasAlerts
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : hasAlerts
                                       ? AppColors.error.withOpacity(0.3)
                                       : AppColors.border,
                             ),
                           ),
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
                               if (state.isBulkMode) ...[
                                 Icon(
                                   isSelected
                                       ? Icons.check_box
                                       : Icons.check_box_outline_blank,
-                                  color:
-                                      isSelected
-                                          ? AppColors.primary
-                                          : AppColors.border,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.border,
                                 ),
                                 const SizedBox(width: 12),
                               ],
                               CircleAvatar(
-                                backgroundColor:
-                                    isPending
-                                        ? AppColors.surface
-                                        : hasAlerts
+                                radius: 24,
+                                backgroundColor: isPending
+                                    ? AppColors.surface
+                                    : hasAlerts
                                         ? AppColors.errorLight
                                         : AppColors.primaryLight,
                                 child: Text(
                                   trainee.avatar,
                                   style: TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    color:
-                                        isPending
-                                            ? AppColors.textMuted
-                                            : hasAlerts
+                                    fontSize: 16,
+                                    color: isPending
+                                        ? AppColors.textMuted
+                                        : hasAlerts
                                             ? AppColors.error
                                             : AppColors.primary,
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 12),
+                              const SizedBox(width: 14),
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    // Name and Status Row
                                     Row(
                                       children: [
-                                        Text(
-                                          trainee.name,
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
-                                        ),
-                                         Text(
-                                          trainee.adherence.toString(),
-                                          style: const TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 16,
-                                          ),
+                                        Expanded(
+                                          child: Text(
+                                            trainee.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 16,
+                                            ),
+                                           ),
                                         ),
                                         const SizedBox(width: 8),
                                         Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 6,
-                                            vertical: 2,
+                                            horizontal: 8,
+                                            vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color:
-                                                isPending
-                                                    ? AppColors.warningLight
-                                                    : AppColors.successLight,
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
+                                            color: isPending
+                                                ? AppColors.warningLight
+                                                : AppColors.successLight,
+                                            borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
                                             isPending ? 'Pending' : 'Active',
                                             style: TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
-                                              color:
-                                                  isPending
-                                                      ? AppColors.warning
-                                                      : AppColors.success,
+                                              color: isPending
+                                                  ? AppColors.warning
+                                                  : AppColors.success,
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
+                                    const SizedBox(height: 4),
+                                    
+                                    // Goal and Joined Date
                                     Text(
-                                      '${trainee.goal} · ${isPending ? 'Invited ${trainee.joined}' : trainee.lastActivity}',
+                                      '${trainee.goal} · ${isPending ? 'Invited ${trainee.joined}' : trainee.joined}',
                                       style: const TextStyle(
                                         fontSize: 12,
                                         color: AppColors.textSecondary,
                                       ),
                                     ),
+                                    
+                                    // Unified Alerts and Missed Items Wrap
                                     if (hasAlerts)
                                       Padding(
-                                        padding: const EdgeInsets.only(top: 4),
+                                        padding: const EdgeInsets.only(top: 8),
                                         child: Wrap(
-                                          spacing: 4,
-                                          children:
-                                              trainee.alerts
-                                                  .map(
-                                                    (a) => Container(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 6,
-                                                            vertical: 2,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: AppColors.error
-                                                            .withOpacity(0.1),
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              6,
-                                                            ),
-                                                      ),
-                                                      child: Text(
-                                                        a, // In a real app, map this to localized strings
-                                                        style: const TextStyle(
-                                                          fontSize: 10,
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          color:
-                                                              AppColors.error,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  )
-                                                  .toList(),
+                                          spacing: 6,
+                                          runSpacing: 6,
+                                          children: [
+                                            if (trainee.missedMealCount > 0)
+                                              _buildAlertBadge('${trainee.missedMealCount} Missed Meals'),
+                                            if (trainee.missedWorkoutCount > 0)
+                                              _buildAlertBadge('${trainee.missedWorkoutCount} Missed Workouts'),
+                                            ...trainee.alerts.map((a) => _buildAlertBadge(a)),
+                                          ],
                                         ),
                                       ),
                                   ],
                                 ),
                               ),
+                             
+                              // Adherence Score
                               if (!state.isBulkMode && !isPending)
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      '${trainee.adherence}%',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.w900,
-                                        color:
-                                            trainee.adherence >= 80
-                                                ? AppColors.success
-                                                : AppColors.warning,
+                                Padding(
+                                  padding: const EdgeInsets.only(left: 12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        '${trainee.adherence}%',
+                                        style: TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w900,
+                                          color: trainee.adherence >= 80
+                                              ? AppColors.success
+                                              : AppColors.warning,
+                                        ),
                                       ),
-                                    ),
-                                    const Text(
-                                      'adherence',
-                                      style: TextStyle(
-                                        fontSize: 10,
-                                        color: AppColors.textMuted,
+                                      const Text(
+                                        'adherence',
+                                        style: TextStyle(
+                                          fontSize: 10,
+                                          color: AppColors.textMuted,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                             ],
                           ),
@@ -337,11 +313,15 @@ class TraineesView extends StatelessWidget {
                         );
                       },
                       icon: const Icon(Icons.person_add),
-                      label: const Text('Invite Trainee'),
+                      label: const Text(
+                        'Invite Trainee',
+                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
                       style: ElevatedButton.styleFrom(
-                        minimumSize: const Size(double.infinity, 50),
+                        minimumSize: const Size(double.infinity, 54),
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
+                        elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
@@ -363,52 +343,57 @@ class TraineesView extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${state.selectedIds.length} selected',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {
-                                context.read<TraineesBloc>().add(
-                                  const ToggleBulkModeEvent(false),
-                                );
-                              },
-                              style: TextButton.styleFrom(
-                                foregroundColor: AppColors.error,
-                                padding: EdgeInsets.zero,
-                                minimumSize: const Size(50, 30),
-                              ),
-                              child: const Text('Cancel'),
-                            ),
-                          ],
-                        ),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
+                    child: SafeArea(
+                      top: false,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              _bulkActionButton(
-                                'Assign Workout',
-                                Icons.fitness_center,
-                                AppColors.primary,
+                              Text(
+                                '${state.selectedIds.length} selected',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
                               ),
-                              _bulkActionButton(
-                                'Assign Nutrition',
-                                Icons.restaurant,
-                                AppColors.success,
+                              TextButton(
+                                onPressed: () {
+                                  context.read<TraineesBloc>().add(
+                                    const ToggleBulkModeEvent(false),
+                                  );
+                                },
+                                style: TextButton.styleFrom(
+                                  foregroundColor: AppColors.error,
+                                  padding: EdgeInsets.zero,
+                                  minimumSize: const Size(50, 30),
+                                ),
+                                child: const Text('Cancel'),
                               ),
                             ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 8),
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: [
+                                _bulkActionButton(
+                                  'Assign Workout',
+                                  Icons.fitness_center,
+                                  AppColors.primary,
+                                ),
+                                const SizedBox(width: 12),
+                                _bulkActionButton(
+                                  'Assign Nutrition',
+                                  Icons.restaurant,
+                                  AppColors.success,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
               ],
@@ -416,6 +401,25 @@ class TraineesView extends StatelessWidget {
           }
           return const SizedBox.shrink();
         },
+      ),
+    );
+  }
+
+  // Extracted Badge widget for cleaner code
+  Widget _buildAlertBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.error.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: AppColors.error,
+        ),
       ),
     );
   }
@@ -433,16 +437,20 @@ class TraineesView extends StatelessWidget {
           FilterTraineesEvent(filter: filterValue),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
         decoration: BoxDecoration(
           color: isActive ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isActive ? AppColors.primary : AppColors.border.withOpacity(0.5),
+          ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 12,
+            fontSize: 13,
             fontWeight: FontWeight.w600,
             color: isActive ? Colors.white : AppColors.textSecondary,
           ),
@@ -453,22 +461,21 @@ class TraineesView extends StatelessWidget {
 
   Widget _bulkActionButton(String label, IconData icon, Color color) {
     return Container(
-      margin: const EdgeInsets.only(right: 8, top: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 6),
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: FontWeight.bold,
               color: color,
             ),
