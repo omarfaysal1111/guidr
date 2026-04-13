@@ -67,7 +67,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         titleSpacing: 20,
-        title: const Text(
+        title:  Text(
           'guider.',
           style: TextStyle(
             fontSize: 20,
@@ -77,16 +77,16 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications_none_outlined,
+            icon:  Icon(Icons.notifications_none_outlined,
                 color: AppColors.textPrimary),
             onPressed: () {},
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
+            padding:  EdgeInsets.only(right: 16.0),
             child: CircleAvatar(
               radius: 18,
               backgroundColor: AppColors.primaryLight,
-              child: const Icon(Icons.person, color: AppColors.primary),
+              child:  Icon(Icons.person, color: AppColors.primary),
             ),
           ),
         ],
@@ -95,21 +95,21 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
         color: AppColors.primary,
         onRefresh: _load,
         child: _loading
-            ? const Center(
+            ?  Center(
                 child: CircularProgressIndicator(color: AppColors.primary),
               )
             : _error != null
                 ? ListView(
-                    padding: const EdgeInsets.all(20),
+                    padding:  EdgeInsets.all(20),
                     children: [
                       Text(
                         _error!,
-                        style: const TextStyle(
+                        style:  TextStyle(
                           color: AppColors.error,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                       SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: _load,
                         style: ElevatedButton.styleFrom(
@@ -119,47 +119,47 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('Retry'),
+                        child:  Text('Retry'),
                       ),
                     ],
                   )
                 : ListView(
                     padding:
-                        const EdgeInsets.fromLTRB(20, 8, 20, 24),
+                         EdgeInsets.fromLTRB(20, 8, 20, 24),
                     children: [
-                      const SizedBox(height: 8),
+                       SizedBox(height: 8),
                       // Header
                       Text(
                         "Today's Nutrition",
-                        style: const TextStyle(
+                        style:  TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                       SizedBox(height: 4),
                       Text(
                         coachName != null && coachName.isNotEmpty
                             ? 'Assigned by $coachName'
                             : 'Assigned by your coach',
-                        style: const TextStyle(
+                        style:  TextStyle(
                           fontSize: 13,
                           color: AppColors.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      const Text(
+                       SizedBox(height: 4),
+                       Text(
                         '1/4 meals logged',
                         style: TextStyle(
                           fontSize: 11,
                           color: AppColors.textSecondary,
                         ),
                       ),
-                      const SizedBox(height: 16),
+                       SizedBox(height: 16),
 
                       // Main nutrition card
                       Container(
-                        padding: const EdgeInsets.all(18),
+                        padding:  EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(18),
@@ -181,7 +181,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                         strokeWidth: 8,
                                         backgroundColor: AppColors.surface,
                                         valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
+                                             AlwaysStoppedAnimation<Color>(
                                                 AppColors.surface),
                                       ),
                                       CircularProgressIndicator(
@@ -192,7 +192,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                         strokeWidth: 8,
                                         backgroundColor: Colors.transparent,
                                         valueColor:
-                                            const AlwaysStoppedAnimation<Color>(
+                                             AlwaysStoppedAnimation<Color>(
                                                 AppColors.primary),
                                       ),
                                       Center(
@@ -201,7 +201,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                           children: [
                                             Text(
                                               '$caloriesConsumed',
-                                              style: const TextStyle(
+                                              style:  TextStyle(
                                                 fontSize: 20,
                                                 fontWeight: FontWeight.w800,
                                                 color: AppColors.textPrimary,
@@ -209,7 +209,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                             ),
                                             Text(
                                               '/${caloriesTarget > 0 ? caloriesTarget : 0} cal',
-                                              style: const TextStyle(
+                                              style:  TextStyle(
                                                 fontSize: 11,
                                                 color:
                                                     AppColors.textSecondary,
@@ -221,7 +221,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                     ],
                                   ),
                                 ),
-                                const SizedBox(width: 16),
+                                 SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -248,10 +248,10 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                             : '—',
                                         color: Colors.redAccent,
                                       ),
-                                      const SizedBox(height: 6),
+                                       SizedBox(height: 6),
                                       Text(
                                         '$caloriesRemaining cal remaining',
-                                        style: const TextStyle(
+                                        style:  TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
                                           color: AppColors.success,
@@ -262,18 +262,18 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 16),
+                             SizedBox(height: 16),
 
                             // Water intake
                             Text(
                               'Water Intake',
-                              style: const TextStyle(
+                              style:  TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 8),
+                             SizedBox(height: 8),
                             Row(
                               children: [
                                 Wrap(
@@ -300,18 +300,18 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                     ),
                                   ),
                                 ),
-                                const Spacer(),
+                                 Spacer(),
                                 TextButton(
                                   onPressed: () {},
                                   style: TextButton.styleFrom(
                                     backgroundColor: AppColors.primaryLight,
-                                    padding: const EdgeInsets.symmetric(
+                                    padding:  EdgeInsets.symmetric(
                                         horizontal: 12, vertical: 6),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                   ),
-                                  child: const Text(
+                                  child:  Text(
                                     '+250ml',
                                     style: TextStyle(
                                       fontSize: 11,
@@ -326,10 +326,10 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                       SizedBox(height: 20),
 
                       // Meals list (structure only, using total calories)
-                      const Text(
+                       Text(
                         'Meals',
                         style: TextStyle(
                           fontSize: 15,
@@ -337,17 +337,17 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                       SizedBox(height: 10),
                       _mealCard(
-                        title: 'Breakfast',
-                        description: 'Oatmeal, Banana, Whey Protein Shake',
+                        title: summary!.meals[0].name,
+                        description: summary.meals[0].name+summary.meals[1].name+summary.meals[0].name,
                         kcal: caloriesConsumed > 0
                             ? '$caloriesConsumed cal'
                             : '0 cal',
                         logged: _mealCompleted['Breakfast'] ?? false,
                         onToggle: () => _toggleMeal('Breakfast', 1),
                       ),
-                      const SizedBox(height: 10),
+                       SizedBox(height: 10),
                       _mealCard(
                         title: 'Lunch',
                         description:
@@ -356,7 +356,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                         logged: _mealCompleted['Lunch'] ?? false,
                         onToggle: () => _toggleMeal('Lunch', 2),
                       ),
-                      const SizedBox(height: 10),
+                       SizedBox(height: 10),
                       _mealCard(
                         title: 'Snack',
                         description: 'Greek Yogurt, Mixed Berries',
@@ -364,7 +364,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                         logged: _mealCompleted['Snack'] ?? false,
                         onToggle: () => _toggleMeal('Snack', 3),
                       ),
-                      const SizedBox(height: 10),
+                       SizedBox(height: 10),
                       _mealCard(
                         title: 'Dinner',
                         description:
@@ -374,11 +374,11 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                         onToggle: () => _toggleMeal('Dinner', 4),
                       ),
 
-                      const SizedBox(height: 24),
+                       SizedBox(height: 24),
 
                       // Coach Notes & Tips (static scaffolding)
                       Container(
-                        padding: const EdgeInsets.all(18),
+                        padding:  EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(18),
@@ -387,7 +387,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                             Text(
                               'Coach Notes & Tips',
                               style: TextStyle(
                                 fontSize: 14,
@@ -395,7 +395,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                 color: AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 10),
+                             SizedBox(height: 10),
                             _tipRow(
                               icon: Icons.lightbulb_outline,
                               label: 'Daily Tip',
@@ -403,7 +403,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                   'Try to spread protein intake across all meals for better absorption. Aim for 30–40g per meal.',
                               color: AppColors.primary,
                             ),
-                            const SizedBox(height: 8),
+                             SizedBox(height: 8),
                             _tipRow(
                               icon: Icons.notifications_none_outlined,
                               label: 'Reminder',
@@ -411,8 +411,8 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                   'Avoid dairy within 1 hour of iron-rich meals for better nutrient absorption.',
                               color: AppColors.warning,
                             ),
-                            const SizedBox(height: 12),
-                            const Text(
+                             SizedBox(height: 12),
+                             Text(
                               'Your Notes',
                               style: TextStyle(
                                 fontSize: 12,
@@ -420,15 +420,15 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 6),
+                             SizedBox(height: 6),
                             Container(
-                              padding: const EdgeInsets.all(10),
+                              padding:  EdgeInsets.all(10),
                               decoration: BoxDecoration(
                                 color: AppColors.surface,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(color: AppColors.border),
                               ),
-                              child: const Text(
+                              child:  Text(
                                 'Add a note about today’s meals…',
                                 style: TextStyle(
                                   fontSize: 12,
@@ -440,12 +440,12 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                       SizedBox(height: 20),
 
                       // Logging streak + badges section (using real streak where available)
                       if (dashboard != null) ...[
                         Container(
-                          padding: const EdgeInsets.all(18),
+                          padding:  EdgeInsets.all(18),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(18),
@@ -454,7 +454,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                               Text(
                                 '8-Day Logging Streak',
                                 style: TextStyle(
                                   fontSize: 14,
@@ -462,18 +462,18 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                   color: AppColors.textPrimary,
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              const Text(
+                               SizedBox(height: 6),
+                               Text(
                                 'Log all meals to keep your streak alive!',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
-                              const SizedBox(height: 10),
+                               SizedBox(height: 10),
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(999),
-                                child: const LinearProgressIndicator(
+                                child:  LinearProgressIndicator(
                                   value: 0.8,
                                   minHeight: 6,
                                   backgroundColor: AppColors.surface,
@@ -482,11 +482,11 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                           AppColors.primary),
                                 ),
                               ),
-                              const SizedBox(height: 8),
+                               SizedBox(height: 8),
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
-                                children: const [
+                                children:  [
                                   Text(
                                     '8 days ago',
                                     style: TextStyle(
@@ -506,9 +506,9 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16),
+                         SizedBox(height: 16),
                         Container(
-                          padding: const EdgeInsets.all(18),
+                          padding:  EdgeInsets.all(18),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(18),
@@ -517,7 +517,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                               Text(
                                 'Nutrition Badges',
                                 style: TextStyle(
                                   fontSize: 14,
@@ -525,7 +525,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                   color: AppColors.textPrimary,
                                 ),
                               ),
-                              const SizedBox(height: 10),
+                               SizedBox(height: 10),
                               Row(
                                 children: [
                                   _badgeChip('Clean Eater', earned: true),
@@ -534,8 +534,8 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                   _badgeChip('Hydrated', earned: false),
                                 ],
                               ),
-                              const SizedBox(height: 10),
-                              const Text(
+                               SizedBox(height: 10),
+                               Text(
                                 '3 meals left to log — you’ve got this!',
                                 style: TextStyle(
                                   fontSize: 11,
@@ -564,7 +564,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
       borderRadius: BorderRadius.circular(18),
       onTap: onToggle,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding:  EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
@@ -576,23 +576,23 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
               logged ? Icons.check_circle : Icons.radio_button_unchecked,
               color: logged ? AppColors.success : AppColors.textSecondary,
             ),
-            const SizedBox(width: 12),
+             SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style:  TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                   SizedBox(height: 4),
                   Text(
                     description,
-                    style: const TextStyle(
+                    style:  TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
                     ),
@@ -600,10 +600,10 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                 ],
               ),
             ),
-            const SizedBox(width: 8),
+             SizedBox(width: 8),
             Text(
               kcal,
-              style: const TextStyle(
+              style:  TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
@@ -625,30 +625,30 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding:  EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: color.withOpacity(0.08),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(icon, size: 18, color: color),
         ),
-        const SizedBox(width: 10),
+         SizedBox(width: 10),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: const TextStyle(
+                style:  TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
               ),
-              const SizedBox(height: 4),
+               SizedBox(height: 4),
               Text(
                 text,
-                style: const TextStyle(
+                style:  TextStyle(
                   fontSize: 12,
                   color: AppColors.textSecondary,
                 ),
@@ -662,8 +662,8 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
 
   Widget _badgeChip(String label, {required bool earned}) {
     return Container(
-      margin: const EdgeInsets.only(right: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      margin:  EdgeInsets.only(right: 8),
+      padding:  EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: earned ? AppColors.primaryLight : AppColors.surface,
         borderRadius: BorderRadius.circular(14),
@@ -722,7 +722,7 @@ class _MacroLegendRow extends StatelessWidget {
   final String value;
   final Color color;
 
-  const _MacroLegendRow({
+   _MacroLegendRow({
     required this.label,
     required this.value,
     required this.color,
@@ -731,7 +731,7 @@ class _MacroLegendRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2),
+      padding:  EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
           Container(
@@ -742,18 +742,18 @@ class _MacroLegendRow extends StatelessWidget {
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 6),
+           SizedBox(width: 6),
           Text(
             label,
-            style: const TextStyle(
+            style:  TextStyle(
               fontSize: 11,
               color: AppColors.textSecondary,
             ),
           ),
-          const Spacer(),
+           Spacer(),
           Text(
             value,
-            style: const TextStyle(
+            style:  TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
