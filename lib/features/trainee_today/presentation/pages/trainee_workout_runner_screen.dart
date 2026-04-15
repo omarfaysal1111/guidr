@@ -78,7 +78,7 @@ class _TraineeWorkoutRunnerScreenState
     if (widget.detail.exercises.isNotEmpty) {
       final first = widget.detail.exercises.first;
       _weightText = first.load ?? '60 kg';
-      _repsCount = first.reps;
+      _repsCount = int.parse( first.reps.toString());
     }
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _elapsedSeconds++);
@@ -602,51 +602,51 @@ class _TraineeWorkoutRunnerScreenState
             ),
             const SizedBox(height: 14),
             // Coach focus tip (from coachNote if available)
-            if ((current.coachNote ?? '').isNotEmpty)
-              Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.successLight,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.success.withOpacity(0.3)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.tips_and_updates_outlined,
-                        size: 15, color: AppColors.success),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Coach's Focus",
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.success,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            current.coachNote!,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.success,
-                              fontWeight: FontWeight.w500,
-                              height: 1.3,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            // if ((current. ?? '').isNotEmpty)
+            //   Container(
+            //     margin: const EdgeInsets.only(bottom: 8),
+            //     padding: const EdgeInsets.symmetric(
+            //         horizontal: 12, vertical: 10),
+            //     decoration: BoxDecoration(
+            //       color: AppColors.successLight,
+            //       borderRadius: BorderRadius.circular(12),
+            //       border: Border.all(color: AppColors.success.withOpacity(0.3)),
+            //     ),
+            //     child: Row(
+            //       crossAxisAlignment: CrossAxisAlignment.start,
+            //       children: [
+            //         const Icon(Icons.tips_and_updates_outlined,
+            //             size: 15, color: AppColors.success),
+            //         const SizedBox(width: 6),
+            //         Expanded(
+            //           child: Column(
+            //             crossAxisAlignment: CrossAxisAlignment.start,
+            //             children: [
+            //               const Text(
+            //                 "Coach's Focus",
+            //                 style: TextStyle(
+            //                   fontSize: 10,
+            //                   fontWeight: FontWeight.w700,
+            //                   color: AppColors.success,
+            //                   letterSpacing: 0.3,
+            //                 ),
+            //               ),
+            //               const SizedBox(height: 2),
+            //               Text(
+            //                 current.coachNote!,
+            //                 style: const TextStyle(
+            //                   fontSize: 12,
+            //                   color: AppColors.success,
+            //                   fontWeight: FontWeight.w500,
+            //                   height: 1.3,
+            //                 ),
+            //               ),
+            //             ],
+            //           ),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
             // Static form tip
             Container(
               margin: const EdgeInsets.only(bottom: 6),
@@ -1080,7 +1080,7 @@ class _TraineeWorkoutRunnerScreenState
               setState(() {
                 _currentExerciseIndex = index;
                 _weightText = e.load ?? _weightText;
-                _repsCount = e.reps;
+                _repsCount =int.parse( e.reps.toString());
               });
             },
             child: Container(
@@ -1271,7 +1271,7 @@ class _TraineeWorkoutRunnerScreenState
       setState(() {
         _currentExerciseIndex++;
         _weightText = exercises[_currentExerciseIndex].load ?? _weightText;
-        _repsCount = exercises[_currentExerciseIndex].reps;
+        _repsCount = int.parse(exercises[_currentExerciseIndex].reps.toString());
       });
     }
   }

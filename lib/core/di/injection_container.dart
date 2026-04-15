@@ -1,4 +1,7 @@
 import 'package:get_it/get_it.dart';
+import 'package:guidr/core/messaging/fcm_service.dart';
+import 'package:guidr/features/chat/data/firestore_chat_repository.dart';
+import 'package:guidr/features/chat/domain/repositories/chat_repository.dart';
 import 'package:guidr/features/coach_builders/data/repositories/builder_repository.dart';
 import 'package:guidr/features/coach_builders/presentation/bloc/workout_builder_bloc.dart';
 import 'package:guidr/features/coach_builders/presentation/bloc/nutrition_builder_bloc.dart';
@@ -57,6 +60,8 @@ Future<void> init() async {
   sl.registerLazySingleton(() => LocalStorage(sl()));
   sl.registerLazySingleton(() => TraineeCompletedPlanSessionsStorage(sl()));
   sl.registerLazySingleton(() => ApiClient(localStorage: sl(), client: sl()));
+  sl.registerLazySingleton<ChatRepository>(() => FirestoreChatRepository());
+  sl.registerLazySingleton(() => FcmService());
 
   //! Features - Auth
   // Data sources

@@ -5,6 +5,7 @@ import 'package:guidr/features/trainee_workout/presentation/pages/trainee_workou
 import 'package:guidr/features/trainee_nutrition/presentation/pages/trainee_nutrition_screen.dart';
 import 'package:guidr/features/trainee_progress/presentation/pages/trainee_progress_screen.dart';
 import 'package:guidr/features/trainee_chat/presentation/pages/trainee_chat_screen.dart';
+import 'package:guidr/features/trainee_app/presentation/pages/trainee_profile_screen.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
 import 'package:guidr/features/trainee_progress/presentation/bloc/trainee_progress_bloc.dart';
@@ -33,6 +34,7 @@ class _TraineeLayoutPageState extends State<TraineeLayoutPage> {
         child: const TraineeProgressScreen(),
       ),
       const TraineeChatScreen(),
+      const TraineeProfileScreen(),
     ];
   }
 
@@ -80,6 +82,11 @@ class _TraineeLayoutPageState extends State<TraineeLayoutPage> {
               icon: Icon(Icons.chat_bubble_outline),
               activeIcon: Icon(Icons.chat_bubble),
               label: 'Chat',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline),
+              activeIcon: Icon(Icons.person),
+              label: 'Profile',
             ),
           ],
         ),

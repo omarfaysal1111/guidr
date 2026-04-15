@@ -42,3 +42,9 @@ android {
 flutter {
     source = "../.."
 }
+
+// Only apply the Google Services plugin when a config file exists.
+// `flutterfire configure` will generate `google-services.json`.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}

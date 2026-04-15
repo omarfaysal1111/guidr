@@ -41,6 +41,9 @@ dependencies:
   shared_preferences: ^2.5.3
   dartz:
   json_annotation: ^4.11.0
+  firebase_core: ^4.7.0
+  cloud_firestore: ^6.3.0
+  firebase_messaging: ^16.2.0
 
 dev_dependencies:
   flutter_test:
