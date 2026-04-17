@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/coach_trainee_detail.dart';
 import '../../domain/entities/coach_trainee_plans_data.dart';
+import '../../domain/entities/coach_trainee_workout_completion_history.dart';
 import '../../domain/entities/coach_trainee_workout_sessions.dart';
+import '../bloc/trainees_bloc.dart';
 
 const _kWorkoutDayShortLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
@@ -16,6 +19,110 @@ String _assignedDateLabel(DateTime d) {
 
 String _formatMdY(DateTime d) =>
     '${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}/${d.year}';
+
+String _calendarDayKey(DateTime d) =>
+    '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+String _formatDayHistoryLabel(DateTime d) {
+  const months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+  return '${_kWorkoutDayShortLabels[d.weekday - 1]} · ${months[d.month - 1]} ${d.day}, ${d.year}';
+}
+
+String _formatTimeOfDay(DateTime? d) {
+  if (d == null) return '';
+  final hour = d.hour == 0 ? 12 : (d.hour > 12 ? d.hour - 12 : d.hour);
+  final minute = d.minute.toString().padLeft(2, '0');
+  final suffix = d.hour >= 12 ? 'PM' : 'AM';
+  return '$hour:$minute $suffix';
+}
+
+int _exerciseDoneCount(List<CoachTraineeWorkoutExerciseLog> exercises) {
+  return exercises.where((e) => e.countsAsExerciseCompleted).length;
+}
+
+int _exercisePlannedCount(List<CoachTraineeWorkoutExerciseLog> exercises) {
+  return exercises.where((e) => !e.isSkipped).length;
+}
+
+String _statusFromExercises(List<CoachTraineeWorkoutExerciseLog> exercises) {
+  if (exercises.isEmpty) return 'COMPLETED';
+  if (exercises.every((e) => e.countsAsExerciseCompleted)) return 'COMPLETED';
+  if (exercises.any((e) => e.hasLoggedSetsWork || e.isSkipped || e.isPartial)) {
+    return 'PARTIAL';
+  }
+  return 'MISSED';
+}
+
+class _WorkoutHistoryDayGroup {
+  final String dayKey;
+  final DateTime day;
+  final List<CoachTraineeWorkoutCompletionRecord> records;
+
+  const _WorkoutHistoryDayGroup({
+    required this.dayKey,
+    required this.day,
+    required this.records,
+  });
+
+  List<CoachTraineeWorkoutExerciseLog> get exercises => records
+      .where((r) => r.hasDetailedLogs && r.exerciseLogs.isNotEmpty)
+      .expand((r) => r.exerciseLogs.map((e) => e.toWorkoutExerciseLog()))
+      .toList();
+
+  int get exercisesDone => _exerciseDoneCount(exercises);
+
+  int get exercisesPlanned => _exercisePlannedCount(exercises);
+
+  String get sessionStatus => _statusFromExercises(exercises);
+
+  String get metricText {
+    if (exercises.isNotEmpty) {
+      final planned = exercisesPlanned;
+      final done = exercisesDone;
+      if (planned > 0) return '$done/$planned ex';
+      return '${exercises.length} ex';
+    }
+    final count = records.length;
+    return '$count session${count == 1 ? '' : 's'}';
+  }
+}
+
+List<_WorkoutHistoryDayGroup> _groupWorkoutHistoryByDay(
+  List<CoachTraineeWorkoutCompletionRecord> records,
+) {
+  final byDay = <String, List<CoachTraineeWorkoutCompletionRecord>>{};
+  final dayDates = <String, DateTime>{};
+
+  for (final record in records) {
+    final parsedDate = DateTime.tryParse(record.completionDate) ??
+        record.completedAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+    final day = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+    final key = _calendarDayKey(day);
+    byDay.putIfAbsent(key, () => []).add(record);
+    dayDates[key] = day;
+  }
+
+  final groups = byDay.entries.map((entry) {
+    final dayRecords = List<CoachTraineeWorkoutCompletionRecord>.from(entry.value)
+      ..sort((a, b) {
+        final aTime = a.completedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.completedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
+    return _WorkoutHistoryDayGroup(
+      dayKey: entry.key,
+      day: dayDates[entry.key]!,
+      records: dayRecords,
+    );
+  }).toList()
+    ..sort((a, b) => b.day.compareTo(a.day));
+
+  return groups;
+}
 
 DateTime? _tryParseLooseDate(String s) {
   final t = s.trim();
@@ -58,15 +165,17 @@ DateTime? _tryParseLooseDate(String s) {
   return (mon, sun);
 }
 
-/// Plans tab: workout + nutrition week strips, workout plan list (data from coach trainee API).
+/// Plans tab: goal/level quick-edit, workout + nutrition week strips, workout plan list.
 class TraineeProfilePlansTab extends StatefulWidget {
   final CoachTraineeDetail? detail;
   final bool loading;
+  final String traineeId;
 
   const TraineeProfilePlansTab({
     super.key,
     required this.detail,
     required this.loading,
+    required this.traineeId,
   });
 
   @override
@@ -76,13 +185,39 @@ class TraineeProfilePlansTab extends StatefulWidget {
 class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
   bool _workoutExpanded = true;
   bool _nutritionExpanded = true;
-  /// Weekdays (1–7) with expanded day-detail cards; today open by default.
-  late Set<int> _openWorkoutDayCards;
+  /// Expanded day-detail cards; today open by default.
+  late Set<String> _openWorkoutDayCards;
+
+  // Goal / level inline editor
+  static const _levels = ['Beginner', 'Intermediate', 'Advanced'];
+  late TextEditingController _goalController;
+  late String _editLevel;
+  String _savedGoal = '';
+  String _savedLevel = '';
+
+  bool get _goalLevelDirty =>
+      _goalController.text.trim() != _savedGoal ||
+      _editLevel != _savedLevel;
+
+  void _syncGoalLevel() {
+    final p = widget.detail?.profile;
+    _savedGoal = p?.goal ?? '';
+    _savedLevel = _levels.contains(p?.level) ? p!.level : _levels[0];
+    _goalController.text = _savedGoal;
+    _editLevel = _savedLevel;
+  }
 
   @override
   void initState() {
     super.initState();
-    _openWorkoutDayCards = {DateTime.now().weekday};
+    _goalController = TextEditingController();
+    _editLevel = _levels[0];
+    _syncGoalLevel();
+    _goalController.addListener(() => setState(() {}));
+    _openWorkoutDayCards = {
+      'history:${_calendarDayKey(DateTime.now())}',
+      'week:${DateTime.now().weekday}',
+    };
   }
 
   @override
@@ -91,16 +226,29 @@ class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
     final oldId = oldWidget.detail?.profile.id;
     final newId = widget.detail?.profile.id;
     if (oldId != newId) {
-      _openWorkoutDayCards = {DateTime.now().weekday};
+      _syncGoalLevel();
+      _openWorkoutDayCards = {
+        'history:${_calendarDayKey(DateTime.now())}',
+        'week:${DateTime.now().weekday}',
+      };
+    } else if (!_goalLevelDirty) {
+      // Refresh saved values if the detail was reloaded (e.g. after a save).
+      _syncGoalLevel();
     }
   }
 
-  void _toggleWorkoutDayCard(int weekday) {
+  @override
+  void dispose() {
+    _goalController.dispose();
+    super.dispose();
+  }
+
+  void _toggleWorkoutDayCard(String key) {
     setState(() {
-      if (_openWorkoutDayCards.contains(weekday)) {
-        _openWorkoutDayCards = Set.from(_openWorkoutDayCards)..remove(weekday);
+      if (_openWorkoutDayCards.contains(key)) {
+        _openWorkoutDayCards = Set.from(_openWorkoutDayCards)..remove(key);
       } else {
-        _openWorkoutDayCards = Set.from(_openWorkoutDayCards)..add(weekday);
+        _openWorkoutDayCards = Set.from(_openWorkoutDayCards)..add(key);
       }
     });
   }
@@ -124,15 +272,76 @@ class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
       );
     }
 
+    return BlocListener<TraineesBloc, TraineesState>(
+      listenWhen: (prev, curr) {
+        if (prev is! TraineesLoaded || curr is! TraineesLoaded) return false;
+        return prev.goalLevelSaving != curr.goalLevelSaving ||
+            prev.goalLevelError != curr.goalLevelError;
+      },
+      listener: (context, state) {
+        if (state is! TraineesLoaded) return;
+        if (!state.goalLevelSaving && state.goalLevelError == null) {
+          // Sync local editor state so the Save button hides after a successful save.
+          setState(_syncGoalLevel);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Goal & level saved'),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+        if (state.goalLevelError != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.goalLevelError!),
+              backgroundColor: AppColors.error,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      },
+      child: BlocBuilder<TraineesBloc, TraineesState>(
+        buildWhen: (prev, curr) {
+          if (prev is! TraineesLoaded || curr is! TraineesLoaded) return true;
+          return prev.goalLevelSaving != curr.goalLevelSaving;
+        },
+        builder: (context, blocState) {
+          final saving = blocState is TraineesLoaded && blocState.goalLevelSaving;
+          return _buildList(d, saving);
+        },
+      ),
+    );
+  }
+
+  Widget _buildList(CoachTraineeDetail d, bool saving) {
     final wp = d.workoutProgress;
     final np = d.nutritionProgress;
-    final workoutWeekMon = _workoutWeekBounds(d).$1;
+    final historyGroups = _groupWorkoutHistoryByDay(d.workoutCompletionHistory);
     final workoutPeriod = wp.countsForToday ? 'today' : 'this week';
     final nutritionPeriod = np.countsForToday ? 'today' : 'this week';
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
       children: [
+        _GoalLevelCard(
+          goalController: _goalController,
+          selectedLevel: _editLevel,
+          levels: _levels,
+          isDirty: _goalLevelDirty,
+          saving: saving,
+          onLevelChanged: (v) => setState(() => _editLevel = v!),
+          onSave: () {
+            context.read<TraineesBloc>().add(UpdateTraineeGoalLevelEvent(
+              traineeId: widget.traineeId,
+              goal: _goalController.text.trim(),
+              level: _editLevel,
+            ));
+          },
+        ),
+        const SizedBox(height: 16),
         _ProgressCard(
           expanded: _workoutExpanded,
           onToggle: () => setState(() => _workoutExpanded = !_workoutExpanded),
@@ -152,28 +361,47 @@ class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
                 _TraineePlanNoteCard(text: d.traineeNoteOnPlan!.trim()),
               ],
               const SizedBox(height: 12),
-              ...d.mergedWorkoutWeek.map(
-                (session) {
-                  final dayDate = DateTime(
-                    workoutWeekMon.year,
-                    workoutWeekMon.month,
-                    workoutWeekMon.day,
-                  ).add(Duration(days: session.weekday - 1));
-                  final fromCompletion =
-                      d.completionExercisesForCalendarDay(dayDate);
+              if (historyGroups.isNotEmpty)
+                ...historyGroups.map((group) {
+                  final groupSession = CoachTraineeWorkoutDaySession(
+                    weekday: group.day.weekday,
+                    stripVisual: CoachTraineeWorkoutProgress.visualForStatusString(
+                      group.sessionStatus,
+                    ),
+                    sessionStatus: group.sessionStatus,
+                    durationMinutes: null,
+                    exercisesDone: group.exercisesDone,
+                    exercisesPlanned: group.exercisesPlanned,
+                    traineeDayNote: null,
+                    exercises: group.exercises,
+                  );
+                  final cardKey = 'history:${group.dayKey}';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _ExpandableWorkoutDayCard(
+                      session: groupSession,
+                      dayLabelOverride: _formatDayHistoryLabel(group.day),
+                      metricTextOverride: group.metricText,
+                      completionRecords: group.records,
+                      allCompletionHistory: d.workoutCompletionHistory,
+                      expanded: _openWorkoutDayCards.contains(cardKey),
+                      onToggle: () => _toggleWorkoutDayCard(cardKey),
+                    ),
+                  );
+                })
+              else
+                ...d.mergedWorkoutWeek.map((session) {
+                  final cardKey = 'week:${session.weekday}';
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: _ExpandableWorkoutDayCard(
                       session: session,
-                      completionExercises: fromCompletion.isNotEmpty
-                          ? fromCompletion
-                          : null,
-                      expanded: _openWorkoutDayCards.contains(session.weekday),
-                      onToggle: () => _toggleWorkoutDayCard(session.weekday),
+                      allCompletionHistory: d.workoutCompletionHistory,
+                      expanded: _openWorkoutDayCards.contains(cardKey),
+                      onToggle: () => _toggleWorkoutDayCard(cardKey),
                     ),
                   );
-                },
-              ),
+                }),
             ],
           ),
         ),
@@ -286,6 +514,191 @@ class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
   }
 }
 
+class _GoalLevelCard extends StatelessWidget {
+  final TextEditingController goalController;
+  final String selectedLevel;
+  final List<String> levels;
+  final bool isDirty;
+  final bool saving;
+  final ValueChanged<String?> onLevelChanged;
+  final VoidCallback onSave;
+
+  const _GoalLevelCard({
+    required this.goalController,
+    required this.selectedLevel,
+    required this.levels,
+    required this.isDirty,
+    required this.saving,
+    required this.onLevelChanged,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.tune_rounded, color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Goal & Level',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'TRAINEE LEVEL',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: selectedLevel,
+            onChanged: onLevelChanged,
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              filled: true,
+              fillColor: AppColors.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+            ),
+            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+            items: levels
+                .map((l) => DropdownMenuItem(value: l, child: Text(l)))
+                .toList(),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'GOAL',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: goalController,
+            maxLines: 2,
+            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'e.g. Lose 5 kg, Build muscle...',
+              hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+              prefixIcon: const Icon(
+                Icons.track_changes_rounded,
+                color: AppColors.textSecondary,
+                size: 20,
+              ),
+              filled: true,
+              fillColor: AppColors.surface,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+            ),
+          ),
+          // Save button appears only when values differ from the saved state.
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            child: isDirty
+                ? Padding(
+                    padding: const EdgeInsets.only(top: 14),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: saving ? null : onSave,
+                        icon: saving
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Icon(Icons.check_rounded, size: 18),
+                        label: Text(saving ? 'Saving…' : 'Save Changes'),
+                        style: FilledButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          textStyle: const TextStyle(
+                              fontSize: 14, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ),
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _ProgressCard extends StatelessWidget {
   final bool expanded;
   final VoidCallback onToggle;
@@ -335,13 +748,13 @@ class _ProgressCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 36,
+                      height: 36,
                       decoration: BoxDecoration(
                         color: AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(icon, color: AppColors.primary, size: 22),
+                      child: Icon(icon, color: AppColors.primary, size: 20),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -553,30 +966,118 @@ class _DateRangeChip extends StatelessWidget {
 
 class _ExpandableWorkoutDayCard extends StatelessWidget {
   final CoachTraineeWorkoutDaySession session;
-  /// When set (from [CoachTraineeDetail.workoutCompletionHistory]), replaces session exercises.
-  final List<CoachTraineeWorkoutExerciseLog>? completionExercises;
+  final List<CoachTraineeWorkoutCompletionRecord>? completionRecords;
+  final List<CoachTraineeWorkoutCompletionRecord>? allCompletionHistory;
+  final String? dayLabelOverride;
+  final String? metricTextOverride;
   final bool expanded;
   final VoidCallback onToggle;
 
   const _ExpandableWorkoutDayCard({
     required this.session,
-    this.completionExercises,
+    this.completionRecords,
+    this.allCompletionHistory,
+    this.dayLabelOverride,
+    this.metricTextOverride,
     required this.expanded,
     required this.onToggle,
   });
 
   List<CoachTraineeWorkoutExerciseLog> get _exercisesToShow {
-    if (completionExercises != null && completionExercises!.isNotEmpty) {
-      return completionExercises!;
+    if (completionRecords != null && completionRecords!.isNotEmpty) {
+      return completionRecords!
+          .where((r) => r.hasDetailedLogs && r.exerciseLogs.isNotEmpty)
+          .expand((r) => r.exerciseLogs.map((e) => e.toWorkoutExerciseLog()))
+          .toList();
     }
     return session.exercises;
+  }
+
+  String get _metricText {
+    if ((metricTextOverride ?? '').trim().isNotEmpty) return metricTextOverride!.trim();
+    final exercises = _exercisesToShow;
+    final planned = session.exercisesPlanned > 0
+        ? session.exercisesPlanned
+        : _exercisePlannedCount(exercises);
+    final done = session.exercisesDone > 0
+        ? session.exercisesDone
+        : _exerciseDoneCount(exercises);
+    if (planned > 0) return '$done/$planned ex';
+    if (exercises.isNotEmpty) return '${exercises.length} ex';
+    return '0 ex';
+  }
+
+  Widget _buildCompletionRecordBlock(
+    BuildContext context,
+    CoachTraineeWorkoutCompletionRecord record,
+  ) {
+    final sessionTitle = (record.planSessionTitle ?? '').trim().isNotEmpty
+        ? record.planSessionTitle!.trim()
+        : 'Workout session';
+    final meta = <String>[];
+    final planTitle = (record.workoutPlanTitle ?? '').trim();
+    if (planTitle.isNotEmpty) meta.add(planTitle);
+    meta.add('Day ${record.dayOrder + 1}');
+    final timeText = _formatTimeOfDay(record.completedAt);
+    if (timeText.isNotEmpty) meta.add(timeText);
+    final exercises = record.exerciseLogs.map((e) => e.toWorkoutExerciseLog()).toList();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            sessionTitle,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          if (meta.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              meta.join(' · '),
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.textMuted.withValues(alpha: 0.95),
+              ),
+            ),
+          ],
+          const SizedBox(height: 10),
+          if (record.hasDetailedLogs && exercises.isNotEmpty)
+            ...exercises.map(
+              (e) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _WorkoutExerciseLogRow(
+                  exercise: e,
+                  allHistory: allCompletionHistory,
+                ),
+              ),
+            )
+          else
+            Text(
+              'This session has no detailed exercise logs.',
+              style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+            ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final idx = session.weekday - 1;
-    final dayLabel =
-        idx >= 0 && idx < 7 ? _kWorkoutDayShortLabels[idx] : '?';
+    final dayLabel = (dayLabelOverride ?? '').trim().isNotEmpty
+        ? dayLabelOverride!.trim()
+        : (idx >= 0 && idx < 7 ? _kWorkoutDayShortLabels[idx] : '?');
     final status = session.sessionStatus.toUpperCase();
     final (badgeBg, badgeFg, badgeText) = _workoutSessionBadgeStyle(status);
 
@@ -644,7 +1145,7 @@ class _ExpandableWorkoutDayCard extends StatelessWidget {
                       ),
                     if (session.durationMinutes != null) const SizedBox(width: 10),
                     Text(
-                      '${session.exercisesDone}/${session.exercisesPlanned} ex',
+                      _metricText,
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -681,7 +1182,14 @@ class _ExpandableWorkoutDayCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                   ],
-                  if (_exercisesToShow.isEmpty)
+                  if (completionRecords != null && completionRecords!.isNotEmpty)
+                    ...completionRecords!.map(
+                      (record) => Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: _buildCompletionRecordBlock(context, record),
+                      ),
+                    )
+                  else if (_exercisesToShow.isEmpty)
                     Text(
                       'No exercise log for this day.',
                       style: TextStyle(fontSize: 12, color: AppColors.textMuted),
@@ -690,7 +1198,10 @@ class _ExpandableWorkoutDayCard extends StatelessWidget {
                     ..._exercisesToShow.map(
                       (e) => Padding(
                         padding: const EdgeInsets.only(bottom: 10),
-                        child: _WorkoutExerciseLogRow(exercise: e),
+                        child: _WorkoutExerciseLogRow(
+                          exercise: e,
+                          allHistory: allCompletionHistory,
+                        ),
                       ),
                     ),
                 ],
@@ -708,8 +1219,12 @@ class _ExpandableWorkoutDayCard extends StatelessWidget {
 
 class _WorkoutExerciseLogRow extends StatelessWidget {
   final CoachTraineeWorkoutExerciseLog exercise;
+  final List<CoachTraineeWorkoutCompletionRecord>? allHistory;
 
-  const _WorkoutExerciseLogRow({required this.exercise});
+  const _WorkoutExerciseLogRow({
+    required this.exercise,
+    this.allHistory,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -751,10 +1266,23 @@ class _WorkoutExerciseLogRow extends StatelessWidget {
               ),
             ),
             if (!skipped) ...[
-              Icon(
-                Icons.show_chart_rounded,
-                size: 20,
-                color: AppColors.success.withValues(alpha: 0.85),
+              GestureDetector(
+                onTap: allHistory != null && allHistory!.isNotEmpty
+                    ? () => _showWeightProgressSheet(context, exercise.name, allHistory!)
+                    : null,
+                child: Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.success,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(
+                    Icons.show_chart_rounded,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ),
               ),
               const SizedBox(width: 6),
             ],
@@ -830,6 +1358,7 @@ class _WorkoutExerciseLogRow extends StatelessWidget {
                             ),
                           ),
                         ),
+                        
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
@@ -1262,4 +1791,389 @@ class _NewWorkoutPlanButton extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─── Weight Progress Feature ──────────────────────────────────────────────────
+
+class _WeightDataPoint {
+  final String sessionLabel;
+  final double weightKg;
+
+  const _WeightDataPoint({required this.sessionLabel, required this.weightKg});
+}
+
+List<_WeightDataPoint> _extractWeightHistory(
+  String exerciseName,
+  List<CoachTraineeWorkoutCompletionRecord> history,
+) {
+  final normalized = exerciseName.trim().toLowerCase();
+  final matches = <(DateTime, double)>[];
+  for (final record in history) {
+    for (final log in record.exerciseLogs) {
+      if (log.exerciseName.trim().toLowerCase() == normalized && log.wieghtKg > 0) {
+        final date = record.completedAt ??
+            DateTime.tryParse(record.completionDate) ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        matches.add((date, log.wieghtKg));
+      }
+    }
+  }
+  matches.sort((a, b) => a.$1.compareTo(b.$1));
+  return matches.asMap().entries.map((entry) {
+    return _WeightDataPoint(
+      sessionLabel: 'W${entry.key + 1}',
+      weightKg: entry.value.$2,
+    );
+  }).toList();
+}
+
+void _showWeightProgressSheet(
+  BuildContext context,
+  String exerciseName,
+  List<CoachTraineeWorkoutCompletionRecord> history,
+) {
+  final dataPoints = _extractWeightHistory(exerciseName, history);
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _WeightProgressSheet(
+      exerciseName: exerciseName,
+      dataPoints: dataPoints,
+    ),
+  );
+}
+
+class _WeightProgressSheet extends StatelessWidget {
+  final String exerciseName;
+  final List<_WeightDataPoint> dataPoints;
+
+  const _WeightProgressSheet({
+    required this.exerciseName,
+    required this.dataPoints,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasData = dataPoints.isNotEmpty;
+    final currentKg = hasData ? dataPoints.last.weightKg : 0.0;
+    final firstKg = hasData ? dataPoints.first.weightKg : 0.0;
+    final changeKg = currentKg - firstKg;
+    final sessions = dataPoints.length;
+
+    String summaryText;
+    if (!hasData) {
+      summaryText = 'No weight data recorded yet';
+    } else if (sessions == 1) {
+      summaryText = 'Weight recorded in 1 session';
+    } else if (changeKg > 0) {
+      summaryText =
+          'Weight increased by ${_formatKg(changeKg)} kg over $sessions sessions';
+    } else if (changeKg < 0) {
+      summaryText =
+          'Weight decreased by ${_formatKg(-changeKg)} kg over $sessions sessions';
+    } else {
+      summaryText = 'Weight unchanged over $sessions sessions';
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.border,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        exerciseName,
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        'Weight Progress Over Sessions',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: const BoxDecoration(
+                      color: AppColors.surface,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 18,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          if (hasData)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _WeightStatCard(
+                      label: 'Current',
+                      value: '${_formatKg(currentKg)} kg',
+                      valueColor: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _WeightStatCard(
+                      label: 'Change',
+                      value: '${changeKg >= 0 ? '+' : ''}${_formatKg(changeKg)} kg',
+                      valueColor: changeKg > 0
+                          ? AppColors.success
+                          : changeKg < 0
+                              ? AppColors.error
+                              : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          const SizedBox(height: 20),
+          if (hasData && dataPoints.length >= 2) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: _WeightLineChart(dataPoints: dataPoints),
+            ),
+            const SizedBox(height: 16),
+          ] else if (hasData) ...[
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'Record more sessions to see the progress trend.',
+                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              summaryText,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+String _formatKg(double kg) {
+  if (kg == kg.roundToDouble()) return kg.round().toString();
+  return kg.toStringAsFixed(1);
+}
+
+class _WeightStatCard extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color valueColor;
+
+  const _WeightStatCard({
+    required this.label,
+    required this.value,
+    required this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: valueColor,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WeightLineChart extends StatelessWidget {
+  final List<_WeightDataPoint> dataPoints;
+
+  const _WeightLineChart({required this.dataPoints});
+
+  @override
+  Widget build(BuildContext context) {
+    final weights = dataPoints.map((p) => p.weightKg).toList();
+    final labels = dataPoints.map((p) => p.sessionLabel).toList();
+    final lastWeight = weights.last;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(
+          height: 140,
+          child: CustomPaint(
+            painter: _WeightLinePainter(
+              weights: weights,
+              lastLabel: '${_formatKg(lastWeight)}kg',
+            ),
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: labels.map((l) {
+            return Expanded(
+              child: Text(
+                l,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              ),
+            );
+          }).toList(),
+        ),
+      ],
+    );
+  }
+}
+
+class _WeightLinePainter extends CustomPainter {
+  final List<double> weights;
+  final String lastLabel;
+
+  const _WeightLinePainter({required this.weights, required this.lastLabel});
+
+  static const _lineColor = AppColors.success;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (weights.isEmpty) return;
+
+    const topPad = 24.0;
+    final chartH = size.height - topPad;
+    final chartW = size.width;
+    final n = weights.length;
+
+    final minW = weights.reduce((a, b) => a < b ? a : b);
+    final maxW = weights.reduce((a, b) => a > b ? a : b);
+    final range = (maxW - minW).abs();
+
+    final pts = List.generate(n, (i) {
+      final x = n == 1 ? chartW / 2 : chartW * i / (n - 1);
+      final y = topPad + (range > 0 ? chartH * (1 - (weights[i] - minW) / range) : chartH * 0.5);
+      return Offset(x, y);
+    });
+
+    // Gradient fill
+    final fillPath = Path()..moveTo(pts.first.dx, topPad + chartH);
+    for (final p in pts) { fillPath.lineTo(p.dx, p.dy); }
+    fillPath.lineTo(pts.last.dx, topPad + chartH);
+    fillPath.close();
+    canvas.drawPath(
+      fillPath,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            _lineColor.withValues(alpha: 0.22),
+            _lineColor.withValues(alpha: 0.03),
+          ],
+        ).createShader(Rect.fromLTWH(0, topPad, chartW, chartH)),
+    );
+
+    // Line
+    final linePath = Path()..moveTo(pts.first.dx, pts.first.dy);
+    for (int i = 1; i < n; i++) { linePath.lineTo(pts[i].dx, pts[i].dy); }
+    canvas.drawPath(
+      linePath,
+      Paint()
+        ..color = _lineColor
+        ..strokeWidth = 2.5
+        ..style = PaintingStyle.stroke
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+
+    // Dots
+    final dotPaint = Paint()
+      ..color = _lineColor
+      ..style = PaintingStyle.fill;
+    for (final p in pts) { canvas.drawCircle(p, 4, dotPaint); }
+
+    // Last-point weight label
+    final tp = TextPainter(
+      text: TextSpan(
+        text: lastLabel,
+        style: const TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          color: _lineColor,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    final lastPt = pts.last;
+    tp.paint(canvas, Offset(lastPt.dx - tp.width / 2, lastPt.dy - tp.height - 6));
+  }
+
+  @override
+  bool shouldRepaint(covariant _WeightLinePainter old) =>
+      old.weights != weights || old.lastLabel != lastLabel;
 }

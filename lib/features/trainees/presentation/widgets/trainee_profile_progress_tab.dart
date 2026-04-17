@@ -362,6 +362,13 @@ class _RedProgressRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final pct = total > 0 ? (fraction * 100).round() : 0;
+    final color = pct >= 70
+        ? AppColors.primary
+        : pct >= 40
+            ? AppColors.warning
+            : AppColors.error;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -373,11 +380,11 @@ class _RedProgressRow extends StatelessWidget {
               style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
             Text(
-              '$done/$total',
-              style: const TextStyle(
-                fontSize: 14,
+              '$done/$total  ($pct%)',
+              style: TextStyle(
+                fontSize: 13,
                 fontWeight: FontWeight.w800,
-                color: AppColors.error,
+                color: color,
               ),
             ),
           ],
@@ -387,9 +394,9 @@ class _RedProgressRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(4),
           child: LinearProgressIndicator(
             value: fraction.clamp(0.0, 1.0),
-            minHeight: 6,
+            minHeight: 7,
             backgroundColor: AppColors.border,
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.error),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
           ),
         ),
       ],
@@ -872,20 +879,89 @@ class _CoachNotesCard extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () {
+                // TODO: dispatch SaveCoachNotesEvent when API is ready
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Notes saved for $traineeName'),
+                    backgroundColor: AppColors.success,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.save_rounded, size: 18),
+              label: const Text('Save Notes'),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.teal.shade600,
+                padding: const EdgeInsets.symmetric(vertical: 13),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 }
 
-class _GoalsCard extends StatelessWidget {
+class _GoalsCard extends StatefulWidget {
   final List<CoachTraineeGoalItem> goals;
 
   const _GoalsCard({required this.goals});
 
   @override
+  State<_GoalsCard> createState() => _GoalsCardState();
+}
+
+class _GoalsCardState extends State<_GoalsCard> {
+  late List<CoachTraineeGoalItem> _goals;
+  final _addController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _goals = List.from(widget.goals);
+  }
+
+  @override
+  void didUpdateWidget(covariant _GoalsCard old) {
+    super.didUpdateWidget(old);
+    if (old.goals != widget.goals) {
+      _goals = List.from(widget.goals);
+    }
+  }
+
+  @override
+  void dispose() {
+    _addController.dispose();
+    super.dispose();
+  }
+
+  void _addGoal() {
+    final text = _addController.text.trim();
+    if (text.isEmpty) return;
+    setState(() {
+      _goals = [
+        ..._goals,
+        CoachTraineeGoalItem(id: DateTime.now().millisecondsSinceEpoch.toString(), title: text, completed: false),
+      ];
+    });
+    _addController.clear();
+  }
+
+  void _removeGoal(int index) {
+    setState(() => _goals = [..._goals]..removeAt(index));
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final done = goals.where((g) => g.completed).length;
+    final done = _goals.where((g) => g.completed).length;
     return _ProgressSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -905,22 +981,25 @@ class _GoalsCard extends StatelessWidget {
                 ),
               ),
               Text(
-                '$done/${goals.length} done',
+                '$done/${_goals.length} done',
                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          if (goals.isEmpty)
-            const Text(
-              'No goals listed yet.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+          if (_goals.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No goals listed yet.',
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
             )
           else
-            ...goals.asMap().entries.map((e) {
+            ..._goals.asMap().entries.map((e) {
               final i = e.key;
               final g = e.value;
-              final last = i == goals.length - 1;
+              final last = i == _goals.length - 1;
               return Column(
                 children: [
                   Padding(
@@ -928,21 +1007,32 @@ class _GoalsCard extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: 24,
-                          height: 24,
-                          margin: const EdgeInsets.only(top: 2),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(
-                              color: g.completed ? AppColors.primary : AppColors.border,
-                              width: 2,
+                        // Checkbox
+                        GestureDetector(
+                          onTap: () => setState(() {
+                            _goals = [..._goals];
+                            _goals[i] = CoachTraineeGoalItem(
+                              id: g.id,
+                              title: g.title,
+                              completed: !g.completed,
+                            );
+                          }),
+                          child: Container(
+                            width: 24,
+                            height: 24,
+                            margin: const EdgeInsets.only(top: 2),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: g.completed ? AppColors.primary : AppColors.border,
+                                width: 2,
+                              ),
+                              color: g.completed ? AppColors.primaryLight : null,
                             ),
-                            color: g.completed ? AppColors.primaryLight : null,
+                            child: g.completed
+                                ? const Icon(Icons.check, size: 16, color: AppColors.primary)
+                                : null,
                           ),
-                          child: g.completed
-                              ? const Icon(Icons.check, size: 16, color: AppColors.primary)
-                              : null,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -957,7 +1047,18 @@ class _GoalsCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Icon(Icons.close, size: 18, color: AppColors.textMuted.withValues(alpha: 0.5)),
+                        // Delete
+                        GestureDetector(
+                          onTap: () => _removeGoal(i),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Icon(
+                              Icons.delete_outline_rounded,
+                              size: 18,
+                              color: AppColors.error.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -965,6 +1066,49 @@ class _GoalsCard extends StatelessWidget {
                 ],
               );
             }),
+          const SizedBox(height: 14),
+          // Add-goal input
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _addController,
+                  style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
+                  onSubmitted: (_) => _addGoal(),
+                  decoration: InputDecoration(
+                    hintText: 'Add a new goal...',
+                    hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: _addGoal,
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size(44, 44),
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Icon(Icons.add_rounded, size: 22),
+              ),
+            ],
+          ),
         ],
       ),
     );

@@ -7,4 +7,5 @@ abstract class TraineesRepository {
   Future<List<Invitation>> getMyInvitations();
   Future<Invitation> createInvitation(String email);
   Future<CoachTraineeDetail> getTraineeDetails(String id);
+  Future<void> updateTraineeGoalLevel(String id, String goal, String level);
 }

@@ -126,6 +126,7 @@ class _TraineeProfileScreenState extends State<TraineeProfileScreen> {
         return TraineeProfilePlansTab(
           detail: state.traineeDetail,
           loading: state.traineeDetailLoading,
+          traineeId: t.id.toString(),
         );
       case 2:
         return TraineeProfileProgressTab(

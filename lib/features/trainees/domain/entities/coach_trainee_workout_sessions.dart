@@ -60,6 +60,7 @@ class CoachTraineeWorkoutExerciseLog extends Equatable {
   final int setsDone;
   final int setsPlanned;
   final String? skipReason;
+  final double wieghtKg ; // TODO when API adds per-set weight, or a planned weight field
   /// Per-set breakdown when API sends `setDetails` or per-set `sets` / `setLogs`.
   final List<CoachTraineeWorkoutSetDetail>? setDetails;
 
@@ -68,6 +69,7 @@ class CoachTraineeWorkoutExerciseLog extends Equatable {
     required this.status,
     required this.setsDone,
     required this.setsPlanned,
+    required this.wieghtKg,
     this.skipReason,
     this.setDetails,
   });
@@ -175,6 +177,7 @@ class CoachTraineeWorkoutExerciseLog extends Equatable {
         flat['setDetails'] ?? flat['sets'] ?? flat['setLogs'] ?? flat['loggedSets']);
 
     return CoachTraineeWorkoutExerciseLog(
+      wieghtKg: flat['wieghtKg'] is num ? (flat['wieghtKg'] as num).toDouble() : 0.0,
       name: flat['name']?.toString() ??
           flat['exerciseName']?.toString() ??
           flat['title']?.toString() ??
@@ -564,8 +567,9 @@ List<CoachTraineeWorkoutDaySession> buildMergedWorkoutWeek({
       final planned = sk.plannedSets ?? sk.setsSkipped ?? 1;
       exercises.add(CoachTraineeWorkoutExerciseLog(
         name: sk.exerciseName ?? 'Exercise',
+        wieghtKg: exercises.isNotEmpty ? exercises.first.wieghtKg : 0.0, // best effort to fill weight for skipped sets without duplication if multiple skips for the day
         status: 'SKIPPED',
-        setsDone: 0,
+        setsDone: sk.plannedSets!-sk.setsSkipped!,
         setsPlanned: planned > 0 ? planned : 1,
         skipReason: sk.reason,
       ));

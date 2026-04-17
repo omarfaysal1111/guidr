@@ -28,4 +28,9 @@ class TraineesRepositoryImpl implements TraineesRepository {
   Future<CoachTraineeDetail> getTraineeDetails(String id) async {
     return await remoteDataSource.getTraineeDetails(id);
   }
+
+  @override
+  Future<void> updateTraineeGoalLevel(String id, String goal, String level) async {
+    return await remoteDataSource.updateTraineeGoalLevel(id, goal, level);
+  }
 }

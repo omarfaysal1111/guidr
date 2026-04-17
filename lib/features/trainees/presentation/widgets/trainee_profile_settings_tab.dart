@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/trainee.dart';
 
-/// Settings tab: status alerts, trainee info rows, archive / delete actions.
-class TraineeProfileSettingsTab extends StatelessWidget {
+/// Settings tab: level/goal editor, status alerts, trainee info rows, archive / delete actions.
+class TraineeProfileSettingsTab extends StatefulWidget {
   final Trainee trainee;
   final Trainee? profileFromDetail;
   final bool detailLoading;
@@ -15,15 +15,72 @@ class TraineeProfileSettingsTab extends StatelessWidget {
     required this.detailLoading,
   });
 
-  Trainee get _p => profileFromDetail ?? trainee;
+  @override
+  State<TraineeProfileSettingsTab> createState() =>
+      _TraineeProfileSettingsTabState();
+}
+
+class _TraineeProfileSettingsTabState
+    extends State<TraineeProfileSettingsTab> {
+  late String _selectedLevel;
+  late TextEditingController _goalController;
+
+  static const _levels = ['Beginner', 'Intermediate', 'Advanced'];
+
+  Trainee get _p => widget.profileFromDetail ?? widget.trainee;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedLevel = _levels.contains(_p.level) ? _p.level : _levels[0];
+    _goalController = TextEditingController(text: _p.goal);
+  }
+
+  @override
+  void didUpdateWidget(covariant TraineeProfileSettingsTab old) {
+    super.didUpdateWidget(old);
+    final prev = old.profileFromDetail ?? old.trainee;
+    final curr = _p;
+    if (prev.id != curr.id) {
+      _selectedLevel = _levels.contains(curr.level) ? curr.level : _levels[0];
+      _goalController.text = curr.goal;
+    }
+  }
+
+  @override
+  void dispose() {
+    _goalController.dispose();
+    super.dispose();
+  }
+
+  void _saveSettings() {
+    // TODO: dispatch UpdateTraineeSettingsEvent when API is ready
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Settings saved for ${_p.name}'),
+        backgroundColor: AppColors.success,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
       children: [
-        if (detailLoading) const LinearProgressIndicator(minHeight: 2),
-        if (detailLoading) const SizedBox(height: 8),
+        if (widget.detailLoading) const LinearProgressIndicator(minHeight: 2),
+        if (widget.detailLoading) const SizedBox(height: 8),
+        // ── Level & Goal editor ─────────────────────────────────
+        _LevelGoalCard(
+          selectedLevel: _selectedLevel,
+          levels: _levels,
+          goalController: _goalController,
+          onLevelChanged: (v) => setState(() => _selectedLevel = v!),
+          onSave: _saveSettings,
+        ),
+        const SizedBox(height: 14),
         ..._buildAlertBanners(_p.alerts),
         if (_p.alerts.isNotEmpty) const SizedBox(height: 12),
         _TraineeInfoCard(profile: _p),
@@ -138,6 +195,175 @@ class TraineeProfileSettingsTab extends StatelessWidget {
     }
   }
 }
+
+// ─── Level & Goal Card ────────────────────────────────────────────────────────
+
+class _LevelGoalCard extends StatelessWidget {
+  final String selectedLevel;
+  final List<String> levels;
+  final TextEditingController goalController;
+  final ValueChanged<String?> onLevelChanged;
+  final VoidCallback onSave;
+
+  const _LevelGoalCard({
+    required this.selectedLevel,
+    required this.levels,
+    required this.goalController,
+    required this.onLevelChanged,
+    required this.onSave,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.tune_rounded, color: AppColors.primary, size: 20),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Level & Goal',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Level dropdown
+          const Text(
+            'TRAINEE LEVEL',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          DropdownButtonFormField<String>(
+            initialValue: selectedLevel,
+            onChanged: onLevelChanged,
+            decoration: InputDecoration(
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              filled: true,
+              fillColor: AppColors.surface,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+            ),
+            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+            items: levels
+                .map((l) => DropdownMenuItem(
+                      value: l,
+                      child: Text(l, style: const TextStyle(fontSize: 13)),
+                    ))
+                .toList(),
+          ),
+          const SizedBox(height: 16),
+
+          // Goal input
+          const Text(
+            'GOAL',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.8,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: goalController,
+            maxLines: 2,
+            style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+            decoration: InputDecoration(
+              hintText: 'e.g. Lose 5 kg, Build muscle...',
+              hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+              prefixIcon: const Icon(Icons.track_changes_rounded, color: AppColors.textSecondary, size: 20),
+              filled: true,
+              fillColor: AppColors.surface,
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Save button
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onSave,
+              icon: const Icon(Icons.check_rounded, size: 18),
+              label: const Text('Save Changes'),
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Alert Banner ─────────────────────────────────────────────────────────────
 
 class _SettingsAlertBanner extends StatelessWidget {
   final Color background;

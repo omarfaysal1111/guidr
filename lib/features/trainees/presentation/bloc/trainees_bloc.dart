@@ -62,6 +62,21 @@ class LoadTraineeDetailEvent extends TraineesEvent {
   List<Object?> get props => [traineeId];
 }
 
+class UpdateTraineeGoalLevelEvent extends TraineesEvent {
+  final String traineeId;
+  final String goal;
+  final String level;
+
+  const UpdateTraineeGoalLevelEvent({
+    required this.traineeId,
+    required this.goal,
+    required this.level,
+  });
+
+  @override
+  List<Object?> get props => [traineeId, goal, level];
+}
+
 // States
 abstract class TraineesState extends Equatable {
   const TraineesState();
@@ -86,6 +101,8 @@ class TraineesLoaded extends TraineesState {
   final String? invitationError;
   final CoachTraineeDetail? traineeDetail;
   final bool traineeDetailLoading;
+  final bool goalLevelSaving;
+  final String? goalLevelError;
 
   const TraineesLoaded({
     required this.allTrainees,
@@ -99,6 +116,8 @@ class TraineesLoaded extends TraineesState {
     this.invitationError,
     this.traineeDetail,
     this.traineeDetailLoading = false,
+    this.goalLevelSaving = false,
+    this.goalLevelError,
   });
 
   TraineesLoaded copyWith({
@@ -115,6 +134,9 @@ class TraineesLoaded extends TraineesState {
     bool clearInvitationError = false,
     CoachTraineeDetail? traineeDetail,
     bool? traineeDetailLoading,
+    bool? goalLevelSaving,
+    String? goalLevelError,
+    bool clearGoalLevelError = false,
   }) {
     return TraineesLoaded(
       allTrainees: allTrainees ?? this.allTrainees,
@@ -130,6 +152,8 @@ class TraineesLoaded extends TraineesState {
           : (invitationError ?? this.invitationError),
       traineeDetail: traineeDetail ?? this.traineeDetail,
       traineeDetailLoading: traineeDetailLoading ?? this.traineeDetailLoading,
+      goalLevelSaving: goalLevelSaving ?? this.goalLevelSaving,
+      goalLevelError: clearGoalLevelError ? null : (goalLevelError ?? this.goalLevelError),
     );
   }
 
@@ -146,6 +170,8 @@ class TraineesLoaded extends TraineesState {
         invitationError,
         traineeDetail,
         traineeDetailLoading,
+        goalLevelSaving,
+        goalLevelError,
       ];
 }
 
@@ -280,6 +306,28 @@ class TraineesBloc extends Bloc<TraineesEvent, TraineesState> {
       if (state is TraineesLoaded) {
         final currentState = state as TraineesLoaded;
         emit(currentState.copyWith(clearInviteResult: true));
+      }
+    });
+
+    on<UpdateTraineeGoalLevelEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        final currentState = state as TraineesLoaded;
+        emit(currentState.copyWith(goalLevelSaving: true, clearGoalLevelError: true));
+        try {
+          await repository.updateTraineeGoalLevel(event.traineeId, event.goal, event.level);
+          // Reload trainee details so the UI reflects the saved values.
+          final updated = await repository.getTraineeDetails(event.traineeId);
+          emit(currentState.copyWith(
+            goalLevelSaving: false,
+            traineeDetail: updated,
+            clearGoalLevelError: true,
+          ));
+        } catch (e) {
+          emit(currentState.copyWith(
+            goalLevelSaving: false,
+            goalLevelError: e.toString().replaceFirst('Exception: ', ''),
+          ));
+        }
       }
     });
   }

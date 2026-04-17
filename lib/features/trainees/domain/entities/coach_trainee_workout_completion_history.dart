@@ -12,6 +12,7 @@ class CoachTraineeCompletionExerciseLog extends Equatable {
   final int missedSets;
   final bool allSetsCompleted;
   final String? excuse;
+  final double wieghtKg; // TODO when API adds per-set weight, or a planned weight field
   final String? coachNotes;
   final bool isReviewedByCoach;
   final DateTime? loggedAt;
@@ -22,6 +23,7 @@ class CoachTraineeCompletionExerciseLog extends Equatable {
     required this.planSessionExerciseId,
     required this.exerciseName,
     required this.plannedSets,
+    required this.wieghtKg,
     required this.actualSetsCompleted,
     required this.skippedSets,
     required this.missedSets,
@@ -56,6 +58,7 @@ class CoachTraineeCompletionExerciseLog extends Equatable {
       actualSetsCompleted: _toInt(json['actualSetsCompleted']),
       skippedSets: _toInt(json['skippedSets']),
       missedSets: _toInt(json['missedSets']),
+      wieghtKg: json['wieghtKg'] is num ? (json['wieghtKg'] as num).toDouble() : 0.0,
       allSetsCompleted: json['allSetsCompleted'] == true,
       excuse: json['excuse']?.toString(),
       coachNotes: json['coachNotes']?.toString(),
@@ -86,6 +89,7 @@ class CoachTraineeCompletionExerciseLog extends Equatable {
       setsDone: actualSetsCompleted,
       setsPlanned: plannedSets,
       skipReason: excuse,
+      wieghtKg: wieghtKg,
       setDetails: setDetails.isEmpty ? null : List<CoachTraineeWorkoutSetDetail>.from(setDetails),
     );
   }
@@ -193,8 +197,13 @@ class CoachTraineeWorkoutCompletionRecord extends Equatable {
 
 List<CoachTraineeWorkoutCompletionRecord> parseWorkoutCompletionHistory(dynamic raw) {
   if (raw is! List) return [];
-  return raw
-      .whereType<Map<String, dynamic>>()
-      .map(CoachTraineeWorkoutCompletionRecord.fromJson)
-      .toList();
+  final out = <CoachTraineeWorkoutCompletionRecord>[];
+  for (final e in raw) {
+    if (e is Map<String, dynamic>) {
+      out.add(CoachTraineeWorkoutCompletionRecord.fromJson(e));
+    } else if (e is Map) {
+      out.add(CoachTraineeWorkoutCompletionRecord.fromJson(Map<String, dynamic>.from(e)));
+    }
+  }
+  return out;
 }

@@ -8,6 +8,7 @@ abstract class TraineesRemoteDataSource {
   Future<List<Invitation>> getMyInvitations();
   Future<Invitation> createInvitation(String email);
   Future<CoachTraineeDetail> getTraineeDetails(String id);
+  Future<void> updateTraineeGoalLevel(String id, String goal, String level);
 }
 
 class TraineesRemoteDataSourceImpl implements TraineesRemoteDataSource {
@@ -44,5 +45,13 @@ class TraineesRemoteDataSourceImpl implements TraineesRemoteDataSource {
     final response = await apiClient.get('/coaches/trainees/$id');
     final data = response['data'] ?? response;
     return CoachTraineeDetail.fromJson(data);
+  }
+
+  @override
+  Future<void> updateTraineeGoalLevel(String id, String goal, String level) async {
+    await apiClient.patch(
+      '/coaches/trainees/$id',
+      body: {'fitnessGoal': goal, 'traineeLevel': level},
+    );
   }
 }
