@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/trainee.dart';
+import '../bloc/trainees_bloc.dart';
 
 /// Settings tab: level/goal editor, status alerts, trainee info rows, archive / delete actions.
 class TraineeProfileSettingsTab extends StatefulWidget {
@@ -54,11 +56,10 @@ class _TraineeProfileSettingsTabState
   }
 
   void _saveSettings() {
-    // TODO: dispatch UpdateTraineeSettingsEvent when API is ready
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Settings saved for ${_p.name}'),
-        backgroundColor: AppColors.success,
+        content: const Text('Coming soon — settings update not yet available'),
+        backgroundColor: AppColors.textSecondary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -164,9 +165,8 @@ class _TraineeProfileSettingsTabState
       ),
     );
     if (ok == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Archive is not connected to the API yet.')),
-      );
+      context.read<TraineesBloc>().add(ArchiveTraineeEvent(_p.id.toString()));
+      Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
 
@@ -189,9 +189,8 @@ class _TraineeProfileSettingsTabState
       ),
     );
     if (ok == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Delete is not connected to the API yet.')),
-      );
+      context.read<TraineesBloc>().add(DeleteTraineeEvent(_p.id.toString()));
+      Navigator.of(context).popUntil((route) => route.isFirst);
     }
   }
 }

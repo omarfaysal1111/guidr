@@ -3,7 +3,7 @@ import 'package:guidr/features/coach_builders/data/repositories/builder_reposito
 import 'package:guidr/features/coach_builders/domain/entities/builder_exercise.dart';
 import 'package:guidr/features/coach_builders/domain/entities/workout_plan_session_draft.dart';
 import 'package:guidr/features/coach_builders/domain/services/workout_plan_v1_line_builder.dart';
-import 'package:guidr/features/coach_settings/domain/usecases/CoachDataUseCase.dart';
+import 'package:guidr/features/coach_settings/domain/usecases/coach_data_use_case.dart';
 import 'package:guidr/features/trainees/domain/repositories/trainees_repository.dart';
 import 'workout_builder_event.dart';
 import 'workout_builder_state.dart';

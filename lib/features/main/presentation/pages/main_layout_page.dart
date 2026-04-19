@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:guidr/core/theme/app_colors.dart';
 import 'package:guidr/features/coach_builders/presentation/pages/nutrition_plan_builder_screen.dart';

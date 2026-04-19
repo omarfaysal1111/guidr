@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
 import 'package:guidr/core/theme/app_colors.dart';

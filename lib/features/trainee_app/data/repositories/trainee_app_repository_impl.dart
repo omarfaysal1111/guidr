@@ -1,9 +1,11 @@
 import '../../domain/entities/trainee_app_profile.dart';
 import '../../domain/entities/trainee_dashboard_today.dart';
 import '../../domain/entities/complete_workout_request.dart';
+import '../../domain/entities/meal_completion_request.dart';
 import '../../domain/entities/trainee_exercise_plan_detail.dart';
 import '../../domain/entities/nutrition_plan_detail.dart';
 import '../../domain/entities/ingredient_library_item.dart';
+import '../../domain/entities/extra_meal_log.dart';
 import '../../../coach_settings/domain/entities/coach_profile.dart';
 import 'package:guidr/features/coach_builders/domain/entities/plans.dart';
 import '../../domain/repositories/trainee_app_repository.dart';
@@ -59,22 +61,36 @@ class TraineeAppRepositoryImpl implements TraineeAppRepository {
       remoteDataSource.completePlanSessionWithLogs(planSessionId, request);
 
   @override
-  Future<void> completeMeal(int mealId) =>
-      remoteDataSource.completeMeal(mealId);
-
-  @override
-  Future<void> skipMeal(int mealId) => remoteDataSource.skipMeal(mealId);
-
-  @override
-  Future<void> skipIngredient(int mealId, int ingredientId) =>
-      remoteDataSource.skipIngredient(mealId, ingredientId);
-
-  @override
-  Future<void> swapIngredient(
-          int mealId, int ingredientId, int newIngredientId) =>
-      remoteDataSource.swapIngredient(mealId, ingredientId, newIngredientId);
+  Future<void> completeMeal(int mealId, MealCompletionRequest request) =>
+      remoteDataSource.completeMeal(mealId, request);
 
   @override
   Future<List<IngredientLibraryItem>> searchIngredients(String query) =>
       remoteDataSource.searchIngredients(query);
+
+  @override
+  Future<List<IngredientLibraryItem>> getIngredientsCatalog() =>
+      remoteDataSource.getIngredientsCatalog();
+
+  @override
+  Future<ExtraMealLog> logExtraMeal({
+    int? ingredientId,
+    String? name,
+    required double calories,
+    required String dateIso,
+  }) =>
+      remoteDataSource.logExtraMeal(
+        ingredientId: ingredientId,
+        name: name,
+        calories: calories,
+        dateIso: dateIso,
+      );
+
+  @override
+  Future<void> uploadProgressPhoto(List<int> fileBytes, String fileName) =>
+      remoteDataSource.uploadProgressPhoto(fileBytes, fileName);
+
+  @override
+  Future<void> uploadInBodyReport(List<int> fileBytes, String fileName) =>
+      remoteDataSource.uploadInBodyReport(fileBytes, fileName);
 }

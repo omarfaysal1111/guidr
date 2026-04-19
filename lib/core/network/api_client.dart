@@ -66,6 +66,52 @@ class ApiClient {
     return _processResponse(response);
   }
 
+  /// Multipart POST — single file upload.
+  Future<Map<String, dynamic>> postMultipart(
+    String endpoint, {
+    required http.MultipartFile file,
+    Map<String, String> fields = const {},
+    bool requireAuth = true,
+  }) async {
+    final uri = Uri.parse('$_baseUrl$endpoint');
+    final request = http.MultipartRequest('POST', uri);
+    request.headers['Accept'] = 'application/json';
+    if (requireAuth) {
+      final token = _localStorage.getToken();
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+    }
+    request.fields.addAll(fields);
+    request.files.add(file);
+    final streamed = await _client.send(request);
+    final response = await http.Response.fromStream(streamed);
+    return _processResponse(response);
+  }
+
+  /// Multipart POST — multiple named files in one request.
+  Future<Map<String, dynamic>> postMultipartFiles(
+    String endpoint, {
+    required List<http.MultipartFile> files,
+    Map<String, String> fields = const {},
+    bool requireAuth = true,
+  }) async {
+    final uri = Uri.parse('$_baseUrl$endpoint');
+    final request = http.MultipartRequest('POST', uri);
+    request.headers['Accept'] = 'application/json';
+    if (requireAuth) {
+      final token = _localStorage.getToken();
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+    }
+    request.fields.addAll(fields);
+    request.files.addAll(files);
+    final streamed = await _client.send(request);
+    final response = await http.Response.fromStream(streamed);
+    return _processResponse(response);
+  }
+
   /// POST with a top-level JSON array or any encodable value (not only [Map]).
   Future<Map<String, dynamic>> postJson(
     String endpoint, {
@@ -149,7 +195,7 @@ class ApiClient {
       }
       debugPrint('API ERROR [${response.statusCode}] ${response.request?.url}: $message');
       debugPrint('Response body: ${response.body}');
-      throw Exception('[${ response.statusCode}] $message');
+      throw Exception('[${response.statusCode}] $message');
     }
   }
 }

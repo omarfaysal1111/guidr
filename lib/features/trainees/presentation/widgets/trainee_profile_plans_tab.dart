@@ -4,6 +4,7 @@ import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/coach_trainee_detail.dart';
 import '../../domain/entities/coach_trainee_plans_data.dart';
 import '../../domain/entities/coach_trainee_workout_completion_history.dart';
+import '../../domain/entities/coach_trainee_meal_completion_history.dart';
 import '../../domain/entities/coach_trainee_workout_sessions.dart';
 import '../bloc/trainees_bloc.dart';
 
@@ -124,6 +125,67 @@ List<_WorkoutHistoryDayGroup> _groupWorkoutHistoryByDay(
   return groups;
 }
 
+// ─── Meal history helpers ─────────────────────────────────────────────────────
+
+class _MealHistoryDayGroup {
+  final String dayKey;
+  final DateTime day;
+  final List<MealCompletionRecord> records;
+
+  const _MealHistoryDayGroup({
+    required this.dayKey,
+    required this.day,
+    required this.records,
+  });
+
+  int get completedCount => records.where((r) => !r.skipped).length;
+  int get skippedCount => records.where((r) => r.skipped).length;
+  int get totalCount => records.length;
+
+  String get metricText => '$completedCount/$totalCount meals';
+
+  String get dayStatus {
+    if (records.isEmpty) return 'MISSED';
+    if (records.every((r) => r.skipped)) return 'SKIPPED';
+    if (records.every((r) => !r.skipped)) return 'COMPLETED';
+    return 'PARTIAL';
+  }
+}
+
+List<_MealHistoryDayGroup> _groupMealHistoryByDay(
+  List<MealCompletionRecord> records,
+) {
+  final byDay = <String, List<MealCompletionRecord>>{};
+  final dayDates = <String, DateTime>{};
+
+  for (final record in records) {
+    final parsedDate = DateTime.tryParse(record.completionDate) ??
+        record.completedAt ??
+        DateTime.fromMillisecondsSinceEpoch(0);
+    final day = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+    final key = _calendarDayKey(day);
+    byDay.putIfAbsent(key, () => []).add(record);
+    dayDates[key] = day;
+  }
+
+  return byDay.entries.map((entry) {
+    final dayRecords = List<MealCompletionRecord>.from(entry.value)
+      ..sort((a, b) {
+        final aTime = a.completedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bTime = b.completedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bTime.compareTo(aTime);
+      });
+    return _MealHistoryDayGroup(
+      dayKey: entry.key,
+      day: dayDates[entry.key]!,
+      records: dayRecords,
+    );
+  }).toList()
+    ..sort((a, b) => b.day.compareTo(a.day));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 DateTime? _tryParseLooseDate(String s) {
   final t = s.trim();
   if (t.isEmpty) return null;
@@ -187,6 +249,7 @@ class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
   bool _nutritionExpanded = true;
   /// Expanded day-detail cards; today open by default.
   late Set<String> _openWorkoutDayCards;
+  late Set<String> _openMealDayCards;
 
   // Goal / level inline editor
   static const _levels = ['Beginner', 'Intermediate', 'Advanced'];
@@ -218,6 +281,9 @@ class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
       'history:${_calendarDayKey(DateTime.now())}',
       'week:${DateTime.now().weekday}',
     };
+    _openMealDayCards = {
+      'meal:${_calendarDayKey(DateTime.now())}',
+    };
   }
 
   @override
@@ -230,6 +296,9 @@ class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
       _openWorkoutDayCards = {
         'history:${_calendarDayKey(DateTime.now())}',
         'week:${DateTime.now().weekday}',
+      };
+      _openMealDayCards = {
+        'meal:${_calendarDayKey(DateTime.now())}',
       };
     } else if (!_goalLevelDirty) {
       // Refresh saved values if the detail was reloaded (e.g. after a save).
@@ -249,6 +318,16 @@ class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
         _openWorkoutDayCards = Set.from(_openWorkoutDayCards)..remove(key);
       } else {
         _openWorkoutDayCards = Set.from(_openWorkoutDayCards)..add(key);
+      }
+    });
+  }
+
+  void _toggleMealDayCard(String key) {
+    setState(() {
+      if (_openMealDayCards.contains(key)) {
+        _openMealDayCards = Set.from(_openMealDayCards)..remove(key);
+      } else {
+        _openMealDayCards = Set.from(_openMealDayCards)..add(key);
       }
     });
   }
@@ -320,6 +399,7 @@ class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
     final wp = d.workoutProgress;
     final np = d.nutritionProgress;
     final historyGroups = _groupWorkoutHistoryByDay(d.workoutCompletionHistory);
+    final mealHistoryGroups = _groupMealHistoryByDay(d.mealCompletionHistory);
     final workoutPeriod = wp.countsForToday ? 'today' : 'this week';
     final nutritionPeriod = np.countsForToday ? 'today' : 'this week';
 
@@ -466,6 +546,20 @@ class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
                     ),
                   ],
                 ),
+              ],
+              if (mealHistoryGroups.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                ...mealHistoryGroups.map((group) {
+                  final cardKey = 'meal:${group.dayKey}';
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _MealCompletionDayCard(
+                      group: group,
+                      expanded: _openMealDayCards.contains(cardKey),
+                      onToggle: () => _toggleMealDayCard(cardKey),
+                    ),
+                  );
+                }),
               ],
             ],
           ),
@@ -1332,6 +1426,48 @@ class _WorkoutExerciseLogRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 6),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 44,
+                        child: Text(
+                          'Set',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textMuted.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 52,
+                        child: Text(
+                          'Kg',
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textMuted.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Status',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textMuted.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 ...exercise.setDetails!.map((s) {
                   final oc = s.outcome.toUpperCase();
                   Color ocColor;
@@ -1342,6 +1478,12 @@ class _WorkoutExerciseLogRow extends StatelessWidget {
                   } else {
                     ocColor = AppColors.error;
                   }
+                  final w = s.weightKg;
+                  final weightLabel = w == null
+                      ? '—'
+                      : ((w - w.round()).abs() < 1e-6
+                          ? '${w.round()}'
+                          : w.toStringAsFixed(1));
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Row(
@@ -1358,7 +1500,19 @@ class _WorkoutExerciseLogRow extends StatelessWidget {
                             ),
                           ),
                         ),
-                        
+                        SizedBox(
+                          width: 52,
+                          child: Text(
+                            weightLabel,
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
@@ -1810,10 +1964,19 @@ List<_WeightDataPoint> _extractWeightHistory(
   final matches = <(DateTime, double)>[];
   for (final record in history) {
     for (final log in record.exerciseLogs) {
-      if (log.exerciseName.trim().toLowerCase() == normalized && log.wieghtKg > 0) {
-        final date = record.completedAt ??
-            DateTime.tryParse(record.completionDate) ??
-            DateTime.fromMillisecondsSinceEpoch(0);
+      if (log.exerciseName.trim().toLowerCase() != normalized) continue;
+      final date = record.completedAt ??
+          DateTime.tryParse(record.completionDate) ??
+          DateTime.fromMillisecondsSinceEpoch(0);
+      // Prefer per-set weights: use max completed-set weight for this exercise row.
+      final setWeights = log.setDetails
+          .where((s) => s.isCompleted && s.weightKg != null && s.weightKg! > 0)
+          .map((s) => s.weightKg!)
+          .toList();
+      if (setWeights.isNotEmpty) {
+        final maxKg = setWeights.reduce((a, b) => a > b ? a : b);
+        matches.add((date, maxKg));
+      } else if (log.wieghtKg > 0) {
         matches.add((date, log.wieghtKg));
       }
     }
@@ -2176,4 +2339,337 @@ class _WeightLinePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _WeightLinePainter old) =>
       old.weights != weights || old.lastLabel != lastLabel;
+}
+
+// ─── Meal Completion History Widgets ─────────────────────────────────────────
+
+(Color, Color, String) _mealDayBadgeStyle(String status) {
+  switch (status.toUpperCase()) {
+    case 'COMPLETED':
+      return (AppColors.successLight, AppColors.success, 'Completed');
+    case 'PARTIAL':
+      return (AppColors.warningLight, AppColors.warning, 'Partial');
+    case 'SKIPPED':
+      return (AppColors.errorLight, AppColors.error, 'Skipped');
+    default:
+      return (AppColors.surface, AppColors.textMuted, 'Logged');
+  }
+}
+
+class _MealCompletionDayCard extends StatelessWidget {
+  final _MealHistoryDayGroup group;
+  final bool expanded;
+  final VoidCallback onToggle;
+
+  const _MealCompletionDayCard({
+    required this.group,
+    required this.expanded,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final (badgeBg, badgeFg, badgeText) = _mealDayBadgeStyle(group.dayStatus);
+    final dayLabel = _formatDayHistoryLabel(group.day);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onToggle,
+              borderRadius: BorderRadius.vertical(
+                top: const Radius.circular(14),
+                bottom: Radius.circular(expanded ? 0 : 14),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 8, 12),
+                child: Row(
+                  children: [
+                    Text(
+                      dayLabel,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: badgeBg,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        badgeText,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                          color: badgeFg,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      group.metricText,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      expanded
+                          ? Icons.keyboard_arrow_up
+                          : Icons.keyboard_arrow_down,
+                      color: AppColors.textMuted,
+                      size: 22,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: group.records
+                    .map((r) => Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _MealCompletionRecordBlock(record: r),
+                        ))
+                    .toList(),
+              ),
+            ),
+            crossFadeState:
+                expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MealCompletionRecordBlock extends StatelessWidget {
+  final MealCompletionRecord record;
+
+  const _MealCompletionRecordBlock({required this.record});
+
+  @override
+  Widget build(BuildContext context) {
+    final timeText = _formatTimeOfDay(record.completedAt);
+    final meta = <String>[];
+    if ((record.nutritionPlanTitle).trim().isNotEmpty) {
+      meta.add(record.nutritionPlanTitle.trim());
+    }
+    if (timeText.isNotEmpty) meta.add(timeText);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      record.mealName,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: record.skipped
+                            ? AppColors.textMuted
+                            : AppColors.textPrimary,
+                        decoration: record.skipped
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
+                    ),
+                    if (meta.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        meta.join(' · '),
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: AppColors.textMuted.withValues(alpha: 0.95),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: record.skipped
+                      ? AppColors.errorLight
+                      : AppColors.successLight,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  record.skipped ? 'SKIPPED' : 'DONE',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    color: record.skipped
+                        ? AppColors.error
+                        : AppColors.success,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (record.hasDeviations &&
+              record.ingredientDeviations.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              'INGREDIENT CHANGES',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+                color: AppColors.textMuted.withValues(alpha: 0.9),
+              ),
+            ),
+            const SizedBox(height: 6),
+            ...record.ingredientDeviations
+                .map((dev) => _MealDeviationRow(deviation: dev)),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _MealDeviationRow extends StatelessWidget {
+  final MealIngredientDeviation deviation;
+
+  const _MealDeviationRow({required this.deviation});
+
+  @override
+  Widget build(BuildContext context) {
+    final isSkipped = deviation.isSkipped;
+    final dotColor = isSkipped ? AppColors.error : AppColors.warning;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: 5),
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: BoxDecoration(
+                color: dotColor,
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  deviation.originalIngredientName,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary,
+                    decoration: isSkipped ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                if (!isSkipped &&
+                    (deviation.replacementIngredientName ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      const Icon(Icons.swap_horiz,
+                          size: 12, color: AppColors.warning),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          deviation.replacementIngredientName!,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                      if (deviation.newQuantity != null)
+                        Text(
+                          '${deviation.newQuantity!.toStringAsFixed(0)}g',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                    ],
+                  ),
+                ] else if (isSkipped)
+                  Text(
+                    'Skipped',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.error.withValues(alpha: 0.85),
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: dotColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              isSkipped ? 'SKIPPED' : 'SWAPPED',
+              style: TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.w800,
+                color: dotColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

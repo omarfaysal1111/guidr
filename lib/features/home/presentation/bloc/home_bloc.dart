@@ -149,7 +149,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           dateString: dateString,
           sessionsToday: todaysSessions.length,
           needsAttention: needsAttentionCount,
-          isPremium: false, // TODO: from subscription when available
+          isPremium: false, 
           activeClients: activeClients,
           maxClients: maxClients,
           avgAdherence:

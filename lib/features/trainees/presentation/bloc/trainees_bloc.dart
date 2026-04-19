@@ -77,6 +77,125 @@ class UpdateTraineeGoalLevelEvent extends TraineesEvent {
   List<Object?> get props => [traineeId, goal, level];
 }
 
+class SaveCoachNotesEvent extends TraineesEvent {
+  final String traineeId;
+  final String feedback;
+  final String caution;
+
+  const SaveCoachNotesEvent({
+    required this.traineeId,
+    required this.feedback,
+    required this.caution,
+  });
+
+  @override
+  List<Object?> get props => [traineeId, feedback, caution];
+}
+
+class AddGoalEvent extends TraineesEvent {
+  final String traineeId;
+  final String title;
+
+  const AddGoalEvent({required this.traineeId, required this.title});
+
+  @override
+  List<Object?> get props => [traineeId, title];
+}
+
+class ToggleGoalEvent extends TraineesEvent {
+  final String traineeId;
+  final String goalId;
+  final bool completed;
+
+  const ToggleGoalEvent({
+    required this.traineeId,
+    required this.goalId,
+    required this.completed,
+  });
+
+  @override
+  List<Object?> get props => [traineeId, goalId, completed];
+}
+
+class DeleteGoalEvent extends TraineesEvent {
+  final String traineeId;
+  final String goalId;
+
+  const DeleteGoalEvent({required this.traineeId, required this.goalId});
+
+  @override
+  List<Object?> get props => [traineeId, goalId];
+}
+
+class EditGoalEvent extends TraineesEvent {
+  final String traineeId;
+  final String goalId;
+  final String newTitle;
+
+  const EditGoalEvent({
+    required this.traineeId,
+    required this.goalId,
+    required this.newTitle,
+  });
+
+  @override
+  List<Object?> get props => [traineeId, goalId, newTitle];
+}
+
+class UploadInBodyReportEvent extends TraineesEvent {
+  final String traineeId;
+  final List<int> fileBytes;
+  final String fileName;
+
+  const UploadInBodyReportEvent({
+    required this.traineeId,
+    required this.fileBytes,
+    required this.fileName,
+  });
+
+  @override
+  List<Object?> get props => [traineeId, fileName, fileBytes.length];
+}
+
+class UploadProgressPhotoEvent extends TraineesEvent {
+  final String traineeId;
+  final List<int> fileBytes;
+  final String fileName;
+
+  const UploadProgressPhotoEvent({
+    required this.traineeId,
+    required this.fileBytes,
+    required this.fileName,
+  });
+
+  @override
+  List<Object?> get props => [traineeId, fileName, fileBytes.length];
+}
+
+class ArchiveTraineeEvent extends TraineesEvent {
+  final String traineeId;
+  const ArchiveTraineeEvent(this.traineeId);
+  @override
+  List<Object?> get props => [traineeId];
+}
+
+class DeleteTraineeEvent extends TraineesEvent {
+  final String traineeId;
+  const DeleteTraineeEvent(this.traineeId);
+  @override
+  List<Object?> get props => [traineeId];
+}
+
+enum TraineeSortField { name, adherence, streak }
+
+class SortTraineesEvent extends TraineesEvent {
+  final TraineeSortField field;
+  final bool ascending;
+  const SortTraineesEvent({required this.field, this.ascending = true});
+  @override
+  List<Object?> get props => [field, ascending];
+}
+
 // States
 abstract class TraineesState extends Equatable {
   const TraineesState();
@@ -103,6 +222,14 @@ class TraineesLoaded extends TraineesState {
   final bool traineeDetailLoading;
   final bool goalLevelSaving;
   final String? goalLevelError;
+  final bool coachNotesSaving;
+  final String? coachNotesError;
+  final bool goalsSaving;
+  final String? goalsError;
+  final bool inbodyUploadSaving;
+  final String? inbodyUploadError;
+  final bool progressPhotoUploadSaving;
+  final String? progressPhotoUploadError;
 
   const TraineesLoaded({
     required this.allTrainees,
@@ -118,6 +245,14 @@ class TraineesLoaded extends TraineesState {
     this.traineeDetailLoading = false,
     this.goalLevelSaving = false,
     this.goalLevelError,
+    this.coachNotesSaving = false,
+    this.coachNotesError,
+    this.goalsSaving = false,
+    this.goalsError,
+    this.inbodyUploadSaving = false,
+    this.inbodyUploadError,
+    this.progressPhotoUploadSaving = false,
+    this.progressPhotoUploadError,
   });
 
   TraineesLoaded copyWith({
@@ -137,6 +272,18 @@ class TraineesLoaded extends TraineesState {
     bool? goalLevelSaving,
     String? goalLevelError,
     bool clearGoalLevelError = false,
+    bool? coachNotesSaving,
+    String? coachNotesError,
+    bool clearCoachNotesError = false,
+    bool? goalsSaving,
+    String? goalsError,
+    bool clearGoalsError = false,
+    bool? inbodyUploadSaving,
+    String? inbodyUploadError,
+    bool clearInbodyUploadError = false,
+    bool? progressPhotoUploadSaving,
+    String? progressPhotoUploadError,
+    bool clearProgressPhotoUploadError = false,
   }) {
     return TraineesLoaded(
       allTrainees: allTrainees ?? this.allTrainees,
@@ -154,6 +301,18 @@ class TraineesLoaded extends TraineesState {
       traineeDetailLoading: traineeDetailLoading ?? this.traineeDetailLoading,
       goalLevelSaving: goalLevelSaving ?? this.goalLevelSaving,
       goalLevelError: clearGoalLevelError ? null : (goalLevelError ?? this.goalLevelError),
+      coachNotesSaving: coachNotesSaving ?? this.coachNotesSaving,
+      coachNotesError: clearCoachNotesError ? null : (coachNotesError ?? this.coachNotesError),
+      goalsSaving: goalsSaving ?? this.goalsSaving,
+      goalsError: clearGoalsError ? null : (goalsError ?? this.goalsError),
+      inbodyUploadSaving: inbodyUploadSaving ?? this.inbodyUploadSaving,
+      inbodyUploadError: clearInbodyUploadError
+          ? null
+          : (inbodyUploadError ?? this.inbodyUploadError),
+      progressPhotoUploadSaving: progressPhotoUploadSaving ?? this.progressPhotoUploadSaving,
+      progressPhotoUploadError: clearProgressPhotoUploadError
+          ? null
+          : (progressPhotoUploadError ?? this.progressPhotoUploadError),
     );
   }
 
@@ -172,6 +331,14 @@ class TraineesLoaded extends TraineesState {
         traineeDetailLoading,
         goalLevelSaving,
         goalLevelError,
+        coachNotesSaving,
+        coachNotesError,
+        goalsSaving,
+        goalsError,
+        inbodyUploadSaving,
+        inbodyUploadError,
+        progressPhotoUploadSaving,
+        progressPhotoUploadError,
       ];
 }
 
@@ -330,5 +497,210 @@ class TraineesBloc extends Bloc<TraineesEvent, TraineesState> {
         }
       }
     });
+
+    on<SaveCoachNotesEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        final currentState = state as TraineesLoaded;
+        emit(currentState.copyWith(coachNotesSaving: true, clearCoachNotesError: true));
+        try {
+          await repository.saveCoachNotes(event.traineeId, event.feedback, event.caution);
+          final updated = await repository.getTraineeDetails(event.traineeId);
+          emit(currentState.copyWith(
+            coachNotesSaving: false,
+            traineeDetail: updated,
+            clearCoachNotesError: true,
+          ));
+        } catch (e) {
+          emit(currentState.copyWith(
+            coachNotesSaving: false,
+            coachNotesError: e.toString().replaceFirst('Exception: ', ''),
+          ));
+        }
+      }
+    });
+
+    on<AddGoalEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        await _runGoalsMutation(
+          state as TraineesLoaded,
+          emit,
+          event.traineeId,
+          () => repository.addGoal(event.traineeId, event.title),
+        );
+      }
+    });
+
+    on<ToggleGoalEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        await _runGoalsMutation(
+          state as TraineesLoaded,
+          emit,
+          event.traineeId,
+          () => repository.toggleGoal(event.traineeId, event.goalId, event.completed),
+        );
+      }
+    });
+
+    on<DeleteGoalEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        await _runGoalsMutation(
+          state as TraineesLoaded,
+          emit,
+          event.traineeId,
+          () => repository.deleteGoal(event.traineeId, event.goalId),
+        );
+      }
+    });
+
+    on<EditGoalEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        await _runGoalsMutation(
+          state as TraineesLoaded,
+          emit,
+          event.traineeId,
+          () => repository.editGoal(event.goalId, event.newTitle),
+        );
+      }
+    });
+
+    on<UploadInBodyReportEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        final currentState = state as TraineesLoaded;
+        emit(currentState.copyWith(inbodyUploadSaving: true, clearInbodyUploadError: true));
+        try {
+          await repository.uploadInBodyReport(
+            event.traineeId,
+            event.fileBytes,
+            event.fileName,
+          );
+          final updated = await repository.getTraineeDetails(event.traineeId);
+          emit(currentState.copyWith(
+            inbodyUploadSaving: false,
+            traineeDetail: updated,
+            clearInbodyUploadError: true,
+          ));
+        } catch (e) {
+          emit(currentState.copyWith(
+            inbodyUploadSaving: false,
+            inbodyUploadError: e.toString().replaceFirst('Exception: ', ''),
+          ));
+        }
+      }
+    });
+
+    on<UploadProgressPhotoEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        final currentState = state as TraineesLoaded;
+        emit(currentState.copyWith(
+          progressPhotoUploadSaving: true,
+          clearProgressPhotoUploadError: true,
+        ));
+        try {
+          await repository.uploadProgressPhoto(
+            event.traineeId,
+            event.fileBytes,
+            event.fileName,
+          );
+          final updated = await repository.getTraineeDetails(event.traineeId);
+          emit(currentState.copyWith(
+            progressPhotoUploadSaving: false,
+            traineeDetail: updated,
+            clearProgressPhotoUploadError: true,
+          ));
+        } catch (e) {
+          emit(currentState.copyWith(
+            progressPhotoUploadSaving: false,
+            progressPhotoUploadError: e.toString().replaceFirst('Exception: ', ''),
+          ));
+        }
+      }
+    });
+
+    on<ArchiveTraineeEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        final currentState = state as TraineesLoaded;
+        try {
+          await repository.archiveTrainee(event.traineeId);
+          final trainees = await repository.getMyTrainees();
+          emit(TraineesLoaded(
+            allTrainees: trainees,
+            filteredTrainees: trainees,
+            activeFilter: 'all',
+            searchQuery: '',
+            isBulkMode: false,
+            selectedIds: const [],
+          ));
+        } catch (e) {
+          emit(currentState.copyWith(
+            goalsError: e.toString().replaceFirst('Exception: ', ''),
+          ));
+        }
+      }
+    });
+
+    on<DeleteTraineeEvent>((event, emit) async {
+      if (state is TraineesLoaded) {
+        final currentState = state as TraineesLoaded;
+        try {
+          await repository.deleteTrainee(event.traineeId);
+          final trainees = await repository.getMyTrainees();
+          emit(TraineesLoaded(
+            allTrainees: trainees,
+            filteredTrainees: trainees,
+            activeFilter: 'all',
+            searchQuery: '',
+            isBulkMode: false,
+            selectedIds: const [],
+          ));
+        } catch (e) {
+          emit(currentState.copyWith(
+            goalsError: e.toString().replaceFirst('Exception: ', ''),
+          ));
+        }
+      }
+    });
+
+    on<SortTraineesEvent>((event, emit) {
+      if (state is TraineesLoaded) {
+        final currentState = state as TraineesLoaded;
+        final sorted = List<Trainee>.from(currentState.filteredTrainees);
+        sorted.sort((a, b) {
+          int cmp;
+          switch (event.field) {
+            case TraineeSortField.name:
+              cmp = a.name.compareTo(b.name);
+            case TraineeSortField.adherence:
+              cmp = a.adherence.compareTo(b.adherence);
+            case TraineeSortField.streak:
+              cmp = a.currentStreak.compareTo(b.currentStreak);
+          }
+          return event.ascending ? cmp : -cmp;
+        });
+        emit(currentState.copyWith(filteredTrainees: sorted));
+      }
+    });
+  }
+
+  Future<void> _runGoalsMutation(
+    TraineesLoaded currentState,
+    Emitter<TraineesState> emit,
+    String traineeId,
+    Future<void> Function() request,
+  ) async {
+    emit(currentState.copyWith(goalsSaving: true, clearGoalsError: true));
+    try {
+      await request();
+      final updated = await repository.getTraineeDetails(traineeId);
+      emit(currentState.copyWith(
+        goalsSaving: false,
+        traineeDetail: updated,
+        clearGoalsError: true,
+      ));
+    } catch (e) {
+      emit(currentState.copyWith(
+        goalsSaving: false,
+        goalsError: e.toString().replaceFirst('Exception: ', ''),
+      ));
+    }
   }
 }

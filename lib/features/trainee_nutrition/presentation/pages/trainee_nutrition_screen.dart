@@ -1,10 +1,14 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
 import 'package:guidr/features/trainee_app/domain/entities/ingredient_library_item.dart';
+import 'package:guidr/features/trainee_app/domain/entities/meal_completion_request.dart';
 import 'package:guidr/features/trainee_app/domain/entities/nutrition_plan_detail.dart';
 import 'package:guidr/features/trainee_app/domain/entities/trainee_dashboard_today.dart';
 import 'package:guidr/features/trainee_app/domain/repositories/trainee_app_repository.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../widgets/food_search_sheet.dart';
 
 // ---------------------------------------------------------------------------
 // Screen
@@ -85,13 +89,28 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
       }
     });
     try {
-      await di.sl<TraineeAppRepository>().completeMeal(mealId);
+      final request = MealCompletionRequest(
+        skipMeal: false,
+        skippedIngredientIds:
+            (_skippedIngredients[mealId] ?? {}).toList(),
+        replacedIngredients: (_swappedIngredients[mealId] ?? {})
+            .entries
+            .map((e) => IngredientSwapRequest(
+                  originalIngredientId: e.key,
+                  newIngredientId: e.value.id,
+                ))
+            .toList(),
+      );
+      await di.sl<TraineeAppRepository>().completeMeal(mealId, request);
       if (mounted) _showToast(wasCompleted ? 'Meal unmarked' : 'Meal completed!', success: true);
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        if (wasCompleted) _completedMeals.add(mealId);
-        else _completedMeals.remove(mealId);
+        if (wasCompleted) {
+          _completedMeals.add(mealId);
+        } else {
+          _completedMeals.remove(mealId);
+        }
       });
       _showToast(e.toString().replaceFirst('Exception: ', ''), success: false);
     }
@@ -108,38 +127,37 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
       }
     });
     try {
-      await di.sl<TraineeAppRepository>().skipMeal(mealId);
+      final request = MealCompletionRequest(skipMeal: !wasSkipped);
+      await di.sl<TraineeAppRepository>().completeMeal(mealId, request);
       if (mounted) _showToast(wasSkipped ? 'Meal unskipped' : 'Meal skipped', success: true);
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        if (wasSkipped) _skippedMeals.add(mealId);
-        else _skippedMeals.remove(mealId);
+        if (wasSkipped) {
+          _skippedMeals.add(mealId);
+        } else {
+          _skippedMeals.remove(mealId);
+        }
       });
       _showToast(e.toString().replaceFirst('Exception: ', ''), success: false);
     }
   }
 
   // ── Ingredient actions ─────────────────────────────────────────────────────
+  // These only update local state. Deviations are sent with the meal
+  // completion/skip request when the user taps "Mark Done" or "Skip Meal".
 
-  Future<void> _skipIngredient(int mealId, int ingredientId) async {
+  void _skipIngredient(int mealId, int ingredientId) {
     final set = _skippedIngredients[mealId] ??= {};
-    final wasSkipped = set.contains(ingredientId);
     setState(() {
-      if (wasSkipped) set.remove(ingredientId);
-      else set.add(ingredientId);
+      if (set.contains(ingredientId)) {
+        set.remove(ingredientId);
+      } else {
+        set.add(ingredientId);
+        // Clear any existing swap for this ingredient
+        _swappedIngredients[mealId]?.remove(ingredientId);
+      }
     });
-    try {
-      await di.sl<TraineeAppRepository>().skipIngredient(mealId, ingredientId);
-      if (mounted) _showToast(wasSkipped ? 'Ingredient restored' : 'Ingredient skipped', success: true);
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        if (wasSkipped) set.add(ingredientId);
-        else set.remove(ingredientId);
-      });
-      _showToast(e.toString().replaceFirst('Exception: ', ''), success: false);
-    }
   }
 
   void _openSwapSheet(int mealId, NutritionIngredient ingredient) {
@@ -153,31 +171,20 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
       builder: (ctx) => _IngredientSwapSheet(
         mealId: mealId,
         ingredient: ingredient,
-        onSwap: (newIngredient) async {
+        onSwap: (newIngredient) {
           Navigator.pop(ctx);
-          await _doSwap(mealId, ingredient.id, newIngredient);
+          _doSwap(mealId, ingredient.id, newIngredient);
         },
       ),
     );
   }
 
-  Future<void> _doSwap(
-      int mealId, int ingredientId, IngredientLibraryItem newIngredient) async {
+  void _doSwap(int mealId, int ingredientId, IngredientLibraryItem newIngredient) {
     setState(() {
       (_swappedIngredients[mealId] ??= {})[ingredientId] = newIngredient;
+      // Clear any skip for this ingredient since it's being swapped
+      _skippedIngredients[mealId]?.remove(ingredientId);
     });
-    try {
-      await di
-          .sl<TraineeAppRepository>()
-          .swapIngredient(mealId, ingredientId, newIngredient.id);
-      if (mounted) {
-        _showToast('Swapped to ${newIngredient.name}', success: true);
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _swappedIngredients[mealId]?.remove(ingredientId));
-      _showToast(e.toString().replaceFirst('Exception: ', ''), success: false);
-    }
   }
 
   void _showToast(String message, {required bool success}) {
@@ -206,6 +213,8 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
     // Flatten all meals from all plans for display
     final allMeals = _plans.expand((p) => p.meals).toList();
     final mealsLogged = _completedMeals.length;
+    final waterGlasses = dashboard?.weeklyGoals.waterLiters ?? 0;
+    final waterTarget = (dashboard?.weeklyGoals.waterTargetLiters ?? 8).clamp(1, 20);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -222,6 +231,27 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
           ),
         ),
         actions: [
+          IconButton(
+            tooltip: 'Log extra food',
+            icon: const Icon(Icons.add_circle_outline, color: AppColors.textPrimary),
+            onPressed: _loading || _error != null
+                ? null
+                : () {
+                    showModalBottomSheet<void>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                      ),
+                      builder: (ctx) => FoodSearchSheet(
+                        onLogged: () {
+                          if (mounted) _load();
+                        },
+                      ),
+                    );
+                  },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_none_outlined,
                 color: AppColors.textPrimary),
@@ -464,9 +494,9 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                const Text(
-                                  '5/8 glasses',
-                                  style: TextStyle(
+                                Text(
+                                  '$waterGlasses/$waterTarget glasses',
+                                  style: const TextStyle(
                                     fontSize: 11,
                                     color: AppColors.textSecondary,
                                   ),
@@ -481,12 +511,12 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                     spacing: 6,
                                     runSpacing: 6,
                                     children: List.generate(
-                                      8,
+                                      waterTarget,
                                       (i) => Container(
                                         width: 28,
                                         height: 28,
                                         decoration: BoxDecoration(
-                                          color: i < 5
+                                          color: i < waterGlasses
                                               ? AppColors.primaryLight
                                               : AppColors.surface,
                                           borderRadius:
@@ -495,7 +525,7 @@ class _TraineeNutritionScreenState extends State<TraineeNutritionScreen> {
                                         child: Icon(
                                           Icons.water_drop,
                                           size: 16,
-                                          color: i < 5
+                                          color: i < waterGlasses
                                               ? AppColors.primary
                                               : AppColors.textMuted,
                                         ),
@@ -1243,15 +1273,19 @@ class _IngredientSwapSheetState extends State<_IngredientSwapSheet> {
     try {
       final results =
           await di.sl<TraineeAppRepository>().searchIngredients(query.trim());
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _results = results;
         _searching = false;
       });
+      }
     } catch (e) {
-      if (mounted) setState(() {
+      if (mounted) {
+        setState(() {
         _searchError = e.toString().replaceFirst('Exception: ', '');
         _searching = false;
       });
+      }
     }
   }
 

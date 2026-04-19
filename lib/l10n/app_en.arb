@@ -1,0 +1,391 @@
+{
+  "@@locale": "en",
+
+  "appName": "Guider",
+  "@appName": { "description": "Application name" },
+
+  "language": "Language",
+  "@language": { "description": "Language setting label" },
+
+  "languageEnglish": "English",
+  "@languageEnglish": { "description": "English language option" },
+
+  "languageArabic": "Arabic",
+  "@languageArabic": { "description": "Arabic language option" },
+
+  "units": "Units",
+  "@units": { "description": "Units setting label" },
+
+  "unitsMetric": "Metric (kg / cm)",
+  "@unitsMetric": { "description": "Metric units option" },
+
+  "unitsImperial": "Imperial (lb / in)",
+  "@unitsImperial": { "description": "Imperial units option" },
+
+  "selectLanguage": "Select Language",
+  "@selectLanguage": { "description": "Language picker title" },
+
+  "selectUnits": "Select Units",
+  "@selectUnits": { "description": "Units picker title" },
+
+  "settings": "Settings",
+  "@settings": { "description": "Settings screen title" },
+
+  "profile": "Profile",
+  "@profile": { "description": "Profile screen title" },
+
+  "account": "Account",
+  "@account": { "description": "Account section header" },
+
+  "preferences": "Preferences",
+  "@preferences": { "description": "Preferences section header" },
+
+  "support": "Support",
+  "@support": { "description": "Support section header" },
+
+  "editProfile": "Edit Profile",
+  "@editProfile": { "description": "Edit profile tile" },
+
+  "subscriptionPlan": "Subscription Plan",
+  "@subscriptionPlan": { "description": "Subscription plan tile" },
+
+  "billingInfo": "Billing Info",
+  "@billingInfo": { "description": "Billing info tile" },
+
+  "notifications": "Notifications",
+  "@notifications": { "description": "Notifications tile" },
+
+  "helpCenter": "Help Center",
+  "@helpCenter": { "description": "Help center tile" },
+
+  "contactUs": "Contact Us",
+  "@contactUs": { "description": "Contact us tile" },
+
+  "logOut": "Log Out",
+  "@logOut": { "description": "Log out button" },
+
+  "login": "Log In",
+  "@login": { "description": "Log in button" },
+
+  "register": "Register",
+  "@register": { "description": "Register button" },
+
+  "email": "Email",
+  "@email": { "description": "Email field label" },
+
+  "password": "Password",
+  "@password": { "description": "Password field label" },
+
+  "fullName": "Full Name",
+  "@fullName": { "description": "Full name field label" },
+
+  "retry": "Retry",
+  "@retry": { "description": "Retry button" },
+
+  "loading": "Loading…",
+  "@loading": { "description": "Generic loading text" },
+
+  "error": "Something went wrong",
+  "@error": { "description": "Generic error message" },
+
+  "save": "Save",
+  "@save": { "description": "Save button" },
+
+  "cancel": "Cancel",
+  "@cancel": { "description": "Cancel button" },
+
+  "delete": "Delete",
+  "@delete": { "description": "Delete button" },
+
+  "confirm": "Confirm",
+  "@confirm": { "description": "Confirm button" },
+
+  "done": "Done",
+  "@done": { "description": "Done button" },
+
+  "add": "Add",
+  "@add": { "description": "Add button" },
+
+  "edit": "Edit",
+  "@edit": { "description": "Edit button" },
+
+  "search": "Search",
+  "@search": { "description": "Search placeholder" },
+
+  "noData": "No data available",
+  "@noData": { "description": "Empty state message" },
+
+  "today": "Today",
+  "@today": { "description": "Today label" },
+
+  "yesterday": "Yesterday",
+  "@yesterday": { "description": "Yesterday label" },
+
+  "home": "Home",
+  "@home": { "description": "Home tab label" },
+
+  "trainees": "Trainees",
+  "@trainees": { "description": "Trainees tab label" },
+
+  "trainee": "Trainee",
+  "@trainee": { "description": "Trainee label" },
+
+  "coach": "Coach",
+  "@coach": { "description": "Coach label" },
+
+  "workout": "Workout",
+  "@workout": { "description": "Workout label" },
+
+  "nutrition": "Nutrition",
+  "@nutrition": { "description": "Nutrition label" },
+
+  "progress": "Progress",
+  "@progress": { "description": "Progress label" },
+
+  "plans": "Plans",
+  "@plans": { "description": "Plans tab label" },
+
+  "chat": "Chat",
+  "@chat": { "description": "Chat tab label" },
+
+  "inviteTrainee": "Invite Trainee",
+  "@inviteTrainee": { "description": "Invite trainee button" },
+
+  "sortBy": "Sort by",
+  "@sortBy": { "description": "Sort by label" },
+
+  "filter": "Filter",
+  "@filter": { "description": "Filter label" },
+
+  "name": "Name",
+  "@name": { "description": "Name sort option" },
+
+  "streak": "Streak",
+  "@streak": { "description": "Streak label" },
+
+  "days": "{count, plural, one{{count} day} other{{count} days}}",
+  "@days": {
+    "description": "Days count",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "currentStreak": "Current Streak",
+  "@currentStreak": { "description": "Current streak label" },
+
+  "weight": "Weight",
+  "@weight": { "description": "Weight label" },
+
+  "height": "Height",
+  "@height": { "description": "Height label" },
+
+  "age": "Age",
+  "@age": { "description": "Age label" },
+
+  "goal": "Goal",
+  "@goal": { "description": "Goal label" },
+
+  "goals": "Goals",
+  "@goals": { "description": "Goals label" },
+
+  "addGoal": "Add Goal",
+  "@addGoal": { "description": "Add goal button" },
+
+  "notes": "Notes",
+  "@notes": { "description": "Notes label" },
+
+  "coachNotes": "Coach Notes",
+  "@coachNotes": { "description": "Coach notes section" },
+
+  "cautionNotes": "Caution Notes",
+  "@cautionNotes": { "description": "Caution notes section" },
+
+  "feedback": "Feedback",
+  "@feedback": { "description": "Feedback label" },
+
+  "measurements": "Measurements",
+  "@measurements": { "description": "Measurements section" },
+
+  "photos": "Photos",
+  "@photos": { "description": "Photos label" },
+
+  "inBodyReports": "InBody Reports",
+  "@inBodyReports": { "description": "InBody reports section" },
+
+  "uploadReport": "Upload Report",
+  "@uploadReport": { "description": "Upload report button" },
+
+  "workoutHistory": "Workout History",
+  "@workoutHistory": { "description": "Workout history section" },
+
+  "mealPlan": "Meal Plan",
+  "@mealPlan": { "description": "Meal plan section" },
+
+  "workoutPlan": "Workout Plan",
+  "@workoutPlan": { "description": "Workout plan section" },
+
+  "calories": "Calories",
+  "@calories": { "description": "Calories label" },
+
+  "protein": "Protein",
+  "@protein": { "description": "Protein label" },
+
+  "carbs": "Carbs",
+  "@carbs": { "description": "Carbs label" },
+
+  "fat": "Fat",
+  "@fat": { "description": "Fat label" },
+
+  "sets": "Sets",
+  "@sets": { "description": "Sets label" },
+
+  "reps": "Reps",
+  "@reps": { "description": "Reps label" },
+
+  "exercise": "Exercise",
+  "@exercise": { "description": "Exercise label" },
+
+  "exercises": "Exercises",
+  "@exercises": { "description": "Exercises label" },
+
+  "complete": "Complete",
+  "@complete": { "description": "Complete button" },
+
+  "completed": "Completed",
+  "@completed": { "description": "Completed status" },
+
+  "skipped": "Skipped",
+  "@skipped": { "description": "Skipped status" },
+
+  "pending": "Pending",
+  "@pending": { "description": "Pending status" },
+
+  "active": "Active",
+  "@active": { "description": "Active status" },
+
+  "archived": "Archived",
+  "@archived": { "description": "Archived status" },
+
+  "archiveTrainee": "Archive Trainee",
+  "@archiveTrainee": { "description": "Archive trainee option" },
+
+  "deleteTrainee": "Delete Trainee",
+  "@deleteTrainee": { "description": "Delete trainee option" },
+
+  "confirmDelete": "Are you sure you want to delete?",
+  "@confirmDelete": { "description": "Delete confirmation message" },
+
+  "confirmArchive": "Are you sure you want to archive this trainee?",
+  "@confirmArchive": { "description": "Archive confirmation message" },
+
+  "needsAttention": "Needs Attention",
+  "@needsAttention": { "description": "Needs attention section" },
+
+  "activityFeed": "Activity Feed",
+  "@activityFeed": { "description": "Activity feed section" },
+
+  "badges": "Badges",
+  "@badges": { "description": "Badges section" },
+
+  "achievements": "Achievements",
+  "@achievements": { "description": "Achievements label" },
+
+  "logWeight": "Log Weight",
+  "@logWeight": { "description": "Log weight button" },
+
+  "logMeal": "Log Meal",
+  "@logMeal": { "description": "Log meal button" },
+
+  "searchFood": "Search Food",
+  "@searchFood": { "description": "Search food placeholder" },
+
+  "addMeal": "Add Meal",
+  "@addMeal": { "description": "Add meal button" },
+
+  "date": "Date",
+  "@date": { "description": "Date label" },
+
+  "darkMode": "Dark Mode",
+  "@darkMode": { "description": "Dark mode toggle" },
+
+  "theme": "Theme",
+  "@theme": { "description": "Theme section" },
+
+  "free": "Free",
+  "@free": { "description": "Free plan badge" },
+
+  "kg": "kg",
+  "@kg": { "description": "Kilograms unit" },
+
+  "lb": "lb",
+  "@lb": { "description": "Pounds unit" },
+
+  "cm": "cm",
+  "@cm": { "description": "Centimetres unit" },
+
+  "inchUnit": "in",
+  "@inchUnit": { "description": "Inches unit" },
+
+  "welcomeBack": "Welcome back",
+  "@welcomeBack": { "description": "Welcome message" },
+
+  "todaysPlan": "Today's Plan",
+  "@todaysPlan": { "description": "Today's plan section" },
+
+  "noActiveWorkout": "No active workout plan",
+  "@noActiveWorkout": { "description": "No workout plan message" },
+
+  "noActiveMealPlan": "No active meal plan",
+  "@noActiveMealPlan": { "description": "No meal plan message" },
+
+  "startWorkout": "Start Workout",
+  "@startWorkout": { "description": "Start workout button" },
+
+  "viewAll": "View All",
+  "@viewAll": { "description": "View all button" },
+
+  "session": "Session",
+  "@session": { "description": "Session label" },
+
+  "sessions": "Sessions",
+  "@sessions": { "description": "Sessions label" },
+
+  "assign": "Assign",
+  "@assign": { "description": "Assign button" },
+
+  "assignWorkout": "Assign Workout",
+  "@assignWorkout": { "description": "Assign workout button" },
+
+  "assignNutrition": "Assign Nutrition",
+  "@assignNutrition": { "description": "Assign nutrition button" },
+
+  "bulkActions": "Bulk Actions",
+  "@bulkActions": { "description": "Bulk actions label" },
+
+  "selected": "{count} selected",
+  "@selected": {
+    "description": "Selected count",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "notificationPreferences": "Notification Preferences",
+  "@notificationPreferences": { "description": "Notification preferences label" },
+
+  "enableNotifications": "Enable Notifications",
+  "@enableNotifications": { "description": "Enable notifications toggle" },
+
+  "workoutReminders": "Workout Reminders",
+  "@workoutReminders": { "description": "Workout reminders toggle" },
+
+  "mealReminders": "Meal Reminders",
+  "@mealReminders": { "description": "Meal reminders toggle" },
+
+  "progressUpdates": "Progress Updates",
+  "@progressUpdates": { "description": "Progress updates toggle" },
+
+  "chatMessages": "Chat Messages",
+  "@chatMessages": { "description": "Chat messages toggle" }
+}

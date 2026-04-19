@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/theme/app_colors.dart';
@@ -87,7 +89,7 @@ class TraineesView extends StatelessWidget {
                         ),
                       ),
                       TextButton.icon(
-                        onPressed: () {},
+                        onPressed: () => _showSortSheet(context),
                         icon: const Icon(Icons.swap_vert, size: 16),
                         label: const Text('Sort'),
                         style: TextButton.styleFrom(
@@ -262,7 +264,7 @@ class TraineesView extends StatelessWidget {
                                 ),
                               ),
                              
-                              // Adherence Score
+                              // Adherence + Streak
                               if (!state.isBulkMode && !isPending)
                                 Padding(
                                   padding: const EdgeInsets.only(left: 12),
@@ -287,6 +289,24 @@ class TraineesView extends StatelessWidget {
                                           color: AppColors.textMuted,
                                         ),
                                       ),
+                                      if (trainee.currentStreak > 0) ...[
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Text('🔥', style: TextStyle(fontSize: 12)),
+                                            const SizedBox(width: 2),
+                                            Text(
+                                              '${trainee.currentStreak}d',
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                fontWeight: FontWeight.w700,
+                                                color: AppColors.textSecondary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
@@ -402,6 +422,47 @@ class TraineesView extends StatelessWidget {
           return const SizedBox.shrink();
         },
       ),
+    );
+  }
+
+  void _showSortSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+              child: Text(
+                'Sort Trainees',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+              ),
+            ),
+            _sortTile(ctx, 'Name A–Z', TraineeSortField.name, ascending: true),
+            _sortTile(ctx, 'Name Z–A', TraineeSortField.name, ascending: false),
+            _sortTile(ctx, 'Highest Adherence', TraineeSortField.adherence, ascending: false),
+            _sortTile(ctx, 'Lowest Adherence', TraineeSortField.adherence, ascending: true),
+            _sortTile(ctx, 'Longest Streak', TraineeSortField.streak, ascending: false),
+            _sortTile(ctx, 'Shortest Streak', TraineeSortField.streak, ascending: true),
+            const SizedBox(height: 12),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sortTile(BuildContext ctx, String label, TraineeSortField field, {required bool ascending}) {
+    return ListTile(
+      title: Text(label, style: const TextStyle(fontSize: 15)),
+      onTap: () {
+        ctx.read<TraineesBloc>().add(SortTraineesEvent(field: field, ascending: ascending));
+        Navigator.pop(ctx);
+      },
     );
   }
 

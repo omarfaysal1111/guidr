@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
@@ -78,7 +80,7 @@ class _TraineeWorkoutRunnerScreenState
     if (widget.detail.exercises.isNotEmpty) {
       final first = widget.detail.exercises.first;
       _weightText = first.load ?? '60 kg';
-      _repsCount = int.parse( first.reps.toString());
+      _repsCount = int.tryParse(first.reps.toString()) ?? 0;
     }
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() => _elapsedSeconds++);
@@ -1080,7 +1082,7 @@ class _TraineeWorkoutRunnerScreenState
               setState(() {
                 _currentExerciseIndex = index;
                 _weightText = e.load ?? _weightText;
-                _repsCount =int.parse( e.reps.toString());
+                _repsCount = int.tryParse(e.reps.toString()) ?? 0;
               });
             },
             child: Container(
@@ -1226,7 +1228,11 @@ class _TraineeWorkoutRunnerScreenState
     setState(() {
       switch (outcome) {
         case SetLogOutcome.completed:
-          _setLogs[i].add(_RunnerSetLog.completed());
+          final numMatch = RegExp(r'(\d+(?:\.\d+)?)').firstMatch(_weightText);
+          final parsedKg = numMatch != null
+              ? double.tryParse(numMatch.group(1) ?? '')
+              : null;
+          _setLogs[i].add(_RunnerSetLog.completed(weightKg: parsedKg));
         case SetLogOutcome.skipped:
           _setLogs[i].add(_RunnerSetLog.skipped(reason));
         case SetLogOutcome.missed:
@@ -1271,7 +1277,7 @@ class _TraineeWorkoutRunnerScreenState
       setState(() {
         _currentExerciseIndex++;
         _weightText = exercises[_currentExerciseIndex].load ?? _weightText;
-        _repsCount = int.parse(exercises[_currentExerciseIndex].reps.toString());
+        _repsCount = int.tryParse(exercises[_currentExerciseIndex].reps.toString()) ?? 0;
       });
     }
   }
@@ -1294,7 +1300,10 @@ class _TraineeWorkoutRunnerScreenState
       final row = <ExerciseSetLogRequest>[];
       for (final entry in _setLogs[i]) {
         if (entry.outcome == SetLogOutcome.completed) {
-          row.add(const ExerciseSetLogRequest(outcome: SetLogOutcome.completed));
+          row.add(ExerciseSetLogRequest(
+            outcome: SetLogOutcome.completed,
+            weightKg: entry.weightKg,
+          ));
         } else {
           final r = (entry.reason ?? '').trim();
           row.add(ExerciseSetLogRequest(
@@ -1671,14 +1680,15 @@ class _TraineeWorkoutRunnerScreenState
 class _RunnerSetLog {
   final SetLogOutcome outcome;
   final String? reason;
+  final double? weightKg;
 
-  _RunnerSetLog.completed()
+  _RunnerSetLog.completed({this.weightKg})
       : outcome = SetLogOutcome.completed,
         reason = null;
 
-  _RunnerSetLog.skipped(this.reason) : outcome = SetLogOutcome.skipped;
+  _RunnerSetLog.skipped(this.reason) : outcome = SetLogOutcome.skipped, weightKg = null;
 
-  _RunnerSetLog.missed(this.reason) : outcome = SetLogOutcome.missed;
+  _RunnerSetLog.missed(this.reason) : outcome = SetLogOutcome.missed, weightKg = null;
 
   bool get isCompleted => outcome == SetLogOutcome.completed;
 }

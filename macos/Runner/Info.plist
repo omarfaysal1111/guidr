@@ -28,5 +28,9 @@
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Take photos to upload trainee progress pictures.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Select photos to upload as trainee progress pictures.</string>
 </dict>
 </plist>

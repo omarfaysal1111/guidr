@@ -1,9 +1,17 @@
+// ignore_for_file: deprecated_member_use
+
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../trainees/domain/entities/inbody_report.dart';
+import '../../../trainees/presentation/utils/trainee_media_url.dart';
+import '../../../trainees/presentation/widgets/inbody_report_file_preview.dart';
 import '../bloc/trainee_progress_bloc.dart';
 import '../bloc/trainee_progress_event.dart';
 import '../bloc/trainee_progress_state.dart';
@@ -58,7 +66,6 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
   String _timeRange    = 'month'; // 'week' | 'month'
   String _activeChart  = 'weight'; // 'weight' | 'calories' | 'macros' | 'body'
   bool   _photosExpanded  = false;
-  bool   _inbodyExpanded  = false;
   bool   _watchConnected  = false;
   bool   _showWatchAuth   = false;
   int?   _badgeDetailId;
@@ -99,14 +106,6 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
     {'date': 'Feb 8',  'week': 'Week 2'},
     {'date': 'Feb 1',  'week': 'Week 1'},
     {'date': 'Jan 25', 'week': 'Week 0'},
-  ];
-
-  // InBody reports
-  static const _inbodyReports = [
-    {'date': 'Feb 15, 2025', 'label': 'InBody Full Report',  'type': 'PDF',   'bg': Color(0xFFEDE9FE), 'fg': Color(0xFF6D28D9)},
-    {'date': 'Feb 1, 2025',  'label': 'InBody Scan Result',  'type': 'Image', 'bg': Color(0xFFDBEAFE), 'fg': Color(0xFF2563EB)},
-    {'date': 'Jan 15, 2025', 'label': 'InBody Baseline',     'type': 'PDF',   'bg': Color(0xFFD1FAE5), 'fg': Color(0xFF059669)},
-    {'date': 'Jan 1, 2025',  'label': 'Initial InBody Scan', 'type': 'Image', 'bg': Color(0xFFFEF3C7), 'fg': Color(0xFFD97706)},
   ];
 
   // Weekly comparison
@@ -170,6 +169,7 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
 
           final measurements = state is TraineeProgressLoaded ? state.measurements : [];
           final pictures     = state is TraineeProgressLoaded ? state.pictures : [];
+          final inbodyReports = state is TraineeProgressLoaded ? state.inbodyReports : <InBodyReport>[];
 
           final sortedMeasurements = measurements.toList()
             ..sort((a, b) => b.date.compareTo(a.date));
@@ -179,6 +179,9 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
           final startWeight = sortedMeasurements.isNotEmpty
               ? sortedMeasurements.last.weight?.toStringAsFixed(1) ?? '--'
               : '--';
+
+          final isUploading =
+              state is TraineeProgressLoaded && state.isUploading;
 
           return Stack(
             children: [
@@ -196,9 +199,9 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
                   const SizedBox(height: 24),
                   _buildChartsSection(),
                   const SizedBox(height: 16),
-                  _buildProgressPhotosSection(pictures),
+                  _buildProgressPhotosSection(pictures, isUploading: isUploading),
                   const SizedBox(height: 16),
-                  _buildInbodySection(),
+                  _buildInbodySection(inbodyReports, isUploading: isUploading),
                   const SizedBox(height: 16),
                   _buildAchievementsSection(),
                   const SizedBox(height: 16),
@@ -210,6 +213,8 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
                 ],
               ),
               if (_showWatchAuth) _buildWatchAuthModal(),
+              if (isUploading)
+                const _UploadingOverlay(),
             ],
           );
         },
@@ -1031,9 +1036,17 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
 
   // ── Progress Photos ───────────────────────────────────────────────────────────
 
-  Widget _buildProgressPhotosSection(List pictures) {
-    final visibleSets = _photosExpanded ? _photoSets : _photoSets.take(2).toList();
-    final hiddenCount = _photoSets.length - 2;
+  Widget _buildProgressPhotosSection(
+    List pictures, {
+    bool isUploading = false,
+  }) {
+    // Merge real server pictures with static demo sets for display
+    final realPictures = pictures.cast<dynamic>();
+    final totalSets = realPictures.isNotEmpty ? realPictures.length : _photoSets.length;
+    final visibleReal = _photosExpanded ? realPictures : realPictures.take(2).toList();
+    final visibleDemo = _photosExpanded ? _photoSets : _photoSets.take(2).toList();
+    final useReal = realPictures.isNotEmpty;
+    final hiddenCount = totalSets - 2;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1045,6 +1058,7 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header row
           Row(
             children: [
               const Icon(Icons.photo_camera_outlined, size: 14, color: AppColors.textPrimary),
@@ -1055,71 +1069,97 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                 decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(6)),
-                child: Text('${_photoSets.length} sets',
+                child: Text('$totalSets sets',
                     style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
               ),
               const Spacer(),
               GestureDetector(
-                onTap: () => _showAddProgressPictureDialog(context),
-                child: const Text('+ Upload',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                onTap: isUploading ? null : () => _showProgressPhotoSheet(context),
+                child: Text(
+                  '+ Upload',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isUploading ? AppColors.textMuted : AppColors.primary,
+                  ),
+                ),
               ),
             ],
           ),
           const SizedBox(height: 14),
 
-          // Photo date groups
-          ...visibleSets.asMap().entries.map((e) {
-            final group   = e.value;
-            final isLast  = e.key == visibleSets.length - 1;
-            return Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.textMuted),
-                      const SizedBox(width: 4),
-                      Text(group['date']!,
-                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-                      const SizedBox(width: 4),
-                      Text('(${group['week']})',
-                          style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: ['Front', 'Side', 'Back'].map((label) {
-                      return Expanded(
-                        child: Container(
-                          margin: label == 'Front' ? EdgeInsets.zero : const EdgeInsets.only(left: 8),
-                          height: 90,
-                          decoration: BoxDecoration(
-                            color: AppColors.surface,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.photo_camera_outlined, size: 16, color: AppColors.textMuted),
-                              const SizedBox(height: 4),
-                              Text(label,
-                                  style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-            );
-          }),
+          // Real photo rows from server
+          if (useReal)
+            ...visibleReal.asMap().entries.map((e) {
+              final pic = e.value;
+              final isLast = e.key == visibleReal.length - 1;
+              final dateStr = pic.date ?? '';
+              final uploadedAt = pic.uploadedAt ?? '';
+              return Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(dateStr.isNotEmpty ? dateStr : uploadedAt,
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildPhotoSlot('Front', pic.frontPictureUrl),
+                        const SizedBox(width: 8),
+                        _buildPhotoSlot('Side',  pic.sidePictureUrl),
+                        const SizedBox(width: 8),
+                        _buildPhotoSlot('Back',  pic.backPictureUrl),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            })
+          else
+            // Demo placeholder rows
+            ...visibleDemo.asMap().entries.map((e) {
+              final group  = e.value;
+              final isLast = e.key == visibleDemo.length - 1;
+              return Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.textMuted),
+                        const SizedBox(width: 4),
+                        Text(group['date']!,
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                        const SizedBox(width: 4),
+                        Text('(${group['week']})',
+                            style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        _buildPhotoSlot('Front', null),
+                        const SizedBox(width: 8),
+                        _buildPhotoSlot('Side',  null),
+                        const SizedBox(width: 8),
+                        _buildPhotoSlot('Back',  null),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
 
           // Show more / less
-          if (_photoSets.length > 2) ...[
+          if (totalSets > 2) ...[
             const SizedBox(height: 12),
             GestureDetector(
               onTap: () => setState(() => _photosExpanded = !_photosExpanded),
@@ -1149,25 +1189,34 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
             ),
           ],
 
-          // Add new photo set
+          // Add new photo set CTA
           const SizedBox(height: 10),
           GestureDetector(
-            onTap: () => _showAddProgressPictureDialog(context),
+            onTap: isUploading ? null : () => _showProgressPhotoSheet(context),
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.04),
+                color: AppColors.primary.withOpacity(isUploading ? 0.02 : 0.04),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.primary.withOpacity(0.3), style: BorderStyle.solid),
+                border: Border.all(
+                  color: AppColors.primary.withOpacity(isUploading ? 0.1 : 0.3),
+                ),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.add_rounded, size: 16, color: AppColors.primary),
-                  SizedBox(width: 6),
-                  Text('Add New Photo Set',
-                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                  Icon(Icons.add_a_photo_outlined, size: 16,
+                      color: isUploading ? AppColors.textMuted : AppColors.primary),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Add New Photo Set',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: isUploading ? AppColors.textMuted : AppColors.primary,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -1177,12 +1226,68 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
     );
   }
 
+  Widget _buildPhotoSlot(String label, String? url) {
+    return Expanded(
+      child: Container(
+        height: 90,
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+          image: url != null && url.isNotEmpty
+              ? DecorationImage(
+                  image: NetworkImage(url),
+                  fit: BoxFit.cover,
+                )
+              : null,
+        ),
+        child: url == null || url.isEmpty
+            ? Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.photo_camera_outlined, size: 16, color: AppColors.textMuted),
+                  const SizedBox(height: 4),
+                  Text(label,
+                      style: const TextStyle(
+                          fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
+                ],
+              )
+            : Align(
+                alignment: Alignment.bottomLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  margin: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                        fontSize: 8, fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+
   // ── InBody Reports ────────────────────────────────────────────────────────────
 
-  Widget _buildInbodySection() {
+  Widget _buildInbodySection(
+    List<InBodyReport> reports, {
+    bool isUploading = false,
+  }) {
     const purple = Color(0xFF8B5CF6);
-    final visibleReports = _inbodyExpanded ? _inbodyReports : _inbodyReports.take(2).toList();
-    final hiddenCount    = _inbodyReports.length - 2;
+    final sorted = reports.toList()
+      ..sort((a, b) {
+        final da = a.uploadedAt;
+        final db = b.uploadedAt;
+        if (da == null && db == null) return 0;
+        if (da == null) return 1;
+        if (db == null) return -1;
+        return db.compareTo(da);
+      });
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1191,138 +1296,211 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: const EdgeInsets.only(top: 4),
+          initiallyExpanded: false,
+          title: Row(
             children: [
-              const Icon(Icons.show_chart_rounded, size: 14, color: purple),
-              const SizedBox(width: 6),
-              const Text('InBody Reports',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(6)),
-                child: Text('${_inbodyReports.length}',
-                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
+              const Icon(Icons.analytics_outlined, size: 20, color: purple),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'InBody Reports',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
-              const Spacer(),
-              const Text('+ Upload', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: purple)),
+              Text(
+                '${sorted.length}',
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(width: 8),
+              // Upload button inside the title row
+              GestureDetector(
+                onTap: isUploading ? null : () => _showInBodyUploadSheet(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isUploading
+                        ? AppColors.surface
+                        : purple.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isUploading
+                          ? AppColors.border
+                          : purple.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.upload_file_outlined,
+                        size: 12,
+                        color: isUploading ? AppColors.textMuted : purple,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Upload',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isUploading ? AppColors.textMuted : purple,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 14),
-
-          ...visibleReports.asMap().entries.map((e) {
-            final report = e.value;
-            final bg     = report['bg'] as Color;
-            final fg     = report['fg'] as Color;
-            final isPDF  = report['type'] == 'PDF';
-            return Padding(
-              padding: EdgeInsets.only(bottom: e.key < visibleReports.length - 1 ? 8 : 0),
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: bg.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: bg),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
-                      child: Icon(
-                        isPDF ? Icons.picture_as_pdf_outlined : Icons.image_outlined,
-                        color: fg,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(report['label'] as String,
-                              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                          const SizedBox(height: 2),
-                          Text('${report['date']} · ${report['type']}',
-                              style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
-                        ],
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        _buildIconBtn(Icons.visibility_outlined),
-                        const SizedBox(width: 6),
-                        _buildIconBtn(Icons.download_outlined),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-
-          if (_inbodyReports.length > 2) ...[
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () => setState(() => _inbodyExpanded = !_inbodyExpanded),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(_inbodyExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                        size: 14, color: purple),
-                    const SizedBox(width: 4),
-                    Text(
-                      _inbodyExpanded ? 'Show Less' : 'Show $hiddenCount More',
-                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: purple),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 10),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(
-              color: purple.withOpacity(0.04),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: purple.withOpacity(0.3)),
-            ),
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.upload_outlined, size: 16, color: purple),
-                SizedBox(width: 6),
-                Text('Upload InBody Report',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: purple)),
-              ],
+          subtitle: const Padding(
+            padding: EdgeInsets.only(top: 4),
+            child: Text(
+              'View or upload InBody / body-composition reports.',
+              style: TextStyle(fontSize: 11, color: AppColors.textMuted),
             ),
           ),
-        ],
+          children: [
+            if (sorted.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
+                  children: [
+                    const Icon(Icons.analytics_outlined, size: 32, color: AppColors.textMuted),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'No InBody reports yet.',
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    GestureDetector(
+                      onTap: isUploading ? null : () => _showInBodyUploadSheet(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: purple.withOpacity(0.08),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: purple.withOpacity(0.25)),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.upload_file_outlined, size: 14,
+                                color: isUploading ? AppColors.textMuted : purple),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Upload Your First Report',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w700,
+                                color: isUploading ? AppColors.textMuted : purple,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...sorted.map((r) {
+                final uri = resolveTraineeMediaUrl(r.fileUrl);
+                final label = r.fileName ??
+                    (r.uploadedAt != null
+                        ? '${r.uploadedAt!.toLocal()}'.split('.').first
+                        : 'Report ${r.id.isNotEmpty ? r.id : uri.path}');
+                return Padding(
+                  key: ValueKey('trainee-inbody-${r.id}-${r.fileUrl}'),
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    childrenPadding: const EdgeInsets.only(bottom: 8),
+                    collapsedShape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                    backgroundColor: AppColors.surface,
+                    collapsedBackgroundColor: AppColors.surface,
+                    title: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            label,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildInbodyFileTypeBadge(r),
+                      ],
+                    ),
+                    subtitle: r.uploadedAt != null
+                        ? Text(
+                            '${r.uploadedAt!.toLocal()}'.split('.').first,
+                            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
+                          )
+                        : null,
+                    children: [
+                      InBodyReportFilePreview(
+                        uri: uri,
+                        isPdf: r.isPdf,
+                        isImage: r.isImage,
+                      ),
+                    ],
+                  ),
+                );
+              }),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildIconBtn(IconData icon) {
+  Widget _buildInbodyFileTypeBadge(InBodyReport r) {
+    final isPdf = r.isPdf;
+    final isImage = r.isImage;
+    final label = isPdf ? 'PDF' : isImage ? 'Image' : 'File';
+    final Color bg;
+    final Color fg;
+    if (isPdf) {
+      bg = const Color(0xFFFEE2E2);
+      fg = const Color(0xFFB91C1C);
+    } else if (isImage) {
+      bg = const Color(0xFFDBEAFE);
+      fg = const Color(0xFF1D4ED8);
+    } else {
+      bg = AppColors.surface;
+      fg = AppColors.textSecondary;
+    }
     return Container(
-      width: 28,
-      height: 28,
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(7)),
-      child: Icon(icon, size: 13, color: AppColors.textSecondary),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: fg.withValues(alpha: 0.25)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: fg),
+      ),
     );
   }
 
@@ -1797,54 +1975,549 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
     );
   }
 
-  void _showAddProgressPictureDialog(BuildContext context) {
-    final frontUrlCtrl = TextEditingController();
-    final sideUrlCtrl  = TextEditingController();
-    final backUrlCtrl  = TextEditingController();
-    final notesCtrl    = TextEditingController();
-    final bloc = context.read<TraineeProgressBloc>();
+  // ── Progress Photo Picker Sheet ───────────────────────────────────────────────
 
-    Widget field(TextEditingController ctrl, String label, {int maxLines = 1}) => Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: TextField(
-        controller: ctrl,
-        maxLines: maxLines,
-        decoration: InputDecoration(labelText: label, isDense: true, border: const OutlineInputBorder()),
+  void _showProgressPhotoSheet(BuildContext context) {
+    final bloc = context.read<TraineeProgressBloc>();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => _ProgressPhotoSheet(
+        onUpload: (frontPath, sidePath, backPath, notes) {
+          bloc.add(UploadProgressPhoto(
+            frontPath: frontPath,
+            sidePath: sidePath,
+            backPath: backPath,
+            notes: notes,
+          ));
+        },
       ),
     );
+  }
 
-    showDialog(
+  // ── InBody Upload Sheet ───────────────────────────────────────────────────────
+
+  void _showInBodyUploadSheet(BuildContext context) {
+    final bloc = context.read<TraineeProgressBloc>();
+    showModalBottomSheet<void>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Progress Photo'),
-        content: SingleChildScrollView(
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => _InBodyUploadSheet(
+        onUpload: (filePath, label) {
+          bloc.add(UploadInBodyReport(filePath: filePath, label: label));
+        },
+      ),
+    );
+  }
+}
+
+// ── Upload Overlay ────────────────────────────────────────────────────────────
+
+class _UploadingOverlay extends StatelessWidget {
+  const _UploadingOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black.withOpacity(0.35),
+      child: const Center(
+        child: Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(16))),
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: AppColors.primary),
+                SizedBox(height: 16),
+                Text(
+                  'Uploading…',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Progress Photo Picker Sheet ───────────────────────────────────────────────
+
+class _ProgressPhotoSheet extends StatefulWidget {
+  final void Function(String? frontPath, String? sidePath, String? backPath, String? notes) onUpload;
+
+  const _ProgressPhotoSheet({required this.onUpload});
+
+  @override
+  State<_ProgressPhotoSheet> createState() => _ProgressPhotoSheetState();
+}
+
+class _ProgressPhotoSheetState extends State<_ProgressPhotoSheet> {
+  XFile? _front;
+  XFile? _side;
+  XFile? _back;
+  final _notesCtrl = TextEditingController();
+  final _picker = ImagePicker();
+
+  Future<void> _pick(String angle) async {
+    final img = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80,
+    );
+    if (img == null) return;
+    setState(() {
+      if (angle == 'Front') _front = img;
+      if (angle == 'Side')  _side  = img;
+      if (angle == 'Back')  _back  = img;
+    });
+  }
+
+  bool get _hasAny => _front != null || _side != null || _back != null;
+
+  @override
+  void dispose() {
+    _notesCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              field(frontUrlCtrl, 'Front Photo URL'),
-              field(sideUrlCtrl,  'Side Photo URL'),
-              field(backUrlCtrl,  'Back Photo URL'),
-              field(notesCtrl,    'Notes (optional)', maxLines: 2),
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              const Text(
+                'Add Progress Photos',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Pick one or more angle photos. All are optional.',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+
+              // Three photo slots
+              Row(
+                children: ['Front', 'Side', 'Back'].map((angle) {
+                  XFile? picked = angle == 'Front'
+                      ? _front
+                      : angle == 'Side'
+                          ? _side
+                          : _back;
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => _pick(angle),
+                      child: _PhotoPickerSlot(angle: angle, file: picked),
+                    ),
+                  );
+                }).expand((w) => [w, const SizedBox(width: 10)]).toList()
+                  ..removeLast(),
+              ),
+              const SizedBox(height: 16),
+
+              // Notes
+              TextField(
+                controller: _notesCtrl,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  hintText: 'Notes (optional)',
+                  hintStyle: const TextStyle(fontSize: 13),
+                  isDense: true,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Upload button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _hasAny
+                      ? () {
+                          Navigator.pop(context);
+                          widget.onUpload(
+                            _front?.path,
+                            _side?.path,
+                            _back?.path,
+                            _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
+                          );
+                        }
+                      : null,
+                  icon: const Icon(Icons.cloud_upload_outlined, size: 18),
+                  label: const Text('Upload Photos'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppColors.surface,
+                    disabledForegroundColor: AppColors.textMuted,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                    textStyle: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              final today = DateTime.now();
-              final date  = '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
-              final data  = <String, dynamic>{'date': date};
-              if (frontUrlCtrl.text.trim().isNotEmpty) data['frontPictureUrl'] = frontUrlCtrl.text.trim();
-              if (sideUrlCtrl.text.trim().isNotEmpty)  data['sidePictureUrl']  = sideUrlCtrl.text.trim();
-              if (backUrlCtrl.text.trim().isNotEmpty)  data['backPictureUrl']  = backUrlCtrl.text.trim();
-              if (notesCtrl.text.trim().isNotEmpty)    data['notes']           = notesCtrl.text.trim();
-              bloc.add(AddProgressPicture(data));
-              Navigator.pop(ctx);
-            },
-            child: const Text('Save'),
-          ),
+      ),
+    );
+  }
+}
+
+class _PhotoPickerSlot extends StatelessWidget {
+  final String angle;
+  final XFile? file;
+
+  const _PhotoPickerSlot({required this.angle, this.file});
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPick = file != null;
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      height: 110,
+      decoration: BoxDecoration(
+        color: hasPick ? Colors.transparent : AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: hasPick ? AppColors.primary : AppColors.border,
+          width: hasPick ? 2 : 1,
+        ),
+        image: hasPick
+            ? DecorationImage(
+                image: FileImage(File(file!.path)),
+                fit: BoxFit.cover,
+              )
+            : null,
+      ),
+      child: Stack(
+        children: [
+          if (!hasPick)
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Icon(Icons.add_a_photo_outlined,
+                    size: 22, color: AppColors.textMuted),
+                const SizedBox(height: 6),
+                Text(
+                  angle,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textMuted),
+                ),
+              ],
+            ),
+          if (hasPick)
+            Positioned(
+              bottom: 6,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    angle,
+                    style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+          if (hasPick)
+            Positioned(
+              top: 6,
+              right: 6,
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: const BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, size: 13, color: Colors.white),
+              ),
+            ),
         ],
+      ),
+    );
+  }
+}
+
+// ── InBody Upload Sheet ───────────────────────────────────────────────────────
+
+class _InBodyUploadSheet extends StatefulWidget {
+  final void Function(String filePath, String? label) onUpload;
+
+  const _InBodyUploadSheet({required this.onUpload});
+
+  @override
+  State<_InBodyUploadSheet> createState() => _InBodyUploadSheetState();
+}
+
+class _InBodyUploadSheetState extends State<_InBodyUploadSheet> {
+  PlatformFile? _picked;
+  final _labelCtrl = TextEditingController();
+
+  Future<void> _pickFile() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'heic'],
+      allowMultiple: false,
+    );
+    if (result == null || result.files.isEmpty) return;
+    setState(() => _picked = result.files.first);
+  }
+
+  @override
+  void dispose() {
+    _labelCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    const purple = Color(0xFF8B5CF6);
+    final hasPick = _picked != null;
+
+    return Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 20),
+                  decoration: BoxDecoration(
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+
+              const Text(
+                'Upload InBody Report',
+                style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'Accepted formats: PDF, JPG, PNG, WEBP, HEIC',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 20),
+
+              // Drop zone / pick button
+              GestureDetector(
+                onTap: _pickFile,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  decoration: BoxDecoration(
+                    color: hasPick
+                        ? purple.withOpacity(0.05)
+                        : AppColors.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: hasPick ? purple : AppColors.border,
+                      width: hasPick ? 2 : 1,
+                    ),
+                  ),
+                  child: hasPick
+                      ? Column(
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: purple.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                _picked!.extension?.toLowerCase() == 'pdf'
+                                    ? Icons.picture_as_pdf_outlined
+                                    : Icons.image_outlined,
+                                size: 22,
+                                color: purple,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              _picked!.name,
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _picked!.size > 0
+                                  ? '${(_picked!.size / 1024).toStringAsFixed(1)} KB'
+                                  : '',
+                              style: const TextStyle(
+                                  fontSize: 11, color: AppColors.textMuted),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Tap to change file',
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: purple.withOpacity(0.7),
+                                  fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: purple.withOpacity(0.08),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.upload_file_outlined,
+                                  size: 24, color: purple),
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              'Tap to select a file',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            const Text(
+                              'PDF, JPG, PNG, WEBP, HEIC',
+                              style: TextStyle(
+                                  fontSize: 11, color: AppColors.textMuted),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Optional label
+              TextField(
+                controller: _labelCtrl,
+                decoration: InputDecoration(
+                  hintText: 'Label (optional, e.g. "March 2025")',
+                  hintStyle: const TextStyle(fontSize: 13),
+                  isDense: true,
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Upload button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: hasPick && _picked!.path != null
+                      ? () {
+                          Navigator.pop(context);
+                          widget.onUpload(
+                            _picked!.path!,
+                            _labelCtrl.text.trim().isEmpty
+                                ? null
+                                : _labelCtrl.text.trim(),
+                          );
+                        }
+                      : null,
+                  icon: const Icon(Icons.cloud_upload_outlined, size: 18),
+                  label: const Text('Upload Report'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: purple,
+                    foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppColors.surface,
+                    disabledForegroundColor: AppColors.textMuted,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                    textStyle: const TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -1990,7 +2663,9 @@ class _WeightChartPainter extends CustomPainter {
 
     // Fill
     final fillPath = Path()..moveTo(pts.first.dx, padT + h);
-    for (final p in pts) fillPath.lineTo(p.dx, p.dy);
+    for (final p in pts) {
+      fillPath.lineTo(p.dx, p.dy);
+    }
     fillPath.lineTo(pts.last.dx, padT + h);
     fillPath.close();
     canvas.drawPath(fillPath, Paint()
@@ -1999,7 +2674,9 @@ class _WeightChartPainter extends CustomPainter {
 
     // Line
     final linePath = Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (int i = 1; i < pts.length; i++) linePath.lineTo(pts[i].dx, pts[i].dy);
+    for (int i = 1; i < pts.length; i++) {
+      linePath.lineTo(pts[i].dx, pts[i].dy);
+    }
     canvas.drawPath(linePath, Paint()
       ..color = AppColors.primary
       ..strokeWidth = 2.5
@@ -2125,6 +2802,8 @@ class _BarChartPainter extends CustomPainter {
 extension _IndexedIterable<T> on Iterable<T> {
   Iterable<(int, T)> get indexed sync* {
     var i = 0;
-    for (final e in this) yield (i++, e);
+    for (final e in this) {
+      yield (i++, e);
+    }
   }
 }

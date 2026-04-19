@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/theme/app_colors.dart';
@@ -302,7 +304,7 @@ class _RegisterTraineeScreenState extends State<RegisterTraineeScreen> {
         ),
         const SizedBox(height: 24),
         const Text(
-          'FitCoach Pro',
+          'Guider',
           style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w900,

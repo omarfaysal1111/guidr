@@ -16,10 +16,12 @@ enum SetLogOutcome {
 class ExerciseSetLogRequest {
   final SetLogOutcome outcome;
   final String? reason;
+  final double? weightKg;
 
   const ExerciseSetLogRequest({
     required this.outcome,
     this.reason,
+    this.weightKg,
   });
 
   factory ExerciseSetLogRequest.fromJson(Map<String, dynamic> json) =>

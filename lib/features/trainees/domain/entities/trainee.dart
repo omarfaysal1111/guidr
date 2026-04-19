@@ -16,6 +16,7 @@ class Trainee extends Equatable {
   final int missedWorkoutCount; // New field for missed workouts
   final int missedMealCount;    // New field for missed meals
   final List<String> alerts; // 'missed', 'nutrition', 'noLogin', 'plateau'
+  final int currentStreak;
   /// Optional coach/internal notes (settings & profile APIs).
   final String? notes;
 
@@ -35,13 +36,14 @@ class Trainee extends Equatable {
     required this.alerts,
     required this.missedWorkoutCount,
     required this.missedMealCount,
+    this.currentStreak = 0,
     this.notes,
   });
 
   @override
   List<Object?> get props => [
         id, name, email, avatar, goal, level, adherence, status, weight,
-        lastActivity, nextSession, joined, alerts, notes,
+        lastActivity, nextSession, joined, alerts, currentStreak, notes,
       ];
 
   static int _parseIntField(dynamic v, [int fallback = 0]) {
@@ -93,6 +95,7 @@ class Trainee extends Equatable {
       lastActivity: '—',
       nextSession: '—',
       joined: 'Recently',
+      currentStreak: _parseIntField(json['currentStreak']),
       alerts: _parseAlerts(json['alerts'] ?? json['alertCodes'] ?? json['statusAlerts']),
       notes: notes,
     );

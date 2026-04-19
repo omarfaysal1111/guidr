@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -81,7 +83,7 @@ class _InviteTraineeDialogState extends State<InviteTraineeDialog> {
                 const SizedBox(height: 20),
 
                 if (!hasResult) ...[
-                  if (loaded && (state as TraineesLoaded).invitationError != null) ...[
+                  if (loaded && (state).invitationError != null) ...[
                     Container(
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
@@ -102,7 +104,7 @@ class _InviteTraineeDialogState extends State<InviteTraineeDialog> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
-                              (state as TraineesLoaded).invitationError!,
+                              (state).invitationError!,
                               style: const TextStyle(
                                 fontSize: 13,
                                 color: AppColors.error,

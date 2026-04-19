@@ -7,11 +7,14 @@ class CoachTraineeWorkoutSetDetail extends Equatable {
   /// `COMPLETED` | `SKIPPED` | `MISSED` (or legacy booleans inferred in [fromJson]).
   final String outcome;
   final String? reason;
+  /// Logged load for this set (kg), when API sends `weight` / `weightKg` on each set row.
+  final double? weightKg;
 
   const CoachTraineeWorkoutSetDetail({
     required this.setNumber,
     required this.outcome,
     this.reason,
+    this.weightKg,
   });
 
   bool get isCompleted => outcome.toUpperCase() == 'COMPLETED';
@@ -46,11 +49,34 @@ class CoachTraineeWorkoutSetDetail extends Equatable {
       setNumber: sn,
       outcome: outcome,
       reason: reason != null && reason.trim().isEmpty ? null : reason?.trim(),
+      weightKg: _readSetWeightKg(m),
     );
   }
 
+  static double? _readSetWeightKg(Map<String, dynamic> m) {
+    const keys = [
+      'weight',
+      'weightKg',
+      'weight_kg',
+      'wieghtKg',
+      'loadKg',
+      'load',
+      'loggedWeight',
+      'actualWeight',
+    ];
+    for (final k in keys) {
+      final v = m[k];
+      if (v is num) return v.toDouble();
+      if (v is String && v.trim().isNotEmpty) {
+        final p = double.tryParse(v.trim().replaceAll(',', '.'));
+        if (p != null) return p;
+      }
+    }
+    return null;
+  }
+
   @override
-  List<Object?> get props => [setNumber, outcome, reason];
+  List<Object?> get props => [setNumber, outcome, reason, weightKg];
 }
 
 /// Logged exercise row for a single day (coach trainee API).
@@ -60,7 +86,7 @@ class CoachTraineeWorkoutExerciseLog extends Equatable {
   final int setsDone;
   final int setsPlanned;
   final String? skipReason;
-  final double wieghtKg ; // TODO when API adds per-set weight, or a planned weight field
+  final double wieghtKg ; 
   /// Per-set breakdown when API sends `setDetails` or per-set `sets` / `setLogs`.
   final List<CoachTraineeWorkoutSetDetail>? setDetails;
 

@@ -1,11 +1,12 @@
 import 'package:get_it/get_it.dart';
+import 'package:guidr/core/locale/locale_cubit.dart';
 import 'package:guidr/core/messaging/fcm_service.dart';
 import 'package:guidr/features/chat/data/firestore_chat_repository.dart';
 import 'package:guidr/features/chat/domain/repositories/chat_repository.dart';
 import 'package:guidr/features/coach_builders/data/repositories/builder_repository.dart';
 import 'package:guidr/features/coach_builders/presentation/bloc/workout_builder_bloc.dart';
 import 'package:guidr/features/coach_builders/presentation/bloc/nutrition_builder_bloc.dart';
-import 'package:guidr/features/coach_settings/domain/usecases/CoachDataUseCase.dart';
+import 'package:guidr/features/coach_settings/domain/usecases/coach_data_use_case.dart';
 import 'package:guidr/features/home/data/datasources/home_remote_data_source.dart';
 import 'package:guidr/features/home/domain/usecases/get_coach_home_use_case.dart';
 import 'package:http/http.dart' as http;
@@ -62,6 +63,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => ApiClient(localStorage: sl(), client: sl()));
   sl.registerLazySingleton<ChatRepository>(() => FirestoreChatRepository());
   sl.registerLazySingleton(() => FcmService());
+  sl.registerLazySingleton(() => LocaleCubit(sl()));
 
   //! Features - Auth
   // Data sources

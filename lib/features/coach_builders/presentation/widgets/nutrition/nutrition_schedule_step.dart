@@ -204,6 +204,7 @@ class _NotificationToggles extends StatelessWidget {
             onChanged: (v) => context
                 .read<NutritionBuilderBloc>()
                 .add(NutritionUpdateSchedule(remindTrainee: v)),
+            // ignore: deprecated_member_use
             activeColor: AppColors.primary,
           ),
           const Divider(height: 1),
@@ -214,6 +215,7 @@ class _NotificationToggles extends StatelessWidget {
             onChanged: (v) => context
                 .read<NutritionBuilderBloc>()
                 .add(NutritionUpdateSchedule(alertIfMissed: v)),
+            // ignore: deprecated_member_use
             activeColor: AppColors.primary,
           ),
         ],

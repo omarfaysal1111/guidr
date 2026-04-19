@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:guidr/core/theme/app_colors.dart';
 import 'package:guidr/features/needs_attention/domain/entities/attention_item.dart';

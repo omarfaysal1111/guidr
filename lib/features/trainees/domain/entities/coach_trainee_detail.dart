@@ -3,9 +3,12 @@ import 'package:equatable/equatable.dart';
 import 'coach_trainee_plans_data.dart';
 import 'coach_trainee_progress_extra.dart';
 import 'coach_trainee_workout_completion_history.dart';
+import 'coach_trainee_meal_completion_history.dart';
 import 'coach_trainee_workout_sessions.dart';
 import 'trainee.dart';
 import 'trainee_health_history.dart';
+import 'inbody_report.dart';
+import 'progress_photo.dart';
 import '../../../../features/trainee_progress/domain/entities/trainee_measurement.dart';
 import '../../../../features/trainee_progress/domain/entities/trainee_progress_picture.dart';
 
@@ -28,7 +31,8 @@ import '../../../../features/trainee_progress/domain/entities/trainee_progress_p
 /// **Completion history:** `workoutCompletionHistory` lists past session completions with
 /// `exerciseLogs` and `setDetails` (see [CoachTraineeWorkoutCompletionRecord]).
 ///
-/// **Progress tab:** `traineeFeedback` / `feedback`, `goals`, and on `profile`:
+/// **Progress tab:** `traineeFeedback` / `feedback`, `goals`, `progressPhotos` / `progress_photos`
+/// (see [ProgressPhoto]), `inbodyReports` / `inbody_reports` (see [InBodyReport]), and on `profile`:
 /// `coachNotesToTrainee` / `coachNotes`, `cautionNotes` / `medicalNotes`.
 ///
 /// **Health history sheet:** nested `profile.healthHistory` or same keys on `profile`
@@ -43,6 +47,8 @@ class CoachTraineeDetail extends Equatable {
   final List<CoachTraineeWorkoutPlanRow> workoutPlans;
   final List<CoachTraineeFeedbackEntry> traineeFeedback;
   final List<CoachTraineeGoalItem> traineeGoals;
+  final List<InBodyReport> inbodyReports;
+  final List<ProgressPhoto> progressPhotos;
   final String? coachNotesToTrainee;
   final String? coachCautionNotes;
   final TraineeHealthHistory healthHistory;
@@ -60,6 +66,9 @@ class CoachTraineeDetail extends Equatable {
   /// Logged session completions with per-set detail (`workoutCompletionHistory` on API).
   final List<CoachTraineeWorkoutCompletionRecord> workoutCompletionHistory;
   
+  /// Logged meal completions with ingredient deviations (`mealCompletionHistory` on API).
+  final List<MealCompletionRecord> mealCompletionHistory;
+  
   final int missedWorkoutCount;
   final int missedMealCount;
 
@@ -72,6 +81,8 @@ class CoachTraineeDetail extends Equatable {
     required this.workoutPlans,
     this.traineeFeedback = const [],
     this.traineeGoals = const [],
+    this.inbodyReports = const [],
+    this.progressPhotos = const [],
     this.coachNotesToTrainee,
     this.coachCautionNotes,
     required this.healthHistory,
@@ -79,7 +90,8 @@ class CoachTraineeDetail extends Equatable {
     this.recentSkippedSets = const [],
     this.traineeNoteOnPlan,
     this.workoutWeekRangeLabel,
-    this.workoutCompletionHistory = const [], 
+    this.workoutCompletionHistory = const [],
+    this.mealCompletionHistory = const [],
     required this.missedWorkoutCount, 
     required this.missedMealCount,
   });
@@ -179,6 +191,16 @@ class CoachTraineeDetail extends Equatable {
         
     final goalsRaw = json['goals'] ?? profileMap['goals'] ?? profileMap['traineeGoals'];
 
+    final inbodyRaw = json['inbodyReports'] ??
+        json['inbody_reports'] ??
+        profileMap['inbodyReports'] ??
+        profileMap['inbody_reports'];
+
+    final progressPhotosRaw = json['progressPhotos'] ??
+        json['progress_photos'] ??
+        profileMap['progressPhotos'] ??
+        profileMap['progress_photos'];
+
     final coachNotes = _pickString(profileMap, [
       'coachNotesToTrainee',
       'coachNotes',
@@ -196,6 +218,11 @@ class CoachTraineeDetail extends Equatable {
         section['workoutCompletionHistory'] ??
         profileMap['workoutCompletionHistory'];
     final completionHistory = parseWorkoutCompletionHistory(historyRaw);
+
+    final mealHistoryRaw = json['mealCompletionHistory'] ??
+        section['mealCompletionHistory'] ??
+        profileMap['mealCompletionHistory'];
+    final mealHistory = parseMealCompletionHistory(mealHistoryRaw);
 
     final sessionsRaw = section['workoutDaySessions'] ??
         json['workoutDaySessions'] ??
@@ -250,6 +277,8 @@ class CoachTraineeDetail extends Equatable {
       workoutPlans: plans,
       traineeFeedback: parseFeedbackList(feedbackRaw),
       traineeGoals: parseGoalsList(goalsRaw),
+      inbodyReports: parseInBodyReportsList(inbodyRaw),
+      progressPhotos: parseProgressPhotosList(progressPhotosRaw),
       coachNotesToTrainee: coachNotes,
       coachCautionNotes: caution,
       healthHistory: TraineeHealthHistory.fromProfileMap(profileMap, profile),
@@ -258,6 +287,7 @@ class CoachTraineeDetail extends Equatable {
       traineeNoteOnPlan: planNote,
       workoutWeekRangeLabel: weekRange,
       workoutCompletionHistory: completionHistory,
+      mealCompletionHistory: mealHistory,
       missedMealCount: (json['missedMealCount'] as num?)?.toInt() ?? 0,
       missedWorkoutCount: (json['missedWorkoutCount'] as num?)?.toInt() ?? 0,
     );
@@ -273,6 +303,8 @@ class CoachTraineeDetail extends Equatable {
         workoutPlans,
         traineeFeedback,
         traineeGoals,
+        inbodyReports,
+        progressPhotos,
         coachNotesToTrainee,
         coachCautionNotes,
         healthHistory,
@@ -281,7 +313,8 @@ class CoachTraineeDetail extends Equatable {
         traineeNoteOnPlan,
         workoutWeekRangeLabel,
         workoutCompletionHistory,
-        missedWorkoutCount, // Fixed: Added to Equatable props
-        missedMealCount,    // Fixed: Added to Equatable props
+        mealCompletionHistory,
+        missedWorkoutCount,
+        missedMealCount,
       ];
 }

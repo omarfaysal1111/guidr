@@ -118,12 +118,12 @@ class TraineeStreak extends Equatable {
   });
 
   factory TraineeStreak.fromJson(Map<String, dynamic> json) {
-    int _toInt(dynamic v) =>
+    int toInt(dynamic v) =>
         v is num ? v.toInt() : int.tryParse(v?.toString() ?? '') ?? 0;
 
     return TraineeStreak(
-      currentDays: _toInt(json['currentDays']),
-      nextBadgeInDays: _toInt(json['nextBadgeInDays']),
+      currentDays: toInt(json['currentDays']),
+      nextBadgeInDays: toInt(json['nextBadgeInDays']),
       nextBadgeName: json['nextBadgeName'] ?? '',
     );
   }
@@ -175,17 +175,17 @@ class TodayWorkoutSummary extends Equatable {
   });
 
   factory TodayWorkoutSummary.fromJson(Map<String, dynamic> json) {
-    int _toInt(dynamic v) =>
+    int toInt(dynamic v) =>
         v is num ? v.toInt() : int.tryParse(v?.toString() ?? '') ?? 0;
 
     return TodayWorkoutSummary(
       planId: json['planId']?.toString() ?? '',
       title: json['title'] ?? '',
       difficulty: json['difficulty'] ?? '',
-      exercisesTotal: _toInt(json['exercisesTotal']),
-      exercisesDone: _toInt(json['exercisesDone']),
-      durationMinutes: _toInt(json['durationMinutes']),
-      estimatedCalories: _toInt(json['estimatedCalories']),
+      exercisesTotal: toInt(json['exercisesTotal']),
+      exercisesDone: toInt(json['exercisesDone']),
+      durationMinutes: toInt(json['durationMinutes']),
+      estimatedCalories: toInt(json['estimatedCalories']),
     );
   }
 
@@ -229,20 +229,20 @@ class TodayNutritionSummary extends Equatable {
   });
 
   factory TodayNutritionSummary.fromJson(Map<String, dynamic> json) {
-    int _toInt(dynamic v) =>
+    int toInt(dynamic v) =>
         v is num ? v.toInt() : int.tryParse(v?.toString() ?? '') ?? 0;
 
     return TodayNutritionSummary(
-      planId: _toInt(json['planId']),
+      planId: toInt(json['planId']),
       title: json['title'] ?? '',
-      caloriesConsumed: _toInt(json['caloriesConsumed']),
-      caloriesTarget: _toInt(json['caloriesTarget']),
-      proteinGrams: _toInt(json['proteinGrams']),
-      proteinTarget: _toInt(json['proteinTarget']),
-      carbsGrams: _toInt(json['carbsGrams']),
-      carbsTarget: _toInt(json['carbsTarget']),
-      fatGrams: _toInt(json['fatGrams']),
-      fatTarget: _toInt(json['fatTarget']),
+      caloriesConsumed: toInt(json['caloriesConsumed']),
+      caloriesTarget: toInt(json['caloriesTarget']),
+      proteinGrams: toInt(json['proteinGrams']),
+      proteinTarget: toInt(json['proteinTarget']),
+      carbsGrams: toInt(json['carbsGrams']),
+      carbsTarget: toInt(json['carbsTarget']),
+      fatGrams: toInt(json['fatGrams']),
+      fatTarget: toInt(json['fatTarget']),
       meals: (json['meals'] as List? ?? [])
           .map((e) => DashboardMeal.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -279,12 +279,12 @@ class DashboardMeal extends Equatable {
   });
 
   factory DashboardMeal.fromJson(Map<String, dynamic> json) {
-    int _toInt(dynamic v) =>
+    int toInt(dynamic v) =>
         v is num ? v.toInt() : int.tryParse(v?.toString() ?? '') ?? 0;
     return DashboardMeal(
-      id: _toInt(json['id']),
+      id: toInt(json['id']),
       name: json['name'] ?? '',
-      calories: _toInt(json['calories']),
+      calories: toInt(json['calories']),
       completed: json['completed'] as bool? ?? false,
     );
   }
@@ -317,21 +317,21 @@ class WeeklyGoals extends Equatable {
   });
 
   factory WeeklyGoals.fromJson(Map<String, dynamic> json) {
-    int _toInt(dynamic v) =>
+    int toInt(dynamic v) =>
         v is num ? v.toInt() : int.tryParse(v?.toString() ?? '') ?? 0;
-    double _toDouble(dynamic v) =>
+    double toDouble(dynamic v) =>
         v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '') ?? 0;
 
     return WeeklyGoals(
-      workoutsCompleted: _toInt(json['workoutsCompleted']),
-      workoutsTarget: _toInt(json['workoutsTarget']),
-      mealsLogged: _toInt(json['mealsLogged']),
-      mealsTarget: _toInt(json['mealsTarget']),
-      waterLiters: _toInt(json['waterLiters']),
-      waterTargetLiters: _toInt(json['waterTargetLiters']),
-      weightStart: _toDouble(json['weightStart']),
-      weightCurrent: _toDouble(json['weightCurrent']),
-      weightTarget: _toDouble(json['weightTarget']),
+      workoutsCompleted: toInt(json['workoutsCompleted']),
+      workoutsTarget: toInt(json['workoutsTarget']),
+      mealsLogged: toInt(json['mealsLogged']),
+      mealsTarget: toInt(json['mealsTarget']),
+      waterLiters: toInt(json['waterLiters']),
+      waterTargetLiters: toInt(json['waterTargetLiters']),
+      weightStart: toDouble(json['weightStart']),
+      weightCurrent: toDouble(json['weightCurrent']),
+      weightTarget: toDouble(json['weightTarget']),
     );
   }
 

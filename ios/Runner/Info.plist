@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Take photos to upload trainee progress pictures.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Select photos to upload as trainee progress pictures.</string>
 </dict>
 </plist>

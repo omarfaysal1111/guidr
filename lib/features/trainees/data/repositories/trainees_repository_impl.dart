@@ -33,4 +33,49 @@ class TraineesRepositoryImpl implements TraineesRepository {
   Future<void> updateTraineeGoalLevel(String id, String goal, String level) async {
     return await remoteDataSource.updateTraineeGoalLevel(id, goal, level);
   }
+
+  @override
+  Future<void> saveCoachNotes(String id, String feedback, String caution) async {
+    return await remoteDataSource.saveCoachNotes(id, feedback, caution);
+  }
+
+  @override
+  Future<void> addGoal(String traineeId, String title) async {
+    return await remoteDataSource.addGoal(traineeId, title);
+  }
+
+  @override
+  Future<void> editGoal(String goalId, String newTitle) async {
+    return await remoteDataSource.editGoal(goalId, newTitle);
+  }
+
+  @override
+  Future<void> toggleGoal(String traineeId, String goalId, bool completed) async {
+    return await remoteDataSource.toggleGoal(traineeId, goalId, completed);
+  }
+
+  @override
+  Future<void> deleteGoal(String traineeId, String goalId) async {
+    return await remoteDataSource.deleteGoal(traineeId, goalId);
+  }
+
+  @override
+  Future<void> uploadInBodyReport(String traineeId, List<int> fileBytes, String fileName) async {
+    return await remoteDataSource.uploadInBodyReport(traineeId, fileBytes, fileName);
+  }
+
+  @override
+  Future<void> uploadProgressPhoto(String traineeId, List<int> fileBytes, String fileName) async {
+    return await remoteDataSource.uploadProgressPhoto(traineeId, fileBytes, fileName);
+  }
+
+  @override
+  Future<void> archiveTrainee(String id) async {
+    return await remoteDataSource.archiveTrainee(id);
+  }
+
+  @override
+  Future<void> deleteTrainee(String id) async {
+    return await remoteDataSource.deleteTrainee(id);
+  }
 }

@@ -186,6 +186,7 @@ class _NotificationToggles extends StatelessWidget {
             onChanged: (v) => context
                 .read<WorkoutBuilderBloc>()
                 .add(UpdateSchedule(remindTrainee: v)),
+            // ignore: deprecated_member_use
             activeColor: AppColors.primary,
           ),
           const Divider(height: 1),
@@ -198,6 +199,7 @@ class _NotificationToggles extends StatelessWidget {
             onChanged: (v) => context
                 .read<WorkoutBuilderBloc>()
                 .add(UpdateSchedule(alertIfMissed: v)),
+            // ignore: deprecated_member_use
             activeColor: AppColors.primary,
           ),
         ],

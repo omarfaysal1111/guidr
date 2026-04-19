@@ -1,11 +1,14 @@
 import 'package:guidr/core/network/api_client.dart';
 import 'package:guidr/features/coach_builders/domain/entities/plans.dart';
+import 'package:http/http.dart' as http;
 import '../../domain/entities/trainee_app_profile.dart';
 import '../../domain/entities/trainee_dashboard_today.dart';
 import '../../domain/entities/complete_workout_request.dart';
+import '../../domain/entities/meal_completion_request.dart';
 import '../../domain/entities/trainee_exercise_plan_detail.dart';
 import '../../domain/entities/nutrition_plan_detail.dart';
 import '../../domain/entities/ingredient_library_item.dart';
+import '../../domain/entities/extra_meal_log.dart';
 import '../../../coach_settings/domain/entities/coach_profile.dart';
 
 abstract class TraineeAppRemoteDataSource {
@@ -24,11 +27,17 @@ abstract class TraineeAppRemoteDataSource {
     String planSessionId,
     CompleteWorkoutRequest request,
   );
-  Future<void> completeMeal(int mealId);
-  Future<void> skipMeal(int mealId);
-  Future<void> skipIngredient(int mealId, int ingredientId);
-  Future<void> swapIngredient(int mealId, int ingredientId, int newIngredientId);
+  Future<void> completeMeal(int mealId, MealCompletionRequest request);
   Future<List<IngredientLibraryItem>> searchIngredients(String query);
+  Future<List<IngredientLibraryItem>> getIngredientsCatalog();
+  Future<ExtraMealLog> logExtraMeal({
+    int? ingredientId,
+    String? name,
+    required double calories,
+    required String dateIso,
+  });
+  Future<void> uploadProgressPhoto(List<int> fileBytes, String fileName);
+  Future<void> uploadInBodyReport(List<int> fileBytes, String fileName);
 }
 
 class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
@@ -114,35 +123,10 @@ class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
   }
 
   @override
-  Future<void> completeMeal(int mealId) async {
+  Future<void> completeMeal(int mealId, MealCompletionRequest request) async {
     await apiClient.post(
       '/trainees/me/meals/$mealId/complete',
-      body: <String, dynamic>{},
-    );
-  }
-
-  @override
-  Future<void> skipMeal(int mealId) async {
-    await apiClient.post(
-      '/trainees/me/meals/$mealId/skip',
-      body: <String, dynamic>{},
-    );
-  }
-
-  @override
-  Future<void> skipIngredient(int mealId, int ingredientId) async {
-    await apiClient.post(
-      '/trainees/me/meals/$mealId/ingredients/$ingredientId/skip',
-      body: <String, dynamic>{},
-    );
-  }
-
-  @override
-  Future<void> swapIngredient(
-      int mealId, int ingredientId, int newIngredientId) async {
-    await apiClient.post(
-      '/trainees/me/meals/$mealId/ingredients/$ingredientId/swap',
-      body: {'newIngredientId': newIngredientId},
+      body: request.toJson(),
     );
   }
 
@@ -150,10 +134,69 @@ class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
   Future<List<IngredientLibraryItem>> searchIngredients(String query) async {
     final response =
         await apiClient.get('/ingredients?search=${Uri.encodeComponent(query)}');
-    final data = response['data'] as List? ?? response as List? ?? [];
-    return (data as List)
+    final raw = response['data'] as List? ?? response as List? ?? [];
+    return raw
         .map((e) =>
             IngredientLibraryItem.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  @override
+  Future<List<IngredientLibraryItem>> getIngredientsCatalog() async {
+    final response = await apiClient.get('/ingredients');
+    final raw = response['data'] as List? ?? response as List? ?? [];
+    return raw
+        .map((e) =>
+            IngredientLibraryItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<ExtraMealLog> logExtraMeal({
+    int? ingredientId,
+    String? name,
+    required double calories,
+    required String dateIso,
+  }) async {
+    final body = <String, dynamic>{
+      'calories': calories,
+      'date': dateIso,
+    };
+    if (ingredientId != null) {
+      body['ingredientId'] = ingredientId;
+    }
+    if (name != null && name.trim().isNotEmpty) {
+      body['name'] = name.trim();
+    }
+    final response = await apiClient.post(
+      '/trainees/me/extra-meals',
+      body: body,
+    );
+    final data = response['data'] ?? response;
+    if (data is Map<String, dynamic>) {
+      return ExtraMealLog.fromJson(data);
+    }
+    return ExtraMealLog(
+      name: name ?? '',
+      calories: calories,
+      date: DateTime.tryParse(dateIso) ?? DateTime.now(),
+      ingredientId: ingredientId,
+    );
+  }
+
+  @override
+  Future<void> uploadProgressPhoto(List<int> fileBytes, String fileName) async {
+    await apiClient.postMultipart(
+      '/trainees/me/progress-photos',
+      file: http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
+    );
+  }
+
+  @override
+  Future<void> uploadInBodyReport(List<int> fileBytes, String fileName) async {
+    await apiClient.postMultipart(
+      '/trainees/me/inbody-reports',
+      file: http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
+    );
   }
 }

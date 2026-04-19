@@ -1,8 +1,9 @@
+// ignore_for_file: deprecated_member_use, dead_code
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
-import 'package:guidr/features/trainee_app/domain/entities/trainee_dashboard_today.dart';
-import 'package:guidr/features/trainee_app/domain/repositories/trainee_app_repository.dart';
+import 'package:guidr/features/trainee_nutrition/presentation/pages/trainee_nutrition_screen.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/progress_bar.dart';
 import '../bloc/trainee_today_cubit.dart';
@@ -77,8 +78,7 @@ class _TraineeTodayScreenState extends State<TraineeTodayScreen> {
               ? state.nutritionPlans.first
               : null;
 
-          // Determine whether to show notifications badge
-          const hasNotifications = true;
+          const hasNotifications = false;
 
           return Scaffold(
             backgroundColor: AppColors.background,
@@ -1083,15 +1083,8 @@ class _TraineeTodayScreenState extends State<TraineeTodayScreen> {
     BuildContext context,
     int mealId,
   ) async {
-    final repo = di.sl<TraineeAppRepository>();
     try {
-      await repo.completeMeal(mealId);
-      // ignore: use_build_context_synchronously
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Meal marked as completed.'),
-        ),
-      );
+Navigator.push(context, MaterialPageRoute(builder: (context)=>TraineeNutritionScreen()));
       if (context.mounted) {
         context.read<TraineeTodayCubit>().load();
       }

@@ -12,7 +12,7 @@ class CoachTraineeCompletionExerciseLog extends Equatable {
   final int missedSets;
   final bool allSetsCompleted;
   final String? excuse;
-  final double wieghtKg; // TODO when API adds per-set weight, or a planned weight field
+  final double wieghtKg; 
   final String? coachNotes;
   final bool isReviewedByCoach;
   final DateTime? loggedAt;
