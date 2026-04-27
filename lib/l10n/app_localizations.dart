@@ -853,6 +853,1644 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Chat Messages'**
   String get chatMessages;
+
+  /// Login screen tagline
+  ///
+  /// In en, this message translates to:
+  /// **'Train smarter. Together.'**
+  String get trainSmarter;
+
+  /// Role selection - coach
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m a Coach'**
+  String get iAmACoach;
+
+  /// Coach role description
+  ///
+  /// In en, this message translates to:
+  /// **'Manage clients, create plans & track progress'**
+  String get coachRoleDescription;
+
+  /// Role selection - trainee
+  ///
+  /// In en, this message translates to:
+  /// **'I\'m a Trainee'**
+  String get iAmATrainee;
+
+  /// Trainee role description
+  ///
+  /// In en, this message translates to:
+  /// **'Follow plans, log workouts & hit your goals'**
+  String get traineeRoleDescription;
+
+  /// Continue button
+  ///
+  /// In en, this message translates to:
+  /// **'Continue →'**
+  String get continueBtn;
+
+  /// Welcome back for coach
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back, Coach'**
+  String get welcomeBackCoach;
+
+  /// Email address field label
+  ///
+  /// In en, this message translates to:
+  /// **'Email Address'**
+  String get emailAddress;
+
+  /// Email validation message
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your email'**
+  String get pleaseEnterEmail;
+
+  /// Password validation message
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your password'**
+  String get pleaseEnterPassword;
+
+  /// Log in button label
+  ///
+  /// In en, this message translates to:
+  /// **'Log In'**
+  String get logIn;
+
+  /// Register link text
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account? Register'**
+  String get dontHaveAccount;
+
+  /// Register screen subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Create your account'**
+  String get createYourAccount;
+
+  /// Invitation code field label
+  ///
+  /// In en, this message translates to:
+  /// **'Invitation Code'**
+  String get invitationCode;
+
+  /// Fitness goal field label
+  ///
+  /// In en, this message translates to:
+  /// **'Fitness Goal'**
+  String get fitnessGoal;
+
+  /// Name validation message
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your name'**
+  String get pleaseEnterName;
+
+  /// Email format validation
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email'**
+  String get pleaseEnterValidEmail;
+
+  /// Password required validation
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a password'**
+  String get pleaseEnterAPassword;
+
+  /// Password length validation
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get passwordMinLength;
+
+  /// Invitation code validation
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your invitation code'**
+  String get pleaseEnterInvitationCode;
+
+  /// Create new plan sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Create new plan'**
+  String get createNewPlan;
+
+  /// Exercises plan option
+  ///
+  /// In en, this message translates to:
+  /// **'Exercises Plan'**
+  String get exercisesPlan;
+
+  /// Nutrition plan option
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition Plan'**
+  String get nutritionPlan;
+
+  /// More tab label
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get more;
+
+  /// Morning greeting
+  ///
+  /// In en, this message translates to:
+  /// **'Good morning'**
+  String get goodMorning;
+
+  /// Afternoon greeting
+  ///
+  /// In en, this message translates to:
+  /// **'Good afternoon'**
+  String get goodAfternoon;
+
+  /// Evening greeting
+  ///
+  /// In en, this message translates to:
+  /// **'Good evening'**
+  String get goodEvening;
+
+  /// Sessions today count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} sessions today'**
+  String sessionsToday(int count);
+
+  /// Needs attention count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} need attention'**
+  String needAttention(int count);
+
+  /// Free plan label
+  ///
+  /// In en, this message translates to:
+  /// **'Free Plan'**
+  String get freePlan;
+
+  /// Upgrade button
+  ///
+  /// In en, this message translates to:
+  /// **'Upgrade'**
+  String get upgrade;
+
+  /// Clients label
+  ///
+  /// In en, this message translates to:
+  /// **'Clients'**
+  String get clients;
+
+  /// Client limit warning
+  ///
+  /// In en, this message translates to:
+  /// **'Client limit reached — upgrade to add more'**
+  String get clientLimitReached;
+
+  /// Today's sessions section
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Sessions'**
+  String get todaysSessions;
+
+  /// No sessions today message
+  ///
+  /// In en, this message translates to:
+  /// **'No sessions scheduled for today.'**
+  String get noSessionsToday;
+
+  /// Top performers section
+  ///
+  /// In en, this message translates to:
+  /// **'Top Performers'**
+  String get topPerformers;
+
+  /// Top performers empty state
+  ///
+  /// In en, this message translates to:
+  /// **'Your most engaged clients will appear here.'**
+  String get topPerformersEmpty;
+
+  /// Recent activity section
+  ///
+  /// In en, this message translates to:
+  /// **'Recent Activity'**
+  String get recentActivity;
+
+  /// Recent activity empty state
+  ///
+  /// In en, this message translates to:
+  /// **'Activity from your clients will appear here.'**
+  String get recentActivityEmpty;
+
+  /// Pending invitations section
+  ///
+  /// In en, this message translates to:
+  /// **'Pending Invitations'**
+  String get pendingInvitations;
+
+  /// No pending invites message
+  ///
+  /// In en, this message translates to:
+  /// **'No pending invites. Invite a trainee to get started.'**
+  String get noPendingInvites;
+
+  /// Expiry date label
+  ///
+  /// In en, this message translates to:
+  /// **'Expires {date}'**
+  String expires(String date);
+
+  /// Pending invitation label
+  ///
+  /// In en, this message translates to:
+  /// **'Pending invitation'**
+  String get pendingInvitation;
+
+  /// Invited email label
+  ///
+  /// In en, this message translates to:
+  /// **'Invited: {email}'**
+  String invited(String email);
+
+  /// No attention items message
+  ///
+  /// In en, this message translates to:
+  /// **'No items need attention right now.'**
+  String get noItemsNeedAttention;
+
+  /// View all button variant
+  ///
+  /// In en, this message translates to:
+  /// **'View all'**
+  String get viewAllBtn;
+
+  /// Trainee count label
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trainees'**
+  String traineeCount(int count);
+
+  /// Sort button
+  ///
+  /// In en, this message translates to:
+  /// **'Sort'**
+  String get sort;
+
+  /// Sort trainees sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Sort Trainees'**
+  String get sortTrainees;
+
+  /// Sort name ascending
+  ///
+  /// In en, this message translates to:
+  /// **'Name A–Z'**
+  String get nameAZ;
+
+  /// Sort name descending
+  ///
+  /// In en, this message translates to:
+  /// **'Name Z–A'**
+  String get nameZA;
+
+  /// Sort highest adherence
+  ///
+  /// In en, this message translates to:
+  /// **'Highest Adherence'**
+  String get highestAdherence;
+
+  /// Sort lowest adherence
+  ///
+  /// In en, this message translates to:
+  /// **'Lowest Adherence'**
+  String get lowestAdherence;
+
+  /// Sort longest streak
+  ///
+  /// In en, this message translates to:
+  /// **'Longest Streak'**
+  String get longestStreak;
+
+  /// Sort shortest streak
+  ///
+  /// In en, this message translates to:
+  /// **'Shortest Streak'**
+  String get shortestStreak;
+
+  /// Adherence label lowercase
+  ///
+  /// In en, this message translates to:
+  /// **'adherence'**
+  String get adherenceWord;
+
+  /// Missed meals badge
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Missed Meals'**
+  String missedMeals(int count);
+
+  /// Missed workouts badge
+  ///
+  /// In en, this message translates to:
+  /// **'{count} Missed Workouts'**
+  String missedWorkouts(int count);
+
+  /// Overview tab
+  ///
+  /// In en, this message translates to:
+  /// **'Overview'**
+  String get overview;
+
+  /// Trainee level label
+  ///
+  /// In en, this message translates to:
+  /// **'Trainee Level'**
+  String get traineeLevel;
+
+  /// Direction / goal section label
+  ///
+  /// In en, this message translates to:
+  /// **'DIRECTION / GOAL'**
+  String get directionGoal;
+
+  /// Adherence metric label uppercase
+  ///
+  /// In en, this message translates to:
+  /// **'ADHERENCE'**
+  String get adherenceLabel;
+
+  /// Day streak metric label uppercase
+  ///
+  /// In en, this message translates to:
+  /// **'DAY STREAK'**
+  String get dayStreak;
+
+  /// Weight metric label uppercase
+  ///
+  /// In en, this message translates to:
+  /// **'WEIGHT'**
+  String get weightLabel;
+
+  /// View health history link
+  ///
+  /// In en, this message translates to:
+  /// **'View Health & Training History'**
+  String get viewHealthHistory;
+
+  /// Weekly summary section
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Summary'**
+  String get weeklySummary;
+
+  /// Workouts label
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts'**
+  String get workouts;
+
+  /// Details section
+  ///
+  /// In en, this message translates to:
+  /// **'Details'**
+  String get details;
+
+  /// Last active label
+  ///
+  /// In en, this message translates to:
+  /// **'Last Active'**
+  String get lastActive;
+
+  /// Next session label
+  ///
+  /// In en, this message translates to:
+  /// **'Next Session'**
+  String get nextSession;
+
+  /// Missed workouts alert message
+  ///
+  /// In en, this message translates to:
+  /// **'Missed workouts'**
+  String get missedWorkoutsAlert;
+
+  /// Low nutrition adherence alert
+  ///
+  /// In en, this message translates to:
+  /// **'Low nutrition adherence'**
+  String get lowNutritionAdherence;
+
+  /// Weight plateau alert
+  ///
+  /// In en, this message translates to:
+  /// **'Weight plateau (3+ weeks)'**
+  String get weightPlateau;
+
+  /// Health & training history sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Health & Training History'**
+  String get healthTrainingHistory;
+
+  /// Training experience label
+  ///
+  /// In en, this message translates to:
+  /// **'TRAINING EXPERIENCE'**
+  String get trainingExperience;
+
+  /// Previous training label
+  ///
+  /// In en, this message translates to:
+  /// **'PREVIOUS TRAINING'**
+  String get previousTraining;
+
+  /// Reason for stopping label
+  ///
+  /// In en, this message translates to:
+  /// **'REASON FOR STOPPING'**
+  String get reasonForStopping;
+
+  /// Diseases/conditions label
+  ///
+  /// In en, this message translates to:
+  /// **'DISEASES / CONDITIONS'**
+  String get diseasesConditions;
+
+  /// Allergies label
+  ///
+  /// In en, this message translates to:
+  /// **'ALLERGIES'**
+  String get allergiesLabel;
+
+  /// Injuries label
+  ///
+  /// In en, this message translates to:
+  /// **'INJURIES'**
+  String get injuriesLabel;
+
+  /// Medications label
+  ///
+  /// In en, this message translates to:
+  /// **'MEDICATIONS'**
+  String get medicationsLabel;
+
+  /// Weight trend section
+  ///
+  /// In en, this message translates to:
+  /// **'Weight Trend'**
+  String get weightTrend;
+
+  /// No weight logs message
+  ///
+  /// In en, this message translates to:
+  /// **'No weight logs yet.'**
+  String get noWeightLogs;
+
+  /// This week label
+  ///
+  /// In en, this message translates to:
+  /// **'This Week'**
+  String get thisWeek;
+
+  /// Body measurements section
+  ///
+  /// In en, this message translates to:
+  /// **'Body Measurements'**
+  String get bodyMeasurements;
+
+  /// From trainee badge
+  ///
+  /// In en, this message translates to:
+  /// **'From Trainee'**
+  String get fromTrainee;
+
+  /// Pose check-ins section
+  ///
+  /// In en, this message translates to:
+  /// **'Pose check-ins'**
+  String get poseCheckIns;
+
+  /// All dates filter option
+  ///
+  /// In en, this message translates to:
+  /// **'All dates'**
+  String get allDates;
+
+  /// Clear button
+  ///
+  /// In en, this message translates to:
+  /// **'Clear'**
+  String get clear;
+
+  /// No photos message
+  ///
+  /// In en, this message translates to:
+  /// **'No photos in this range.'**
+  String get noPhotosInRange;
+
+  /// Front photo label
+  ///
+  /// In en, this message translates to:
+  /// **'Front'**
+  String get front;
+
+  /// Side photo label
+  ///
+  /// In en, this message translates to:
+  /// **'Side'**
+  String get sideLabel;
+
+  /// Back photo label
+  ///
+  /// In en, this message translates to:
+  /// **'Back'**
+  String get backLabel;
+
+  /// Trainee feedback section
+  ///
+  /// In en, this message translates to:
+  /// **'Trainee Feedback'**
+  String get traineeFeedback;
+
+  /// No feedback message
+  ///
+  /// In en, this message translates to:
+  /// **'No feedback entries yet.'**
+  String get noFeedbackYet;
+
+  /// Latest badge
+  ///
+  /// In en, this message translates to:
+  /// **'Latest'**
+  String get latest;
+
+  /// Feedback for trainee label
+  ///
+  /// In en, this message translates to:
+  /// **'Feedback for {name}'**
+  String feedbackForTrainee(String name);
+
+  /// Feedback hint text
+  ///
+  /// In en, this message translates to:
+  /// **'Write your feedback here... This will be visible to the trainee.'**
+  String get feedbackHint;
+
+  /// Caution/medical notes label
+  ///
+  /// In en, this message translates to:
+  /// **'Caution / Medical Notes'**
+  String get cautionMedicalNotes;
+
+  /// Caution hint text
+  ///
+  /// In en, this message translates to:
+  /// **'Injuries, restrictions, things to watch out for...'**
+  String get cautionHint;
+
+  /// Save notes button
+  ///
+  /// In en, this message translates to:
+  /// **'Save Notes'**
+  String get saveNotes;
+
+  /// Saving label
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get saving;
+
+  /// Uploading label
+  ///
+  /// In en, this message translates to:
+  /// **'Uploading…'**
+  String get uploading;
+
+  /// Upload image/PDF button
+  ///
+  /// In en, this message translates to:
+  /// **'Upload image or PDF'**
+  String get uploadImageOrPdf;
+
+  /// No InBody reports message
+  ///
+  /// In en, this message translates to:
+  /// **'No InBody reports yet.'**
+  String get noInBodyReports;
+
+  /// InBody reports subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Upload scans or PDFs from the device. Expand a row to preview.'**
+  String get inBodyReportsSubtitle;
+
+  /// No goals message
+  ///
+  /// In en, this message translates to:
+  /// **'No goals listed yet.'**
+  String get noGoalsYet;
+
+  /// Goals hint text
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to mark done · Tap ✏ to edit · Swipe left to delete'**
+  String get tapToMarkDone;
+
+  /// Add new goal hint
+  ///
+  /// In en, this message translates to:
+  /// **'Add a new goal...'**
+  String get addNewGoal;
+
+  /// Edit goal sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Goal'**
+  String get editGoal;
+
+  /// Goal description hint
+  ///
+  /// In en, this message translates to:
+  /// **'Goal description…'**
+  String get goalDescription;
+
+  /// Level & goal card title
+  ///
+  /// In en, this message translates to:
+  /// **'Level & Goal'**
+  String get levelAndGoal;
+
+  /// Trainee level label uppercase
+  ///
+  /// In en, this message translates to:
+  /// **'TRAINEE LEVEL'**
+  String get traineeLevelLabel;
+
+  /// Goal input hint
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Lose 5 kg, Build muscle...'**
+  String get goalHint;
+
+  /// Save changes button
+  ///
+  /// In en, this message translates to:
+  /// **'Save Changes'**
+  String get saveChanges;
+
+  /// Trainee info card title
+  ///
+  /// In en, this message translates to:
+  /// **'Trainee Info'**
+  String get traineeInfo;
+
+  /// Archive trainee dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Archive trainee?'**
+  String get archiveTraineeQuestion;
+
+  /// Archive trainee dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'{name} will be archived. You can restore them later if your app supports it.'**
+  String archiveTraineeBody(String name);
+
+  /// Archive button
+  ///
+  /// In en, this message translates to:
+  /// **'Archive'**
+  String get archive;
+
+  /// Delete trainee dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete trainee permanently?'**
+  String get deleteTraineePermanently;
+
+  /// Delete trainee dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'This will remove {name} and their data. This action cannot be undone.'**
+  String deleteTraineeBody(String name);
+
+  /// Delete trainee permanently button
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Trainee Permanently'**
+  String get deleteTraineePermanentlyBtn;
+
+  /// Plan assigned success message
+  ///
+  /// In en, this message translates to:
+  /// **'Plan assigned successfully!'**
+  String get planAssignedSuccess;
+
+  /// Template saved message
+  ///
+  /// In en, this message translates to:
+  /// **'Template saved on this device'**
+  String get templateSavedMsg;
+
+  /// Draft saved message
+  ///
+  /// In en, this message translates to:
+  /// **'Draft saved on this device'**
+  String get draftSavedMsg;
+
+  /// Saved templates section label
+  ///
+  /// In en, this message translates to:
+  /// **'SAVED TEMPLATES'**
+  String get savedTemplates;
+
+  /// Start from scratch option
+  ///
+  /// In en, this message translates to:
+  /// **'Start from Scratch'**
+  String get startFromScratch;
+
+  /// Search trainees hint
+  ///
+  /// In en, this message translates to:
+  /// **'Search trainees...'**
+  String get searchTrainees;
+
+  /// No trainees message
+  ///
+  /// In en, this message translates to:
+  /// **'No active trainees found'**
+  String get noActiveTraineesFound;
+
+  /// No trainees suggestion
+  ///
+  /// In en, this message translates to:
+  /// **'Invite trainees first to create a plan'**
+  String get inviteTraineesFirst;
+
+  /// Select all option
+  ///
+  /// In en, this message translates to:
+  /// **'Select All'**
+  String get selectAll;
+
+  /// Assignment date label
+  ///
+  /// In en, this message translates to:
+  /// **'ASSIGNMENT DATE'**
+  String get assignmentDate;
+
+  /// Recurrence label
+  ///
+  /// In en, this message translates to:
+  /// **'RECURRENCE'**
+  String get recurrence;
+
+  /// Date picker placeholder
+  ///
+  /// In en, this message translates to:
+  /// **'Select date (or assign immediately)'**
+  String get selectDateOrAssignImmediately;
+
+  /// Plan section label uppercase
+  ///
+  /// In en, this message translates to:
+  /// **'PLAN'**
+  String get planLabel;
+
+  /// Sessions label uppercase
+  ///
+  /// In en, this message translates to:
+  /// **'SESSIONS'**
+  String get sessionsLabel;
+
+  /// Add session button
+  ///
+  /// In en, this message translates to:
+  /// **'Add session'**
+  String get addSession;
+
+  /// Session naming hint
+  ///
+  /// In en, this message translates to:
+  /// **'Name each day (e.g. Leg Day) and add exercises from the library.'**
+  String get nameDayHint;
+
+  /// Trainees selected count
+  ///
+  /// In en, this message translates to:
+  /// **'{count} trainees selected'**
+  String traineesSelected(int count);
+
+  /// Plan & sessions review card title
+  ///
+  /// In en, this message translates to:
+  /// **'Plan & sessions'**
+  String get planAndSessions;
+
+  /// Untitled plan label
+  ///
+  /// In en, this message translates to:
+  /// **'Untitled plan'**
+  String get untitledPlan;
+
+  /// Assigned to label
+  ///
+  /// In en, this message translates to:
+  /// **'Assigned to'**
+  String get assignedTo;
+
+  /// Schedule label
+  ///
+  /// In en, this message translates to:
+  /// **'Schedule'**
+  String get schedule;
+
+  /// Meals label
+  ///
+  /// In en, this message translates to:
+  /// **'Meals'**
+  String get meals;
+
+  /// Breakfast meal label
+  ///
+  /// In en, this message translates to:
+  /// **'Breakfast'**
+  String get breakfast;
+
+  /// Lunch meal label
+  ///
+  /// In en, this message translates to:
+  /// **'Lunch'**
+  String get lunch;
+
+  /// Dinner meal label
+  ///
+  /// In en, this message translates to:
+  /// **'Dinner'**
+  String get dinner;
+
+  /// Snacks meal label
+  ///
+  /// In en, this message translates to:
+  /// **'Snacks'**
+  String get snacks;
+
+  /// My saved templates section label
+  ///
+  /// In en, this message translates to:
+  /// **'MY SAVED TEMPLATES'**
+  String get mySavedTemplates;
+
+  /// Starter templates section label
+  ///
+  /// In en, this message translates to:
+  /// **'STARTER TEMPLATES'**
+  String get starterTemplates;
+
+  /// Workout complete title
+  ///
+  /// In en, this message translates to:
+  /// **'Workout Complete!'**
+  String get workoutComplete;
+
+  /// Workout complete subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Amazing effort!'**
+  String get amazingEffort;
+
+  /// Coach notified message
+  ///
+  /// In en, this message translates to:
+  /// **'Your coach has been notified of your results.'**
+  String get coachNotified;
+
+  /// Back to home button
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Home'**
+  String get backToHome;
+
+  /// Share results button
+  ///
+  /// In en, this message translates to:
+  /// **'Share Results'**
+  String get shareResults;
+
+  /// Duration label
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get duration;
+
+  /// Minutes label
+  ///
+  /// In en, this message translates to:
+  /// **'{count} min'**
+  String minutes(int count);
+
+  /// Sets completed label
+  ///
+  /// In en, this message translates to:
+  /// **'Sets Completed'**
+  String get setsCompleted;
+
+  /// Exercises completed label
+  ///
+  /// In en, this message translates to:
+  /// **'Exercises Completed'**
+  String get exercisesCompleted;
+
+  /// Workout summary section
+  ///
+  /// In en, this message translates to:
+  /// **'Workout Summary'**
+  String get workoutSummary;
+
+  /// No workout plan title
+  ///
+  /// In en, this message translates to:
+  /// **'No Workout Plan'**
+  String get noWorkoutPlan;
+
+  /// No workout plan description
+  ///
+  /// In en, this message translates to:
+  /// **'Your coach hasn\'t assigned a workout plan yet.'**
+  String get noWorkoutPlanDesc;
+
+  /// Calories remaining label
+  ///
+  /// In en, this message translates to:
+  /// **'{cal} cal remaining'**
+  String caloriesRemaining(int cal);
+
+  /// Meals logged label
+  ///
+  /// In en, this message translates to:
+  /// **'{logged}/{total} meals logged'**
+  String mealsLogged(int logged, int total);
+
+  /// Log food button
+  ///
+  /// In en, this message translates to:
+  /// **'Log Food'**
+  String get logFood;
+
+  /// Add custom meal option
+  ///
+  /// In en, this message translates to:
+  /// **'Add Custom Meal'**
+  String get addCustomMeal;
+
+  /// Custom meal name hint
+  ///
+  /// In en, this message translates to:
+  /// **'Custom meal name'**
+  String get customMealName;
+
+  /// Log meal button label
+  ///
+  /// In en, this message translates to:
+  /// **'Log Meal'**
+  String get logMealBtn;
+
+  /// Search food input hint
+  ///
+  /// In en, this message translates to:
+  /// **'Search food...'**
+  String get searchFoodHint;
+
+  /// Weekly goals section
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Goals'**
+  String get weeklyGoals;
+
+  /// Water label
+  ///
+  /// In en, this message translates to:
+  /// **'Water'**
+  String get water;
+
+  /// Liters label
+  ///
+  /// In en, this message translates to:
+  /// **'{amount}L'**
+  String liters(String amount);
+
+  /// Progress load error message
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load progress data.'**
+  String get couldNotLoadProgress;
+
+  /// Set X of Y label
+  ///
+  /// In en, this message translates to:
+  /// **'Set {current} of {total}'**
+  String setXofY(int current, int total);
+
+  /// Complete set button
+  ///
+  /// In en, this message translates to:
+  /// **'Complete Set'**
+  String get completeSet;
+
+  /// Skip set button
+  ///
+  /// In en, this message translates to:
+  /// **'Skip Set'**
+  String get skipSet;
+
+  /// Next exercise button
+  ///
+  /// In en, this message translates to:
+  /// **'Next Exercise'**
+  String get nextExercise;
+
+  /// Finish workout button
+  ///
+  /// In en, this message translates to:
+  /// **'Finish Workout'**
+  String get finishWorkout;
+
+  /// Exercise X of Y label
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise {current} of {total}'**
+  String exerciseXofY(int current, int total);
+
+  /// File read error message
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the selected file. Try a smaller file or re-save the export.'**
+  String get couldNotReadFile;
+
+  /// All filter chip
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get allFilter;
+
+  /// Attention filter chip
+  ///
+  /// In en, this message translates to:
+  /// **'Attention'**
+  String get attentionFilter;
+
+  /// Notes saved success message
+  ///
+  /// In en, this message translates to:
+  /// **'Notes saved for {name}'**
+  String notesForTrainee(String name);
+
+  /// Coming soon settings message
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon — settings update not yet available'**
+  String get comingSoonSettings;
+
+  /// Notifications section label uppercase
+  ///
+  /// In en, this message translates to:
+  /// **'NOTIFICATIONS'**
+  String get notificationsLabel;
+
+  /// Remind trainee toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Remind trainee'**
+  String get remindTrainee;
+
+  /// Alert if missed toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Alert if missed'**
+  String get alertIfMissed;
+
+  /// Time section label
+  ///
+  /// In en, this message translates to:
+  /// **'TIME'**
+  String get timeLabel;
+
+  /// Date section label
+  ///
+  /// In en, this message translates to:
+  /// **'DATE'**
+  String get dateLabel;
+
+  /// Goals card title
+  ///
+  /// In en, this message translates to:
+  /// **'Goals'**
+  String get goalsLabel;
+
+  /// Done count suffix
+  ///
+  /// In en, this message translates to:
+  /// **'done'**
+  String get doneSuffix;
+
+  /// My drafts card title
+  ///
+  /// In en, this message translates to:
+  /// **'My Drafts'**
+  String get myDrafts;
+
+  /// Continue editing saved plans subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Continue editing saved plans'**
+  String get continueEditingPlans;
+
+  /// Build custom workout subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Build a completely custom workout'**
+  String get buildCustomWorkout;
+
+  /// Build custom nutrition subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Build a completely custom nutrition plan'**
+  String get buildCustomNutrition;
+
+  /// No saved templates yet message
+  ///
+  /// In en, this message translates to:
+  /// **'No saved templates yet'**
+  String get noSavedTemplatesYet;
+
+  /// Templates saved hint
+  ///
+  /// In en, this message translates to:
+  /// **'Templates you save will appear here'**
+  String get templatesSavedWillAppearHere;
+
+  /// Confirm and assign workout button
+  ///
+  /// In en, this message translates to:
+  /// **'CONFIRM & ASSIGN WORKOUT'**
+  String get confirmAndAssignWorkout;
+
+  /// Assign nutrition plan button
+  ///
+  /// In en, this message translates to:
+  /// **'Assign Nutrition Plan →'**
+  String get assignNutritionPlanBtn;
+
+  /// Save draft button
+  ///
+  /// In en, this message translates to:
+  /// **'Save Draft'**
+  String get saveDraft;
+
+  /// Save template button
+  ///
+  /// In en, this message translates to:
+  /// **'Save Template'**
+  String get saveTemplate;
+
+  /// Save as template button
+  ///
+  /// In en, this message translates to:
+  /// **'Save as Template'**
+  String get saveAsTemplate;
+
+  /// Load draft button
+  ///
+  /// In en, this message translates to:
+  /// **'Load draft'**
+  String get loadDraft;
+
+  /// Load template button
+  ///
+  /// In en, this message translates to:
+  /// **'Load template…'**
+  String get loadTemplateBtn;
+
+  /// Saved on device note
+  ///
+  /// In en, this message translates to:
+  /// **'Saved on this device (no cloud sync)'**
+  String get savedOnDevice;
+
+  /// Final check message
+  ///
+  /// In en, this message translates to:
+  /// **'Final check before sending to trainees'**
+  String get finalCheckBeforeSending;
+
+  /// Remind trainee before workout toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Remind trainee before workout'**
+  String get remindTraineeBeforeWorkout;
+
+  /// Send notification 30 min before
+  ///
+  /// In en, this message translates to:
+  /// **'Send notification 30 min before'**
+  String get sendNotification30Min;
+
+  /// Alert if missed subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Notify you when trainee misses a session'**
+  String get alertIfMissedSubtitle;
+
+  /// Select all active trainees text with count
+  ///
+  /// In en, this message translates to:
+  /// **'Select all active trainees ({count})'**
+  String selectAllActiveTrainees(int count);
+
+  /// Exercise library sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Exercise library'**
+  String get exerciseLibrary;
+
+  /// Search exercises hint
+  ///
+  /// In en, this message translates to:
+  /// **'Search exercises...'**
+  String get searchExercisesHint;
+
+  /// Add from library button
+  ///
+  /// In en, this message translates to:
+  /// **'Add from library'**
+  String get addFromLibrary;
+
+  /// Add custom button
+  ///
+  /// In en, this message translates to:
+  /// **'Add Custom'**
+  String get addCustom;
+
+  /// Library button
+  ///
+  /// In en, this message translates to:
+  /// **'Library'**
+  String get libraryBtn;
+
+  /// Has video label
+  ///
+  /// In en, this message translates to:
+  /// **'Has video'**
+  String get hasVideo;
+
+  /// Remove session button
+  ///
+  /// In en, this message translates to:
+  /// **'Remove session'**
+  String get removeSession;
+
+  /// Plan title field label
+  ///
+  /// In en, this message translates to:
+  /// **'Plan title *'**
+  String get planTitleLabel;
+
+  /// Plan title hint
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 4-week strength block'**
+  String get planTitleHint;
+
+  /// Description / instructions label
+  ///
+  /// In en, this message translates to:
+  /// **'DESCRIPTION / INSTRUCTIONS'**
+  String get descriptionInstructions;
+
+  /// Optional plan description hint
+  ///
+  /// In en, this message translates to:
+  /// **'Optional plan description for trainees...'**
+  String get optionalPlanDescription;
+
+  /// Caution / notes label
+  ///
+  /// In en, this message translates to:
+  /// **'CAUTION / NOTES'**
+  String get cautionNotesLabel;
+
+  /// Optional safety notes hint
+  ///
+  /// In en, this message translates to:
+  /// **'Optional safety notes...'**
+  String get optionalSafetyNotes;
+
+  /// Session title field label
+  ///
+  /// In en, this message translates to:
+  /// **'Session title'**
+  String get sessionTitleLabel;
+
+  /// Session title hint
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. Push day, Leg day'**
+  String get sessionTitleHint;
+
+  /// Load (weight) field label
+  ///
+  /// In en, this message translates to:
+  /// **'Load (e.g. 60kg)'**
+  String get loadFieldLabel;
+
+  /// Rest time field label
+  ///
+  /// In en, this message translates to:
+  /// **'Rest (e.g. 90s)'**
+  String get restFieldLabel;
+
+  /// Video URL field label
+  ///
+  /// In en, this message translates to:
+  /// **'Video URL'**
+  String get videoUrl;
+
+  /// Set quantity grams dialog text
+  ///
+  /// In en, this message translates to:
+  /// **'Set quantity (grams):'**
+  String get setQuantityGrams;
+
+  /// Add to meal dialog title
+  ///
+  /// In en, this message translates to:
+  /// **'Add to {meal}'**
+  String addToMeal(String meal);
+
+  /// Nutrition plan ready banner
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition plan ready'**
+  String get nutritionPlanReady;
+
+  /// Add nutrition plan name banner
+  ///
+  /// In en, this message translates to:
+  /// **'Add a nutrition plan name'**
+  String get addNutritionPlanName;
+
+  /// Nutrition plan name hint
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition plan name *'**
+  String get nutritionPlanNameHint;
+
+  /// Use template button
+  ///
+  /// In en, this message translates to:
+  /// **'Use template →'**
+  String get useTemplate;
+
+  /// Remind trainee before session toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Remind trainee before session'**
+  String get remindTraineeBeforeSession;
+
+  /// Alert me if plan missed toggle
+  ///
+  /// In en, this message translates to:
+  /// **'Alert me if plan missed'**
+  String get alertMePlanMissed;
+
+  /// Workout templates device storage title
+  ///
+  /// In en, this message translates to:
+  /// **'Workout templates (device storage)'**
+  String get workoutTemplatesDeviceStorage;
+
+  /// Nutrition templates device storage title
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition templates (device storage)'**
+  String get nutritionTemplatesDeviceStorage;
+
+  /// No saved templates snackbar
+  ///
+  /// In en, this message translates to:
+  /// **'No saved templates on this device yet.'**
+  String get noSavedTemplatesSnackbar;
+
+  /// Immediately label for date picker
+  ///
+  /// In en, this message translates to:
+  /// **'Immediately'**
+  String get immediatelyLabel;
+
+  /// Trainee will be reminded notification text
+  ///
+  /// In en, this message translates to:
+  /// **'Trainee will be reminded'**
+  String get traineeWillBeReminded;
+
+  /// Alert if missed suffix
+  ///
+  /// In en, this message translates to:
+  /// **'· Alert if missed'**
+  String get alertIfMissedSuffix;
+
+  /// No trainee selected message
+  ///
+  /// In en, this message translates to:
+  /// **'No trainee selected'**
+  String get noTraineeSelected;
+
+  /// No ingredients available message
+  ///
+  /// In en, this message translates to:
+  /// **'No ingredients available.'**
+  String get noIngredientsAvailable;
+
+  /// Search ingredients hint
+  ///
+  /// In en, this message translates to:
+  /// **'Search ingredients...'**
+  String get searchIngredientsHint;
+
+  /// Add to meal button text
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Meal'**
+  String get addToMealBtn;
+
+  /// Nutrition facts label
+  ///
+  /// In en, this message translates to:
+  /// **'Nutrition Facts · per {amount}g'**
+  String nutritionFactsPer(String amount);
+
+  /// Coach goals section title
+  ///
+  /// In en, this message translates to:
+  /// **'Coach Goals'**
+  String get coachGoals;
+
+  /// Set by coach subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Set by {name}'**
+  String setByCoach(String name);
+
+  /// Today's workout card title
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Workout'**
+  String get todaysWorkout;
+
+  /// Today's nutrition card title
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Nutrition'**
+  String get todaysNutrition;
+
+  /// No workout assigned message
+  ///
+  /// In en, this message translates to:
+  /// **'No workout assigned'**
+  String get noWorkoutAssigned;
+
+  /// No nutrition plan assigned message
+  ///
+  /// In en, this message translates to:
+  /// **'No nutrition plan assigned'**
+  String get noNutritionPlanAssigned;
+
+  /// Exercises done label
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} exercises done'**
+  String exercisesDone(int done, int total);
+
+  /// Monthly goal label
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly Goal'**
+  String get monthlyGoal;
+
+  /// Reach weight goal label
+  ///
+  /// In en, this message translates to:
+  /// **'Reach {kg} kg'**
+  String reachKg(String kg);
+
+  /// Meals logged weekly goal label
+  ///
+  /// In en, this message translates to:
+  /// **'Meals Logged'**
+  String get mealsLoggedLabel;
+
+  /// Water liters weekly goal label
+  ///
+  /// In en, this message translates to:
+  /// **'Water (L)'**
+  String get waterLitersLabel;
+
+  /// Profile updated success message
+  ///
+  /// In en, this message translates to:
+  /// **'Profile updated successfully'**
+  String get profileUpdatedSuccessfully;
+
+  /// Name cannot be empty validation
+  ///
+  /// In en, this message translates to:
+  /// **'Name cannot be empty'**
+  String get nameCannotBeEmpty;
+
+  /// Delete account button/title
+  ///
+  /// In en, this message translates to:
+  /// **'Delete Account'**
+  String get deleteAccount;
+
+  /// Delete account dialog body
+  ///
+  /// In en, this message translates to:
+  /// **'This will permanently delete your account and all your data. This action cannot be undone.'**
+  String get deleteAccountBody;
+
+  /// Type DELETE to confirm label
+  ///
+  /// In en, this message translates to:
+  /// **'Type DELETE to confirm:'**
+  String get typeDeleteToConfirm;
+
+  /// Manage membership subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your membership'**
+  String get manageYourMembership;
+
+  /// No payment method label
+  ///
+  /// In en, this message translates to:
+  /// **'No payment method'**
+  String get noPaymentMethod;
+
+  /// Add a card to upgrade label
+  ///
+  /// In en, this message translates to:
+  /// **'Add a card to upgrade your plan'**
+  String get addCardToUpgrade;
+
+  /// Add payment method button
+  ///
+  /// In en, this message translates to:
+  /// **'Add Payment Method'**
+  String get addPaymentMethod;
+
+  /// Frequently asked questions label
+  ///
+  /// In en, this message translates to:
+  /// **'Frequently asked questions'**
+  String get frequentlyAskedQuestions;
+
+  /// We're here to help subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re here to help. Reach out anytime.'**
+  String get hereToHelp;
+
+  /// Session number label
+  ///
+  /// In en, this message translates to:
+  /// **'Session {number}'**
+  String sessionNumber(int number);
+
+  /// Difficulty label
+  ///
+  /// In en, this message translates to:
+  /// **'Difficulty'**
+  String get difficulty;
+
+  /// Day streak label with count
+  ///
+  /// In en, this message translates to:
+  /// **'{count}-day streak!'**
+  String dayStreakCount(int count);
+
+  /// More days to badge label
+  ///
+  /// In en, this message translates to:
+  /// **'{days} more day to earn the {badge} badge'**
+  String moreDaysToBadge(int days, String badge);
 }
 
 class _AppLocalizationsDelegate

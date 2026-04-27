@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guidr/features/trainee_app/domain/entities/water_intake_day.dart';
 import '../../domain/entities/invitation.dart';
 import '../../domain/entities/trainee.dart';
 import '../../domain/entities/coach_trainee_detail.dart';
@@ -230,6 +231,7 @@ class TraineesLoaded extends TraineesState {
   final String? inbodyUploadError;
   final bool progressPhotoUploadSaving;
   final String? progressPhotoUploadError;
+  final WaterIntakeDay? traineeWaterIntake;
 
   const TraineesLoaded({
     required this.allTrainees,
@@ -253,6 +255,7 @@ class TraineesLoaded extends TraineesState {
     this.inbodyUploadError,
     this.progressPhotoUploadSaving = false,
     this.progressPhotoUploadError,
+    this.traineeWaterIntake,
   });
 
   TraineesLoaded copyWith({
@@ -284,6 +287,8 @@ class TraineesLoaded extends TraineesState {
     bool? progressPhotoUploadSaving,
     String? progressPhotoUploadError,
     bool clearProgressPhotoUploadError = false,
+    WaterIntakeDay? traineeWaterIntake,
+    bool clearTraineeWaterIntake = false,
   }) {
     return TraineesLoaded(
       allTrainees: allTrainees ?? this.allTrainees,
@@ -313,6 +318,9 @@ class TraineesLoaded extends TraineesState {
       progressPhotoUploadError: clearProgressPhotoUploadError
           ? null
           : (progressPhotoUploadError ?? this.progressPhotoUploadError),
+      traineeWaterIntake: clearTraineeWaterIntake
+          ? null
+          : (traineeWaterIntake ?? this.traineeWaterIntake),
     );
   }
 
@@ -339,6 +347,7 @@ class TraineesLoaded extends TraineesState {
         inbodyUploadError,
         progressPhotoUploadSaving,
         progressPhotoUploadError,
+        traineeWaterIntake,
       ];
 }
 
@@ -377,12 +386,23 @@ class TraineesBloc extends Bloc<TraineesEvent, TraineesState> {
     on<LoadTraineeDetailEvent>((event, emit) async {
       if (state is TraineesLoaded) {
         final currentState = state as TraineesLoaded;
-        emit(currentState.copyWith(traineeDetailLoading: true));
+        emit(currentState.copyWith(
+          traineeDetailLoading: true,
+          clearTraineeWaterIntake: true,
+        ));
         try {
           final detail = await repository.getTraineeDetails(event.traineeId);
+          WaterIntakeDay? water;
+          try {
+            water = await repository.getTraineeWaterIntake(event.traineeId);
+          } catch (_) {
+            water = null;
+          }
           emit(currentState.copyWith(
             traineeDetailLoading: false,
             traineeDetail: detail,
+            traineeWaterIntake: water,
+            clearTraineeWaterIntake: false,
           ));
         } catch (e) {
           emit(currentState.copyWith(traineeDetailLoading: false));

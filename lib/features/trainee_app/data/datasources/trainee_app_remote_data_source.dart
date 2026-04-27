@@ -9,6 +9,7 @@ import '../../domain/entities/trainee_exercise_plan_detail.dart';
 import '../../domain/entities/nutrition_plan_detail.dart';
 import '../../domain/entities/ingredient_library_item.dart';
 import '../../domain/entities/extra_meal_log.dart';
+import '../../domain/entities/water_intake_day.dart';
 import '../../../coach_settings/domain/entities/coach_profile.dart';
 
 abstract class TraineeAppRemoteDataSource {
@@ -38,6 +39,13 @@ abstract class TraineeAppRemoteDataSource {
   });
   Future<void> uploadProgressPhoto(List<int> fileBytes, String fileName);
   Future<void> uploadInBodyReport(List<int> fileBytes, String fileName);
+  /// [date] optional — defaults to today on the server.
+  Future<WaterIntakeDay> getMyWaterIntake({DateTime? date});
+  /// Replaces the total liters logged for that calendar day.
+  Future<WaterIntakeDay> setMyWaterIntake({
+    required double liters,
+    required String dateIso,
+  });
 }
 
 class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
@@ -198,5 +206,35 @@ class TraineeAppRemoteDataSourceImpl implements TraineeAppRemoteDataSource {
       '/trainees/me/inbody-reports',
       file: http.MultipartFile.fromBytes('file', fileBytes, filename: fileName),
     );
+  }
+
+  @override
+  Future<WaterIntakeDay> getMyWaterIntake({DateTime? date}) async {
+    final path = date == null
+        ? '/trainees/me/water-intake'
+        : '/trainees/me/water-intake?date=${Uri.encodeComponent(WaterIntakeDay.formatDate(date))}';
+    final response = await apiClient.get(path);
+    final raw = response['data'] ?? response;
+    final m = Map<String, dynamic>.from(raw as Map);
+    return WaterIntakeDay.fromJson(m);
+  }
+
+  @override
+  Future<WaterIntakeDay> setMyWaterIntake({
+    required double liters,
+    required String dateIso,
+  }) async {
+    final response = await apiClient.put(
+      '/trainees/me/water-intake',
+      body: {
+        'liters': liters,
+        'date': dateIso,
+      },
+    );
+    final raw = response['data'] ?? response;
+    if (raw is! Map) {
+      return getMyWaterIntake(date: DateTime.tryParse(dateIso));
+    }
+    return WaterIntakeDay.fromJson(Map<String, dynamic>.from(raw));
   }
 }

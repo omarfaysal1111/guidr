@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/core/widgets/notification_inbox_button.dart';
 import 'package:guidr/core/widgets/progress_bar.dart';
 import 'package:guidr/core/widgets/stat_card.dart';
 import 'package:guidr/features/home/domain/entities/coach_home_models.dart';
@@ -12,6 +13,7 @@ import 'package:guidr/features/needs_attention/domain/usecases/get_needs_attenti
 import 'package:guidr/features/trainees/domain/entities/trainee.dart';
 import 'package:guidr/features/trainees/presentation/bloc/trainees_bloc.dart';
 import 'package:guidr/features/trainees/presentation/pages/trainee_profile_screen.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 
 // ─── Entry point ─────────────────────────────────────────────────────────────
 
@@ -36,15 +38,16 @@ class HomeView extends StatelessWidget {
   const HomeView({super.key});
 
   /// Returns a time-appropriate greeting.
-  String _greeting() {
+  String _greeting(AppLocalizations l) {
     final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+    if (hour < 12) return l.goodMorning;
+    if (hour < 17) return l.goodAfternoon;
+    return l.goodEvening;
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -79,58 +82,17 @@ class HomeView extends StatelessWidget {
         actions: [
           BlocBuilder<HomeBloc, HomeState>(
             builder: (context, state) {
-              int alertCount = 0;
+              var alertCount = 0;
+              var inbox = const <AppInboxNotification>[];
               if (state is HomeLoaded) {
                 alertCount = state.coachData.needsAttention +
                     state.pendingInvitations.length;
+                inbox = _coachInboxFromHome(state, AppLocalizations.of(context));
               }
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: GestureDetector(
-                  onTap: () {},
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: AppColors.card,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.border),
-                        ),
-                        child: const Icon(
-                          Icons.notifications_none_rounded,
-                          color: AppColors.textSecondary,
-                          size: 20,
-                        ),
-                      ),
-                      if (alertCount > 0)
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: Container(
-                            width: 16,
-                            height: 16,
-                            decoration: const BoxDecoration(
-                              color: AppColors.error,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Center(
-                              child: Text(
-                                '$alertCount',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+              return NotificationInboxButton(
+                coachStyle: true,
+                badgeCount: alertCount > 0 ? alertCount : null,
+                items: inbox,
               );
             },
           ),
@@ -169,7 +131,7 @@ class HomeView extends StatelessWidget {
                       onPressed: () =>
                           context.read<HomeBloc>().add(LoadHomeDataEvent()),
                       icon: const Icon(Icons.refresh_rounded, size: 18),
-                      label: const Text('Retry'),
+                      label: Text(l.retry),
                     ),
                   ],
                 ),
@@ -186,6 +148,7 @@ class HomeView extends StatelessWidget {
   }
 
   Widget _buildLoaded(BuildContext context, HomeLoaded state) {
+    final l = AppLocalizations.of(context);
     final data = state.coachData;
     final todaysSessions = state.todaysSessions;
     final topPerformers = state.topPerformers;
@@ -211,7 +174,7 @@ class HomeView extends StatelessWidget {
         children: [
           // ── Greeting ───────────────────────────────────────────────────
           Text(
-            '${_greeting()}, ${data.name}',
+            '${_greeting(l)}, ${data.name}',
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w800,
@@ -229,13 +192,13 @@ class HomeView extends StatelessWidget {
               children: [
                 TextSpan(text: '${data.dateString}  ·  '),
                 TextSpan(
-                  text: '${data.sessionsToday} sessions today',
+                  text: l.sessionsToday(data.sessionsToday),
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 if (data.needsAttention > 0) ...[
                   const TextSpan(text: '  ·  '),
                   TextSpan(
-                    text: '${data.needsAttention} need attention',
+                    text: l.needAttention(data.needsAttention),
                     style: const TextStyle(
                       color: AppColors.error,
                       fontWeight: FontWeight.w700,
@@ -319,8 +282,8 @@ class HomeView extends StatelessWidget {
                 _TodaysSessionsSectionHeader(summary: todaySubtitle),
                 const SizedBox(height: 12),
                 if (todaysSessions.isEmpty)
-                  const _EmptyCard(
-                    message: 'No sessions scheduled for today.',
+                  _EmptyCard(
+                    message: l.noSessionsToday,
                   )
                 else
                   SingleChildScrollView(
@@ -345,14 +308,14 @@ class HomeView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SectionHeader(
-                  title: 'Top Performers',
-                  subtitle: 'View all',
+                _SectionHeader(
+                  title: l.topPerformers,
+                  subtitle: l.viewAllBtn,
                 ),
                 const SizedBox(height: 12),
                 if (topPerformers.isEmpty)
-                  const _EmptyCard(
-                    message: 'Your most engaged clients will appear here.',
+                  _EmptyCard(
+                    message: l.topPerformersEmpty,
                   )
                 else
                   Column(
@@ -380,11 +343,11 @@ class HomeView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const _SectionHeader(title: 'Recent Activity', subtitle: 'All'),
+                _SectionHeader(title: l.recentActivity, subtitle: l.allFilter),
                 const SizedBox(height: 12),
                 if (topPerformers.isEmpty)
-                  const _EmptyCard(
-                    message: 'Activity from your clients will appear here.',
+                  _EmptyCard(
+                    message: l.recentActivityEmpty,
                   )
                 else
                   Column(
@@ -410,14 +373,13 @@ class HomeView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _SectionHeader(
-                  title: 'Pending Invitations',
+                  title: l.pendingInvitations,
                   subtitle: '${pendingInvitations.length}',
                 ),
                 const SizedBox(height: 12),
                 if (pendingInvitations.isEmpty)
-                  const _EmptyCard(
-                    message:
-                        'No pending invites. Invite a trainee to get started.',
+                  _EmptyCard(
+                    message: l.noPendingInvites,
                   )
                 else
                   Column(
@@ -475,6 +437,7 @@ class _FreemiumBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -513,9 +476,9 @@ class _FreemiumBanner extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Free Plan',
-                    style: TextStyle(
+                  Text(
+                    l.freePlan,
+                    style: const TextStyle(
                       fontWeight: FontWeight.w800,
                       fontSize: 16,
                       color: AppColors.textPrimary,
@@ -526,7 +489,7 @@ class _FreemiumBanner extends StatelessWidget {
               ElevatedButton.icon(
                 onPressed: () {},
                 icon: const Icon(Icons.star_rounded, size: 14),
-                label: const Text('Upgrade'),
+                label: Text(l.upgrade),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.warning,
                   foregroundColor: Colors.white,
@@ -550,17 +513,17 @@ class _FreemiumBanner extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Row(
+              Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.people_alt_outlined,
                     size: 14,
                     color: AppColors.textSecondary,
                   ),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   Text(
-                    'Clients',
-                    style: TextStyle(
+                    l.clients,
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                       color: AppColors.textSecondary,
@@ -585,13 +548,13 @@ class _FreemiumBanner extends StatelessWidget {
             color: AppColors.warning,
           ),
           const SizedBox(height: 10),
-          const Row(
+          Row(
             children: [
-              Icon(Icons.lock_outline_rounded, size: 12, color: AppColors.warning),
-              SizedBox(width: 6),
+              const Icon(Icons.lock_outline_rounded, size: 12, color: AppColors.warning),
+              const SizedBox(width: 6),
               Text(
-                'Client limit reached — upgrade to add more',
-                style: TextStyle(
+                l.clientLimitReached,
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppColors.warning,
@@ -614,6 +577,7 @@ class _TodaysSessionsSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -638,9 +602,9 @@ class _TodaysSessionsSectionHeader extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Today's Sessions",
-                style: TextStyle(
+              Text(
+                l.todaysSessions,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
@@ -887,6 +851,7 @@ class _SessionCompletionTag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -910,7 +875,7 @@ class _SessionCompletionTag extends StatelessWidget {
           ),
           const SizedBox(width: 4),
           Text(
-            completed ? 'Completed' : 'Pending',
+            completed ? l.completed : l.pending,
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -1100,6 +1065,7 @@ class _InvitationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1138,7 +1104,7 @@ class _InvitationCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Expires ${invitation.expiresAt.toLocal().toString().split(' ').first}',
+                  l.expires(invitation.expiresAt.toLocal().toString().split(' ').first),
                   style: const TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -1154,9 +1120,9 @@ class _InvitationCard extends StatelessWidget {
               color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(20),
             ),
-            child: const Text(
-              'Pending',
-              style: TextStyle(
+            child: Text(
+              l.pending,
+              style: const TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primary,
@@ -1167,4 +1133,60 @@ class _InvitationCard extends StatelessWidget {
       ),
     );
   }
+}
+
+IconData _inboxIconForAlertType(String alertType) {
+  switch (alertType) {
+    case 'nutrition':
+      return Icons.restaurant_outlined;
+    case 'noLogin':
+      return Icons.how_to_reg_outlined;
+    case 'plateau':
+      return Icons.trending_down;
+    case 'missed':
+    default:
+      return Icons.fitness_center;
+  }
+}
+
+Color _inboxAccentForAlertType(String alertType) {
+  switch (alertType) {
+    case 'nutrition':
+      return AppColors.success;
+    case 'noLogin':
+      return const Color(0xFF3B82F6);
+    case 'plateau':
+      return const Color(0xFF8B5CF6);
+    case 'missed':
+    default:
+      return AppColors.warning;
+  }
+}
+
+List<AppInboxNotification> _coachInboxFromHome(HomeLoaded state, AppLocalizations l) {
+  final out = <AppInboxNotification>[];
+  for (final a in state.coachData.needsAttentionItems) {
+    out.add(
+      AppInboxNotification(
+        title: a.clientName,
+        body: a.message,
+        accent: _inboxAccentForAlertType(a.alertType),
+        icon: _inboxIconForAlertType(a.alertType),
+      ),
+    );
+  }
+  for (final inv in state.pendingInvitations) {
+    out.add(
+      AppInboxNotification(
+        title: l.pendingInvitation,
+        body: l.invited(inv.inviteeEmail),
+        accent: AppColors.primary,
+        icon: Icons.outgoing_mail,
+      ),
+    );
+  }
+  if (out.length > 20) {
+    return out.sublist(0, 20);
+  }
+  return out;
 }

@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:guidr/core/widgets/notification_inbox_button.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../trainees/domain/entities/inbody_report.dart';
 import '../../../trainees/presentation/utils/trainee_media_url.dart';
@@ -127,6 +128,7 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final notifItems = demoTraineeInboxNotifications();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -138,9 +140,9 @@ class _TraineeProgressScreenState extends State<TraineeProgressScreen> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none_outlined, color: AppColors.textPrimary),
-            onPressed: () {},
+          NotificationInboxButton(
+            items: notifItems,
+            badgeCount: notifItems.isNotEmpty ? notifItems.length : null,
           ),
           Padding(
             padding: const EdgeInsets.only(right: 16),

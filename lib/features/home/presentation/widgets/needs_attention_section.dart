@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:guidr/core/theme/app_colors.dart';
 import 'package:guidr/features/needs_attention/domain/entities/attention_item.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 
 /// A reusable section that displays items needing coach attention.
 /// Accepts dynamic data from the API via [items].
@@ -41,19 +42,20 @@ class NeedsAttentionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Row(
+            Row(
               children: [
-                Icon(Icons.circle, color: AppColors.error, size: 10),
-                SizedBox(width: 8),
+                const Icon(Icons.circle, color: AppColors.error, size: 10),
+                const SizedBox(width: 8),
                 Text(
-                  'Needs Attention',
-                  style: TextStyle(
+                  l.needsAttention,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -64,9 +66,9 @@ class NeedsAttentionSection extends StatelessWidget {
             if (items.isNotEmpty)
               TextButton(
                 onPressed: onViewAll,
-                child: const Text(
-                  'View all',
-                  style: TextStyle(fontWeight: FontWeight.w700),
+                child: Text(
+                  l.viewAllBtn,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
                 ),
               ),
           ],
@@ -75,8 +77,8 @@ class NeedsAttentionSection extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(
-              'No items need attention right now.',
-              style: TextStyle(
+              l.noItemsNeedAttention,
+              style: const TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,
               ),

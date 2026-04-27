@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guidr/core/di/injection_container.dart' as di;
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/features/coach_builders/data/local/plan_builder_local_storage.dart';
 import '../../bloc/nutrition_builder_bloc.dart';
 import '../../bloc/nutrition_builder_event.dart';
 
 class NutritionTemplateStep extends StatelessWidget {
   const NutritionTemplateStep({super.key});
 
-  static const _templates = [
+  static const _builtInTemplates = [
     {
       'id': '1',
       'title': 'High Protein — Muscle Building',
@@ -39,6 +41,9 @@ class NutritionTemplateStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final savedTemplates =
+        di.sl<PlanBuilderLocalStorage>().listNutritionTemplates();
+
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -51,18 +56,94 @@ class NutritionTemplateStep extends StatelessWidget {
         _DraftsCard(
           onTap: () => context
               .read<NutritionBuilderBloc>()
-              .add(const NutritionSetStep(3)),
+              .add(const RestoreNutritionDraftFromLocal()),
         ),
         const SizedBox(height: 24),
-        const Text('SAVED TEMPLATES',
+        if (savedTemplates.isNotEmpty) ...[
+          const Text('MY SAVED TEMPLATES',
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textSecondary,
+                  letterSpacing: 0.5)),
+          const SizedBox(height: 12),
+          ...savedTemplates.map((m) => _SavedTemplateCard(
+                id: m['id'] as String? ?? '',
+                name: m['name'] as String? ?? 'Untitled',
+                savedAt: m['savedAt'] as String?,
+              )),
+          const SizedBox(height: 24),
+        ],
+        const Text('STARTER TEMPLATES',
             style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.bold,
                 color: AppColors.textSecondary,
                 letterSpacing: 0.5)),
         const SizedBox(height: 12),
-        ..._templates.map((t) => _TemplateCard(template: t)),
+        ..._builtInTemplates.map((t) => _BuiltInTemplateCard(template: t)),
       ],
+    );
+  }
+}
+
+class _SavedTemplateCard extends StatelessWidget {
+  final String id;
+  final String name;
+  final String? savedAt;
+
+  const _SavedTemplateCard({
+    required this.id,
+    required this.name,
+    this.savedAt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    String subtitle = '';
+    if (savedAt != null) {
+      final dt = DateTime.tryParse(savedAt!);
+      if (dt != null) {
+        subtitle =
+            'Saved ${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: AppColors.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(Icons.bookmark, color: AppColors.primary, size: 22),
+        ),
+        title: Text(name,
+            style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: AppColors.textPrimary)),
+        subtitle: subtitle.isNotEmpty
+            ? Text(subtitle,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textSecondary))
+            : null,
+        trailing:
+            const Icon(Icons.chevron_right, color: AppColors.textMuted),
+        onTap: () => context
+            .read<NutritionBuilderBloc>()
+            .add(RestoreNutritionTemplateFromLocal(id)),
+      ),
     );
   }
 }
@@ -177,9 +258,9 @@ class _DraftsCard extends StatelessWidget {
   }
 }
 
-class _TemplateCard extends StatelessWidget {
+class _BuiltInTemplateCard extends StatelessWidget {
   final Map<String, dynamic> template;
-  const _TemplateCard({required this.template});
+  const _BuiltInTemplateCard({required this.template});
 
   @override
   Widget build(BuildContext context) {

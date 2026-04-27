@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 import 'package:guidr/features/trainee_today/presentation/pages/trainee_today_screen.dart';
 import 'package:guidr/features/trainee_workout/presentation/pages/trainee_workout_screen.dart';
 import 'package:guidr/features/trainee_nutrition/presentation/pages/trainee_nutrition_screen.dart';
@@ -40,6 +41,7 @@ class _TraineeLayoutPageState extends State<TraineeLayoutPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: Container(
@@ -57,36 +59,36 @@ class _TraineeLayoutPageState extends State<TraineeLayoutPage> {
           selectedFontSize: 11,
           unselectedFontSize: 11,
           elevation: 0,
-          items: const [
+          items: [
             BottomNavigationBarItem(
-              icon: Icon(Icons.calendar_today_outlined),
-              activeIcon: Icon(Icons.calendar_today),
-              label: 'Today',
+              icon: const Icon(Icons.calendar_today_outlined),
+              activeIcon: const Icon(Icons.calendar_today),
+              label: l.today,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.fitness_center_outlined),
-              activeIcon: Icon(Icons.fitness_center),
-              label: 'Workout',
+              icon: const Icon(Icons.fitness_center_outlined),
+              activeIcon: const Icon(Icons.fitness_center),
+              label: l.workout,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_outlined),
-              activeIcon: Icon(Icons.restaurant),
-              label: 'Nutrition',
+              icon: const Icon(Icons.restaurant_outlined),
+              activeIcon: const Icon(Icons.restaurant),
+              label: l.nutrition,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.show_chart_outlined),
-              activeIcon: Icon(Icons.show_chart),
-              label: 'Progress',
+              icon: const Icon(Icons.show_chart_outlined),
+              activeIcon: const Icon(Icons.show_chart),
+              label: l.progress,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.chat_bubble_outline),
-              activeIcon: Icon(Icons.chat_bubble),
-              label: 'Chat',
+              icon: const Icon(Icons.chat_bubble_outline),
+              activeIcon: const Icon(Icons.chat_bubble),
+              label: l.chat,
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
+              icon: const Icon(Icons.person_outline),
+              activeIcon: const Icon(Icons.person),
+              label: l.profile,
             ),
           ],
         ),

@@ -3,21 +3,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
+import 'package:guidr/core/widgets/notification_inbox_button.dart';
 import 'package:guidr/features/trainee_nutrition/presentation/pages/trainee_nutrition_screen.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/progress_bar.dart';
 import '../bloc/trainee_today_cubit.dart';
 import 'trainee_exercise_plan_screen.dart';
 
-class TraineeTodayScreen extends StatefulWidget {
+class TraineeTodayScreen extends StatelessWidget {
   const TraineeTodayScreen({super.key});
-
-  @override
-  State<TraineeTodayScreen> createState() => _TraineeTodayScreenState();
-}
-
-class _TraineeTodayScreenState extends State<TraineeTodayScreen> {
-  bool _notifExpanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +72,7 @@ class _TraineeTodayScreenState extends State<TraineeTodayScreen> {
               ? state.nutritionPlans.first
               : null;
 
-          const hasNotifications = false;
+          final notifItems = demoTraineeInboxNotifications();
 
           return Scaffold(
             backgroundColor: AppColors.background,
@@ -95,35 +89,13 @@ class _TraineeTodayScreenState extends State<TraineeTodayScreen> {
                 ),
               ),
               actions: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.notifications_none_outlined,
-                          color: AppColors.textPrimary),
-                      onPressed: () {
-                        setState(() {
-                          _notifExpanded = !_notifExpanded;
-                        });
-                      },
-                    ),
-                    if (hasNotifications)
-                      Positioned(
-                        top: 10,
-                        right: 10,
-                        child: Container(
-                          width: 8,
-                          height: 8,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEF4444),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                  ],
+                NotificationInboxButton(
+                  
+                  items: notifItems,
+                  badgeCount: notifItems.isNotEmpty ? notifItems.length : null,
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(right: 16.0),
+                  padding: const EdgeInsets.only(left: 0.0),
                   child: CircleAvatar(
                     radius: 18,
                     backgroundColor: AppColors.primaryLight,
@@ -187,10 +159,6 @@ class _TraineeTodayScreenState extends State<TraineeTodayScreen> {
                                 color: AppColors.textSecondary,
                               ),
                             ),
-                            const SizedBox(height: 16),
-
-                            // Notification section
-                            _buildNotificationSection(),
                             const SizedBox(height: 16),
 
                             // Streak card
@@ -912,160 +880,6 @@ class _TraineeTodayScreenState extends State<TraineeTodayScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  // ---------------------------------------------------------------------------
-  // Notification section
-  // ---------------------------------------------------------------------------
-
-  Widget _buildNotificationSection() {
-    return Column(
-      children: [
-        // Collapsed row / toggle
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              _notifExpanded = !_notifExpanded;
-            });
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: _notifExpanded
-                  ? const BorderRadius.vertical(top: Radius.circular(14))
-                  : BorderRadius.circular(14),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.notifications_none_outlined,
-                    size: 18, color: AppColors.textSecondary),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    '3 notifications',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                AnimatedRotation(
-                  turns: _notifExpanded ? 0.5 : 0,
-                  duration: const Duration(milliseconds: 200),
-                  child: const Icon(Icons.keyboard_arrow_down,
-                      size: 20, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Expanded notification cards
-        if (_notifExpanded)
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius:
-                  const BorderRadius.vertical(bottom: Radius.circular(14)),
-              border: Border(
-                left: BorderSide(color: AppColors.border),
-                right: BorderSide(color: AppColors.border),
-                bottom: BorderSide(color: AppColors.border),
-              ),
-            ),
-            child: Column(
-              children: [
-                _buildNotifCard(
-                  color: const Color(0xFF8B5CF6),
-                  icon: Icons.chat_bubble_outline,
-                  title: 'Coach Mike sent a message',
-                  description:
-                      'Great progress this week! Let\'s adjust your...',
-                ),
-                _buildNotifCard(
-                  color: const Color(0xFF10B981),
-                  icon: Icons.fitness_center,
-                  title: 'Workout completed!',
-                  description:
-                      'You finished Monday workout. +7 day streak.',
-                ),
-                _buildNotifCard(
-                  color: const Color(0xFFF59E0B),
-                  icon: Icons.restaurant_outlined,
-                  title: 'Nutrition reminder',
-                  description:
-                      'Don\'t forget to log lunch before 2pm!',
-                  isLast: true,
-                ),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildNotifCard({
-    required Color color,
-    required IconData icon,
-    required String title,
-    required String description,
-    bool isLast = false,
-  }) {
-    return Container(
-      margin: EdgeInsets.zero,
-      decoration: BoxDecoration(
-        border: Border(
-          left: BorderSide(color: color, width: 4),
-          bottom: isLast
-              ? BorderSide.none
-              : BorderSide(color: AppColors.border),
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 16, color: color),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    description,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

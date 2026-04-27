@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 import '../../domain/entities/trainee.dart';
 import '../bloc/trainees_bloc.dart';
 
@@ -56,9 +57,10 @@ class _TraineeProfileSettingsTabState
   }
 
   void _saveSettings() {
+    final l = AppLocalizations.of(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Coming soon — settings update not yet available'),
+        content: Text(l.comingSoonSettings),
         backgroundColor: AppColors.textSecondary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -110,36 +112,37 @@ class _TraineeProfileSettingsTabState
   }
 
   Widget? _bannerForCode(String code) {
+    final l = AppLocalizations.of(context);
     switch (code) {
       case 'missed':
-        return const _SettingsAlertBanner(
-          background: Color(0xFFFFE4E6),
-          borderColor: Color(0xFFFECDD3),
-          iconBg: Color(0xFFFFCCD0),
+        return _SettingsAlertBanner(
+          background: const Color(0xFFFFE4E6),
+          borderColor: const Color(0xFFFECDD3),
+          iconBg: const Color(0xFFFFCCD0),
           icon: Icons.fitness_center,
-          iconColor: Color(0xFFDC2626),
-          message: 'Missed workouts',
-          messageColor: Color(0xFFB91C1C),
+          iconColor: const Color(0xFFDC2626),
+          message: l.missedWorkoutsAlert,
+          messageColor: const Color(0xFFB91C1C),
         );
       case 'nutrition':
-        return const _SettingsAlertBanner(
-          background: Color(0xFFFEF9C3),
-          borderColor: Color(0xFFFEF08A),
-          iconBg: Color(0xFFFEF08A),
+        return _SettingsAlertBanner(
+          background: const Color(0xFFFEF9C3),
+          borderColor: const Color(0xFFFEF08A),
+          iconBg: const Color(0xFFFEF08A),
           icon: Icons.eco_outlined,
-          iconColor: Color(0xFFD97706),
-          message: 'Low nutrition adherence',
-          messageColor: Color(0xFFB45309),
+          iconColor: const Color(0xFFD97706),
+          message: l.lowNutritionAdherence,
+          messageColor: const Color(0xFFB45309),
         );
       case 'plateau':
-        return const _SettingsAlertBanner(
-          background: Color(0xFFEDE9FE),
-          borderColor: Color(0xFFC4B5FD),
-          iconBg: Color(0xFFDDD6FE),
+        return _SettingsAlertBanner(
+          background: const Color(0xFFEDE9FE),
+          borderColor: const Color(0xFFC4B5FD),
+          iconBg: const Color(0xFFDDD6FE),
           icon: Icons.show_chart_rounded,
-          iconColor: Color(0xFF7C3AED),
-          message: 'Weight plateau (3+ weeks)',
-          messageColor: Color(0xFF5B21B6),
+          iconColor: const Color(0xFF7C3AED),
+          message: l.weightPlateau,
+          messageColor: const Color(0xFF5B21B6),
         );
       default:
         return null;
@@ -147,19 +150,18 @@ class _TraineeProfileSettingsTabState
   }
 
   Future<void> _confirmArchive(BuildContext context) async {
+    final l = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Archive trainee?'),
-        content: Text(
-          '${_p.name} will be archived. You can restore them later if your app supports it.',
-        ),
+        title: Text(l.archiveTraineeQuestion),
+        content: Text(l.archiveTraineeBody(_p.name)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.cancel)),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: Colors.orange.shade700),
-            child: const Text('Archive'),
+            child: Text(l.archive),
           ),
         ],
       ),
@@ -171,19 +173,18 @@ class _TraineeProfileSettingsTabState
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
+    final l = AppLocalizations.of(context);
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Delete trainee permanently?'),
-        content: Text(
-          'This will remove ${_p.name} and their data. This action cannot be undone.',
-        ),
+        title: Text(l.deleteTraineePermanently),
+        content: Text(l.deleteTraineeBody(_p.name)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(l.cancel)),
           FilledButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: FilledButton.styleFrom(backgroundColor: AppColors.error),
-            child: const Text('Delete'),
+            child: Text(l.delete),
           ),
         ],
       ),
@@ -244,9 +245,9 @@ class _LevelGoalCard extends StatelessWidget {
                 child: const Icon(Icons.tune_rounded, color: AppColors.primary, size: 20),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Level & Goal',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).levelAndGoal,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
@@ -257,9 +258,9 @@ class _LevelGoalCard extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Level dropdown
-          const Text(
-            'TRAINEE LEVEL',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context).traineeLevelLabel,
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
@@ -304,9 +305,9 @@ class _LevelGoalCard extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Goal input
-          const Text(
-            'GOAL',
-            style: TextStyle(
+          Text(
+            AppLocalizations.of(context).goal.toUpperCase(),
+            style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
@@ -319,7 +320,7 @@ class _LevelGoalCard extends StatelessWidget {
             maxLines: 2,
             style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
             decoration: InputDecoration(
-              hintText: 'e.g. Lose 5 kg, Build muscle...',
+              hintText: AppLocalizations.of(context).goalHint,
               hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
               prefixIcon: const Icon(Icons.track_changes_rounded, color: AppColors.textSecondary, size: 20),
               filled: true,
@@ -348,7 +349,7 @@ class _LevelGoalCard extends StatelessWidget {
             child: FilledButton.icon(
               onPressed: onSave,
               icon: const Icon(Icons.check_rounded, size: 18),
-              label: const Text('Save Changes'),
+              label: Text(AppLocalizations.of(context).saveChanges),
               style: FilledButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -427,13 +428,14 @@ class _TraineeInfoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final notes = profile.notes?.trim();
     final rows = [
-      ('Name', profile.name),
-      ('Email', profile.email),
-      ('Goal', profile.goal),
-      ('Level', profile.level),
-      ('Notes', (notes == null || notes.isEmpty) ? '—' : notes),
+      (l.name, profile.name),
+      (l.email, profile.email),
+      (l.goal, profile.goal),
+      (l.traineeLevel, profile.level),
+      (l.notes, (notes == null || notes.isEmpty) ? '—' : notes),
     ];
 
     return Container(
@@ -452,11 +454,11 @@ class _TraineeInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Text(
-              'Trainee Info',
-              style: TextStyle(
+              l.traineeInfo,
+              style: const TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
@@ -515,13 +517,14 @@ class _ArchiveTraineeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: Icon(Icons.inventory_2_outlined, color: Colors.orange.shade800),
         label: Text(
-          'Archive Trainee',
+          l.archiveTrainee,
           style: TextStyle(
             fontWeight: FontWeight.w700,
             color: Colors.orange.shade900,
@@ -546,14 +549,15 @@ class _DeleteTraineeButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: const Icon(Icons.delete_outline_rounded, color: Color(0xFFB91C1C)),
-        label: const Text(
-          'Delete Trainee Permanently',
-          style: TextStyle(
+        label: Text(
+          l.deleteTraineePermanentlyBtn,
+          style: const TextStyle(
             fontWeight: FontWeight.w700,
             color: Color(0xFFB91C1C),
           ),

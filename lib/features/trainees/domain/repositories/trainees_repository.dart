@@ -1,6 +1,7 @@
 import '../../domain/entities/trainee.dart';
 import '../../domain/entities/invitation.dart';
 import '../../domain/entities/coach_trainee_detail.dart';
+import 'package:guidr/features/trainee_app/domain/entities/water_intake_day.dart';
 
 abstract class TraineesRepository {
   Future<List<Trainee>> getMyTrainees();
@@ -17,4 +18,5 @@ abstract class TraineesRepository {
   Future<void> uploadProgressPhoto(String traineeId, List<int> fileBytes, String fileName);
   Future<void> archiveTrainee(String id);
   Future<void> deleteTrainee(String id);
+  Future<WaterIntakeDay> getTraineeWaterIntake(String traineeId, {DateTime? date});
 }

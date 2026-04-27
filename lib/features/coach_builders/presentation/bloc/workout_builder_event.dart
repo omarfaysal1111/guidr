@@ -108,3 +108,14 @@ class AssignWorkout extends WorkoutBuilderEvent {}
 class SaveWorkoutTemplate extends WorkoutBuilderEvent {}
 
 class SaveWorkoutDraft extends WorkoutBuilderEvent {}
+
+/// Restores the last device-saved draft (if any). No API.
+class RestoreWorkoutDraftFromLocal extends WorkoutBuilderEvent {
+  const RestoreWorkoutDraftFromLocal();
+}
+
+/// Restores a template previously saved to device. [templateId] from [PlanBuilderLocalStorage.listWorkoutTemplates].
+class RestoreWorkoutTemplateFromLocal extends WorkoutBuilderEvent {
+  final String templateId;
+  const RestoreWorkoutTemplateFromLocal(this.templateId);
+}

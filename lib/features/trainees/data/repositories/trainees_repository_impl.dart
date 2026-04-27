@@ -1,6 +1,7 @@
 import '../../domain/entities/trainee.dart';
 import '../../domain/entities/invitation.dart';
 import '../../domain/entities/coach_trainee_detail.dart';
+import 'package:guidr/features/trainee_app/domain/entities/water_intake_day.dart';
 import '../../domain/repositories/trainees_repository.dart';
 import '../datasources/trainees_remote_data_source.dart';
 
@@ -77,5 +78,10 @@ class TraineesRepositoryImpl implements TraineesRepository {
   @override
   Future<void> deleteTrainee(String id) async {
     return await remoteDataSource.deleteTrainee(id);
+  }
+
+  @override
+  Future<WaterIntakeDay> getTraineeWaterIntake(String traineeId, {DateTime? date}) {
+    return remoteDataSource.getTraineeWaterIntake(traineeId, date: date);
   }
 }

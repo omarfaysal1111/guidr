@@ -1,5 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'package:guidr/core/network/api_client.dart';
+import 'package:guidr/features/trainee_app/domain/entities/water_intake_day.dart';
 import '../../domain/entities/trainee.dart';
 import '../../domain/entities/invitation.dart';
 import '../../domain/entities/coach_trainee_detail.dart';
@@ -19,6 +20,8 @@ abstract class TraineesRemoteDataSource {
   Future<void> uploadProgressPhoto(String traineeId, List<int> fileBytes, String fileName);
   Future<void> archiveTrainee(String id);
   Future<void> deleteTrainee(String id);
+  /// Coach read-only mirror of trainee water log for a calendar day.
+  Future<WaterIntakeDay> getTraineeWaterIntake(String traineeId, {DateTime? date});
 }
 
 class TraineesRemoteDataSourceImpl implements TraineesRemoteDataSource {
@@ -140,5 +143,19 @@ class TraineesRemoteDataSourceImpl implements TraineesRemoteDataSource {
   @override
   Future<void> deleteTrainee(String id) async {
     await apiClient.delete('/coaches/trainees/$id');
+  }
+
+  @override
+  Future<WaterIntakeDay> getTraineeWaterIntake(
+    String traineeId, {
+    DateTime? date,
+  }) async {
+    final path = date == null
+        ? '/coaches/trainees/$traineeId/water-intake'
+        : '/coaches/trainees/$traineeId/water-intake?date=${Uri.encodeComponent(WaterIntakeDay.formatDate(date))}';
+    final response = await apiClient.get(path);
+    final raw = response['data'] ?? response;
+    final m = Map<String, dynamic>.from(raw as Map);
+    return WaterIntakeDay.fromJson(m);
   }
 }

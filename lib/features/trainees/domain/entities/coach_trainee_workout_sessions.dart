@@ -9,12 +9,15 @@ class CoachTraineeWorkoutSetDetail extends Equatable {
   final String? reason;
   /// Logged load for this set (kg), when API sends `weight` / `weightKg` on each set row.
   final double? weightKg;
+  /// Actual reps performed for this set.
+  final int? reps;
 
   const CoachTraineeWorkoutSetDetail({
     required this.setNumber,
     required this.outcome,
     this.reason,
     this.weightKg,
+    this.reps,
   });
 
   bool get isCompleted => outcome.toUpperCase() == 'COMPLETED';
@@ -45,11 +48,16 @@ class CoachTraineeWorkoutSetDetail extends Equatable {
       }
     }
     final reason = m['reason']?.toString() ?? m['skipReason']?.toString();
+    final repsRaw = m['reps'] ?? m['actualReps'] ?? m['loggedReps'] ?? m['repsCompleted'];
+    final reps = repsRaw is num
+        ? repsRaw.toInt()
+        : int.tryParse(repsRaw?.toString() ?? '');
     return CoachTraineeWorkoutSetDetail(
       setNumber: sn,
       outcome: outcome,
       reason: reason != null && reason.trim().isEmpty ? null : reason?.trim(),
       weightKg: _readSetWeightKg(m),
+      reps: reps,
     );
   }
 
@@ -76,7 +84,7 @@ class CoachTraineeWorkoutSetDetail extends Equatable {
   }
 
   @override
-  List<Object?> get props => [setNumber, outcome, reason, weightKg];
+  List<Object?> get props => [setNumber, outcome, reason, weightKg, reps];
 }
 
 /// Logged exercise row for a single day (coach trainee API).

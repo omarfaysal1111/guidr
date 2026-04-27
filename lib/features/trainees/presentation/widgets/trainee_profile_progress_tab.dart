@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 import '../../domain/entities/inbody_report.dart';
 import '../bloc/trainees_bloc.dart';
 import '../utils/trainee_media_url.dart';
@@ -144,13 +145,13 @@ class _TraineeProfileProgressTabState extends State<TraineeProfileProgressTab> {
     }
     final d = widget.detail;
     if (d == null) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(24),
+          padding: const EdgeInsets.all(24),
           child: Text(
-            'Could not load progress data.',
+            AppLocalizations.of(context).couldNotLoadProgress,
             textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textSecondary),
+            style: const TextStyle(color: AppColors.textSecondary),
           ),
         ),
       );
@@ -179,15 +180,18 @@ class _TraineeProfileProgressTabState extends State<TraineeProfileProgressTab> {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 28),
       children: [
         _ProgressSectionCard(
-          child: Column(
+          child: Builder(
+            builder: (context) {
+              final l = AppLocalizations.of(context);
+              return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Weight Trend',
-                      style: TextStyle(
+                      l.weightTrend,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
@@ -202,10 +206,10 @@ class _TraineeProfileProgressTabState extends State<TraineeProfileProgressTab> {
                 height: 200,
                 width: double.infinity,
                 child: weights.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
-                          'No weight logs yet.',
-                          style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                          l.noWeightLogs,
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                         ),
                       )
                     : Column(
@@ -238,15 +242,20 @@ class _TraineeProfileProgressTabState extends State<TraineeProfileProgressTab> {
                       ),
               ),
             ],
+          );
+            },
           ),
         ),
         const SizedBox(height: 14),
         _ProgressSectionCard(
-          child: Column(
+          child: Builder(
+            builder: (context) {
+              final l = AppLocalizations.of(context);
+              return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                wp.countsForToday ? 'Today' : 'This Week',
+                wp.countsForToday ? l.today : l.thisWeek,
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
@@ -255,32 +264,37 @@ class _TraineeProfileProgressTabState extends State<TraineeProfileProgressTab> {
               ),
               const SizedBox(height: 14),
               _RedProgressRow(
-                label: 'Workouts',
+                label: l.workouts,
                 done: wp.completedThisWeek,
                 total: wp.targetThisWeek,
                 fraction: wFrac,
               ),
               const SizedBox(height: 14),
               _RedProgressRow(
-                label: 'Nutrition',
+                label: l.nutrition,
                 done: np.mealsLogged,
                 total: np.mealsTarget,
                 fraction: nFrac,
               ),
             ],
+          );
+            },
           ),
         ),
         const SizedBox(height: 14),
         _ProgressSectionCard(
-          child: Column(
+          child: Builder(
+            builder: (context) {
+              final l = AppLocalizations.of(context);
+              return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'Body Measurements',
-                      style: TextStyle(
+                      l.bodyMeasurements,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
@@ -293,6 +307,8 @@ class _TraineeProfileProgressTabState extends State<TraineeProfileProgressTab> {
               const SizedBox(height: 14),
               _MeasurementGrid(latest: latest),
             ],
+          );
+            },
           ),
         ),
         const SizedBox(height: 14),
@@ -356,9 +372,9 @@ class _FromTraineeBadge extends StatelessWidget {
         color: AppColors.successLight,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text(
-        'From Trainee',
-        style: TextStyle(
+      child: Text(
+        AppLocalizations.of(context).fromTrainee,
+        style: const TextStyle(
           fontSize: 10,
           fontWeight: FontWeight.w700,
           color: AppColors.success,
@@ -429,8 +445,8 @@ class _InBodyCard extends StatelessWidget {
     if (bytes == null || bytes.isEmpty) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Could not read the selected file. Try a smaller file or re-save the export.'),
+          SnackBar(
+            content: Text(AppLocalizations.of(context).couldNotReadFile),
             behavior: SnackBarBehavior.floating,
           ),
         );
@@ -504,10 +520,10 @@ class _InBodyCard extends StatelessWidget {
                   children: [
                     Icon(Icons.analytics_outlined, size: 22, color: Colors.teal.shade700),
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'InBody reports',
-                        style: TextStyle(
+                        AppLocalizations.of(context).inBodyReports,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
@@ -520,11 +536,11 @@ class _InBodyCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                subtitle: const Padding(
-                  padding: EdgeInsets.only(top: 4),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4),
                   child: Text(
-                    'Upload scans or PDFs from the device. Expand a row to preview.',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    AppLocalizations.of(context).inBodyReportsSubtitle,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ),
                 children: [
@@ -539,7 +555,7 @@ class _InBodyCard extends StatelessWidget {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.upload_file_rounded, size: 20),
-                      label: Text(uploading ? 'Uploading…' : 'Upload image or PDF'),
+                      label: Text(uploading ? AppLocalizations.of(context).uploading : AppLocalizations.of(context).uploadImageOrPdf),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -548,11 +564,11 @@ class _InBodyCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 12),
                   if (reports.isEmpty)
-                    const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
                       child: Text(
-                        'No InBody reports yet.',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                        AppLocalizations.of(context).noInBodyReports,
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                       ),
                     )
                   else
@@ -830,10 +846,10 @@ class _ProgressPhotosCard extends StatelessWidget {
             children: [
               const Icon(Icons.photo_camera_outlined, size: 20, color: AppColors.primary),
               const SizedBox(width: 8),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Pose check-ins',
-                  style: TextStyle(
+                  AppLocalizations.of(context).poseCheckIns,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -872,13 +888,13 @@ class _ProgressPhotosCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         range == null
-                            ? 'All dates'
+                            ? AppLocalizations.of(context).allDates
                             : '${range!.start.day}/${range!.start.month}/${range!.start.year} to ${range!.end.day}/${range!.end.month}/${range!.end.year}',
                         style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                       ),
                     ),
                     if (range != null)
-                      TextButton(onPressed: onClearRange, child: const Text('Clear')),
+                      TextButton(onPressed: onClearRange, child: Text(AppLocalizations.of(context).clear)),
                   ],
                 ),
               ),
@@ -895,12 +911,12 @@ class _ProgressPhotosCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           if (latest == null)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
               child: Center(
                 child: Text(
-                  'No photos in this range.',
-                  style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                  AppLocalizations.of(context).noPhotosInRange,
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                 ),
               ),
             )
@@ -909,21 +925,21 @@ class _ProgressPhotosCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _PhotoSlot(
-                    label: 'Front',
+                    label: AppLocalizations.of(context).front,
                     url: latest.frontPictureUrl,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _PhotoSlot(
-                    label: 'Side',
+                    label: AppLocalizations.of(context).sideLabel,
                     url: latest.sidePictureUrl,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _PhotoSlot(
-                    label: 'Back',
+                    label: AppLocalizations.of(context).backLabel,
                     url: latest.backPictureUrl,
                   ),
                 ),
@@ -1003,9 +1019,9 @@ class _TraineeFeedbackCard extends StatelessWidget {
             children: [
               Icon(Icons.chat_bubble_outline_rounded, size: 22, color: Colors.purple.shade400),
               const SizedBox(width: 8),
-              const Text(
-                'Trainee Feedback',
-                style: TextStyle(
+              Text(
+                AppLocalizations.of(context).traineeFeedback,
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
@@ -1015,9 +1031,9 @@ class _TraineeFeedbackCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           if (sorted.isEmpty)
-            const Text(
-              'No feedback entries yet.',
-              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            Text(
+              AppLocalizations.of(context).noFeedbackYet,
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
             )
           else
             ...sorted.asMap().entries.map((e) {
@@ -1051,7 +1067,7 @@ class _TraineeFeedbackCard extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
-                                'Latest',
+                                AppLocalizations.of(context).latest,
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w700,
@@ -1117,7 +1133,7 @@ class _CoachNotesCard extends StatelessWidget {
         } else {
           messenger.showSnackBar(
             SnackBar(
-              content: Text('Notes saved for $traineeName'),
+              content: Text(AppLocalizations.of(context).notesForTrainee(traineeName)),
               backgroundColor: AppColors.success,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -1133,9 +1149,9 @@ class _CoachNotesCard extends StatelessWidget {
               children: [
                 Icon(Icons.edit_note_rounded, size: 24, color: Colors.teal.shade600),
                 const SizedBox(width: 8),
-                const Text(
-                  'Coach Notes',
-                  style: TextStyle(
+                Text(
+                  AppLocalizations.of(context).coachNotes,
+                  style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
@@ -1150,7 +1166,7 @@ class _CoachNotesCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Feedback for $traineeName',
+                    AppLocalizations.of(context).feedbackForTrainee(traineeName),
                     style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -1165,7 +1181,7 @@ class _CoachNotesCard extends StatelessWidget {
               controller: coachNotesController,
               maxLines: 4,
               decoration: InputDecoration(
-                hintText: 'Write your feedback here... This will be visible to the trainee.',
+                hintText: AppLocalizations.of(context).feedbackHint,
                 hintStyle: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.85), fontSize: 13),
                 filled: true,
                 fillColor: AppColors.card,
@@ -1185,7 +1201,7 @@ class _CoachNotesCard extends StatelessWidget {
                 Icon(Icons.warning_amber_rounded, size: 18, color: Colors.orange.shade700),
                 const SizedBox(width: 6),
                 Text(
-                  'Caution / Medical Notes',
+                  AppLocalizations.of(context).cautionMedicalNotes,
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -1199,7 +1215,7 @@ class _CoachNotesCard extends StatelessWidget {
               controller: cautionController,
               maxLines: 3,
               decoration: InputDecoration(
-                hintText: 'Injuries, restrictions, things to watch out for...',
+                hintText: AppLocalizations.of(context).cautionHint,
                 hintStyle: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.85), fontSize: 13),
                 filled: true,
                 fillColor: const Color(0xFFFFFDE7),
@@ -1244,7 +1260,7 @@ class _CoachNotesCard extends StatelessWidget {
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                           )
                         : const Icon(Icons.save_rounded, size: 18),
-                    label: Text(saving ? 'Saving…' : 'Save Notes'),
+                    label: Text(saving ? AppLocalizations.of(context).saving : AppLocalizations.of(context).saveNotes),
                     style: FilledButton.styleFrom(
                       backgroundColor: Colors.teal.shade600,
                       padding: const EdgeInsets.symmetric(vertical: 13),
@@ -1324,9 +1340,9 @@ class _GoalsCardState extends State<_GoalsCard> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'Edit Goal',
-                    style: TextStyle(
+                  Text(
+                    AppLocalizations.of(context).editGoal,
+                    style: const TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
@@ -1341,7 +1357,7 @@ class _GoalsCardState extends State<_GoalsCard> {
                     textCapitalization: TextCapitalization.sentences,
                     style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
                     decoration: InputDecoration(
-                      hintText: 'Goal description…',
+                      hintText: AppLocalizations.of(context).goalDescription,
                       hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14),
                       filled: true,
                       fillColor: AppColors.surface,
@@ -1390,7 +1406,7 @@ class _GoalsCardState extends State<_GoalsCard> {
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      child: const Text('Save'),
+                      child: Text(AppLocalizations.of(context).save),
                     ),
                   ),
                 ],
@@ -1441,10 +1457,10 @@ class _GoalsCardState extends State<_GoalsCard> {
                   children: [
                     Icon(Icons.track_changes, size: 22, color: Colors.teal.shade600),
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: Text(
-                        'Goals',
-                        style: TextStyle(
+                        AppLocalizations.of(context).goalsLabel,
+                        style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
@@ -1452,23 +1468,23 @@ class _GoalsCardState extends State<_GoalsCard> {
                       ),
                     ),
                     Text(
-                      '$done/${goals.length} done',
+                      '$done/${goals.length} ${AppLocalizations.of(context).doneSuffix}',
                       style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Tap to mark done · Tap ✏ to edit · Swipe left to delete',
+                  AppLocalizations.of(context).tapToMarkDone,
                   style: TextStyle(fontSize: 11, color: AppColors.textMuted.withValues(alpha: 0.9)),
                 ),
                 const SizedBox(height: 12),
                 if (goals.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
                     child: Text(
-                      'No goals listed yet.',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                      AppLocalizations.of(context).noGoalsYet,
+                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
                     ),
                   )
                 else
@@ -1576,7 +1592,7 @@ class _GoalsCardState extends State<_GoalsCard> {
                         style: const TextStyle(fontSize: 13, color: AppColors.textPrimary),
                         onSubmitted: (_) => _submitAdd(context, saving),
                         decoration: InputDecoration(
-                          hintText: 'Add a new goal...',
+                          hintText: AppLocalizations.of(context).addNewGoal,
                           hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),

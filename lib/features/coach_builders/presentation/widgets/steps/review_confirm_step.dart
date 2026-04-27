@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guidr/core/di/injection_container.dart' as di;
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/features/coach_builders/data/local/plan_builder_local_storage.dart';
 import 'package:guidr/features/coach_builders/domain/entities/builder_exercise.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 import '../../bloc/workout_builder_bloc.dart';
 import '../../bloc/workout_builder_event.dart';
 import '../../bloc/workout_builder_state.dart';
@@ -11,6 +14,7 @@ class ReviewConfirmStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return BlocBuilder<WorkoutBuilderBloc, WorkoutBuilderState>(
       builder: (context, state) {
         final totalExercises = state.totalExerciseCount;
@@ -23,13 +27,13 @@ class ReviewConfirmStep extends StatelessWidget {
             _ReviewCard(
               icon: Icons.people,
               iconColor: const Color(0xFF3B82F6),
-              title: 'Trainees',
+              title: l.trainees,
               onEdit: () =>
                   context.read<WorkoutBuilderBloc>().add(const SetStep(1)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('${state.selectedTraineeIds.length} trainees selected',
+                  Text(l.traineesSelected(state.selectedTraineeIds.length),
                       style: const TextStyle(fontSize: 14)),
                   if (state.allTrainees.isNotEmpty) ...[
                     const SizedBox(height: 8),
@@ -59,14 +63,14 @@ class ReviewConfirmStep extends StatelessWidget {
             _ReviewCard(
               icon: Icons.fitness_center,
               iconColor: AppColors.primary,
-              title: 'Plan & sessions',
+              title: l.planAndSessions,
               onEdit: () =>
                   context.read<WorkoutBuilderBloc>().add(const SetStep(3)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    state.planTitle.isEmpty ? 'Untitled plan' : state.planTitle,
+                    state.planTitle.isEmpty ? l.untitledPlan : state.planTitle,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 14,
@@ -77,7 +81,7 @@ class ReviewConfirmStep extends StatelessWidget {
                     final i = e.key;
                     final s = e.value;
                     final label = s.title.trim().isEmpty
-                        ? 'Session ${i + 1}'
+                        ? l.sessionNumber(i + 1)
                         : s.title.trim();
                     return [
                       _ExerciseGroupHeader(
@@ -97,23 +101,23 @@ class ReviewConfirmStep extends StatelessWidget {
             _ReviewCard(
               icon: Icons.calendar_today,
               iconColor: AppColors.warning,
-              title: 'Schedule',
+              title: l.schedule,
               onEdit: () =>
                   context.read<WorkoutBuilderBloc>().add(const SetStep(4)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _InfoRow(
-                      label: 'Date',
+                      label: l.date,
                       value: state.selectedDate != null
                           ? '${state.selectedDate!.day}/${state.selectedDate!.month}/${state.selectedDate!.year}'
-                          : 'Immediately'),
-                  _InfoRow(label: 'Recurrence', value: state.recurrence),
+                          : l.immediatelyLabel),
+                  _InfoRow(label: l.recurrence, value: state.recurrence),
                   _InfoRow(
-                      label: 'Remind',
+                      label: l.remindTrainee,
                       value: state.remindTrainee ? 'Yes' : 'No'),
                   _InfoRow(
-                      label: 'Alert if missed',
+                      label: l.alertIfMissed,
                       value: state.alertIfMissed ? 'Yes' : 'No'),
                 ],
               ),
@@ -123,19 +127,19 @@ class ReviewConfirmStep extends StatelessWidget {
               _ReviewCard(
                 icon: Icons.notes,
                 iconColor: AppColors.textSecondary,
-                title: 'Notes',
+                title: l.notes,
                 onEdit: () =>
                     context.read<WorkoutBuilderBloc>().add(const SetStep(3)),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (state.instructions.isNotEmpty)
-                      Text('Instructions: ${state.instructions}',
+                      Text('${l.descriptionInstructions}: ${state.instructions}',
                           style: const TextStyle(fontSize: 13)),
                     if (state.caution.isNotEmpty)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
-                        child: Text('Caution: ${state.caution}',
+                        child: Text('${l.cautionNotesLabel}: ${state.caution}',
                             style: const TextStyle(
                                 fontSize: 13, color: AppColors.warning)),
                       ),
@@ -163,8 +167,8 @@ class ReviewConfirmStep extends StatelessWidget {
                       height: 24,
                       child: CircularProgressIndicator(
                           color: Colors.white, strokeWidth: 2))
-                  : const Text('CONFIRM & ASSIGN WORKOUT',
-                      style: TextStyle(
+                  : Text(l.confirmAndAssignWorkout,
+                      style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 16)),
@@ -180,7 +184,7 @@ class ReviewConfirmStep extends StatelessWidget {
                             .read<WorkoutBuilderBloc>()
                             .add(SaveWorkoutDraft()),
                     icon: const Icon(Icons.save_outlined, size: 18),
-                    label: const Text('Save Draft'),
+                    label: Text(l.saveDraft),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.textSecondary,
                       side: const BorderSide(color: AppColors.border),
@@ -199,7 +203,7 @@ class ReviewConfirmStep extends StatelessWidget {
                             .read<WorkoutBuilderBloc>()
                             .add(SaveWorkoutTemplate()),
                     icon: const Icon(Icons.bookmark_border, size: 18),
-                    label: const Text('Save Template'),
+                    label: Text(l.saveTemplate),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: const Color(0xFF3B82F6),
                       side: const BorderSide(color: Color(0xFF3B82F6)),
@@ -211,12 +215,92 @@ class ReviewConfirmStep extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: 12),
+            Text(
+              l.savedOnDevice,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary.withValues(alpha: 0.9),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                TextButton.icon(
+                  onPressed: state.saving
+                      ? null
+                      : () => context
+                          .read<WorkoutBuilderBloc>()
+                          .add(const RestoreWorkoutDraftFromLocal()),
+                  icon: const Icon(Icons.download_outlined, size: 18),
+                  label: Text(l.loadDraft),
+                ),
+                TextButton.icon(
+                  onPressed: state.saving
+                      ? null
+                      : () => _showWorkoutTemplatePicker(context),
+                  icon: const Icon(Icons.bookmarks_outlined, size: 18),
+                  label: Text(l.loadTemplateBtn),
+                ),
+              ],
+            ),
             const SizedBox(height: 32),
           ],
         );
       },
     );
   }
+}
+
+void _showWorkoutTemplatePicker(BuildContext context) {
+  final store = di.sl<PlanBuilderLocalStorage>();
+  final list = store.listWorkoutTemplates();
+  if (list.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No saved templates on this device yet.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return;
+  }
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) => SafeArea(
+      child: ListView(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
+            child: Text(
+              'Workout templates (device storage)',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          ...list.map(
+            (m) {
+              final id = m['id'] as String? ?? '';
+              final name = m['name'] as String? ?? 'Untitled';
+              return ListTile(
+                title: Text(name),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.read<WorkoutBuilderBloc>().add(
+                        RestoreWorkoutTemplateFromLocal(id),
+                      );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class _HeaderBanner extends StatelessWidget {

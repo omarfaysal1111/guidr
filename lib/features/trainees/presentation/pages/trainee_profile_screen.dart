@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_colors.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 import '../bloc/trainees_bloc.dart';
 import '../widgets/trainee_profile_plans_tab.dart';
 import '../widgets/trainee_profile_progress_tab.dart';
@@ -127,6 +128,7 @@ class _TraineeProfileScreenState extends State<TraineeProfileScreen> {
           detail: state.traineeDetail,
           loading: state.traineeDetailLoading,
           traineeId: t.id.toString(),
+          waterIntake: state.traineeWaterIntake,
         );
       case 2:
         return TraineeProfileProgressTab(
@@ -158,6 +160,7 @@ class _TraineeProfileScreenState extends State<TraineeProfileScreen> {
   }
 
   Widget _buildOverview(Trainee t, TraineesLoaded state) {
+    final l = AppLocalizations.of(context);
     final p = _resolvedProfile(t, state);
     final weightDisplay = _resolvedWeight(t, state);
     final adherence = p.adherence.clamp(0, 100);
@@ -251,7 +254,7 @@ class _TraineeProfileScreenState extends State<TraineeProfileScreen> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'View Health & Training History',
+                        l.viewHealthHistory,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -271,15 +274,15 @@ class _TraineeProfileScreenState extends State<TraineeProfileScreen> {
                     child: _OverviewMetricTile(
                       value: '$adherence%',
                       valueColor: adherenceColor,
-                      label: 'ADHERENCE',
+                      label: l.adherenceLabel,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  const Expanded(
+                  Expanded(
                     child: _OverviewMetricTile(
                       value: '—',
                       valueColor: AppColors.textPrimary,
-                      label: 'DAY STREAK',
+                      label: l.dayStreak,
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -287,15 +290,15 @@ class _TraineeProfileScreenState extends State<TraineeProfileScreen> {
                     child: _OverviewMetricTile(
                       value: weightDisplay,
                       valueColor: AppColors.textPrimary,
-                      label: 'WEIGHT',
+                      label: l.weightLabel,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 18),
               Text(
-                'DIRECTION / GOAL',
-                style: TextStyle(
+                l.directionGoal,
+                style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 0.6,
@@ -330,9 +333,9 @@ class _TraineeProfileScreenState extends State<TraineeProfileScreen> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  const Text(
-                    'Trainee Level',
-                    style: TextStyle(
+                  Text(
+                    l.traineeLevel,
+                    style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.textSecondary,
                     ),
@@ -416,36 +419,37 @@ class _TraineeProfileScreenState extends State<TraineeProfileScreen> {
   }
 
   Widget? _overviewAlertForCode(String code) {
+    final l = AppLocalizations.of(context);
     switch (code) {
       case 'missed':
-        return const _OverviewAlertBanner(
-          background: Color(0xFFFFE4E6),
-          borderColor: Color(0xFFFECDD3),
-          iconBg: Color(0xFFFFCCD0),
+        return _OverviewAlertBanner(
+          background: const Color(0xFFFFE4E6),
+          borderColor: const Color(0xFFFECDD3),
+          iconBg: const Color(0xFFFFCCD0),
           icon: Icons.fitness_center,
-          iconColor: Color(0xFFDC2626),
-          message: 'Missed workouts',
-          messageColor: Color(0xFFB91C1C),
+          iconColor: const Color(0xFFDC2626),
+          message: l.missedWorkoutsAlert,
+          messageColor: const Color(0xFFB91C1C),
         );
       case 'nutrition':
-        return const _OverviewAlertBanner(
-          background: Color(0xFFFEF9C3),
-          borderColor: Color(0xFFFEF08A),
-          iconBg: Color(0xFFFEF08A),
+        return _OverviewAlertBanner(
+          background: const Color(0xFFFEF9C3),
+          borderColor: const Color(0xFFFEF08A),
+          iconBg: const Color(0xFFFEF08A),
           icon: Icons.eco_outlined,
-          iconColor: Color(0xFFD97706),
-          message: 'Low nutrition adherence',
-          messageColor: Color(0xFFB45309),
+          iconColor: const Color(0xFFD97706),
+          message: l.lowNutritionAdherence,
+          messageColor: const Color(0xFFB45309),
         );
       case 'plateau':
-        return const _OverviewAlertBanner(
-          background: Color(0xFFEDE9FE),
-          borderColor: Color(0xFFC4B5FD),
-          iconBg: Color(0xFFDDD6FE),
+        return _OverviewAlertBanner(
+          background: const Color(0xFFEDE9FE),
+          borderColor: const Color(0xFFC4B5FD),
+          iconBg: const Color(0xFFDDD6FE),
           icon: Icons.show_chart_rounded,
-          iconColor: Color(0xFF7C3AED),
-          message: 'Weight plateau (3+ weeks)',
-          messageColor: Color(0xFF5B21B6),
+          iconColor: const Color(0xFF7C3AED),
+          message: l.weightPlateau,
+          messageColor: const Color(0xFF5B21B6),
         );
       default:
         return null;
@@ -465,7 +469,8 @@ class _SegmentedTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Overview', 'Plans', 'Progress', 'Settings'];
+    final l = AppLocalizations.of(context);
+    final labels = [l.overview, l.plans, l.progress, l.settings];
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -640,6 +645,7 @@ class _WeeklySummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -650,9 +656,9 @@ class _WeeklySummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Weekly Summary',
-            style: TextStyle(
+          Text(
+            l.weeklySummary,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
@@ -660,14 +666,14 @@ class _WeeklySummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _SummaryRow(
-            label: 'Workouts',
+            label: l.workouts,
             done: workoutDone,
             total: workoutTotal,
             pct: workoutPct,
           ),
           const SizedBox(height: 14),
           _SummaryRow(
-            label: 'Nutrition',
+            label: l.nutrition,
             done: nutritionDone,
             total: nutritionTotal,
             pct: nutritionPct,
@@ -751,11 +757,12 @@ class _DetailsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final rows = [
-      ('Email', email),
-      ('Weight', weight),
-      ('Last Active', lastActive),
-      ('Next Session', nextSession),
+      (l.email, email),
+      (l.weight, weight),
+      (l.lastActive, lastActive),
+      (l.nextSession, nextSession),
     ];
 
     return Container(
@@ -768,9 +775,9 @@ class _DetailsCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Details',
-            style: TextStyle(
+          Text(
+            l.details,
+            style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,

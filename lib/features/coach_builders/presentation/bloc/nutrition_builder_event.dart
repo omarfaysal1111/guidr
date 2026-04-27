@@ -39,9 +39,15 @@ class NutritionAddMealItem extends NutritionBuilderEvent {
   final String? customName;
   final Ingredient? libraryIngredient;
 
+  /// Quantity in grams (only used when [libraryIngredient] is provided).
+  final double quantityG;
+
   const NutritionAddMealItem.custom(this.section, this.customName)
-      : libraryIngredient = null;
-  const NutritionAddMealItem.fromLibrary(this.section, this.libraryIngredient)
+      : libraryIngredient = null,
+        quantityG = 0;
+
+  const NutritionAddMealItem.fromLibrary(
+      this.section, this.libraryIngredient, this.quantityG)
       : customName = null;
 }
 
@@ -49,6 +55,13 @@ class NutritionRemoveMealItem extends NutritionBuilderEvent {
   final MealSection section;
   final int index;
   const NutritionRemoveMealItem(this.section, this.index);
+}
+
+class NutritionUpdateMealItemQty extends NutritionBuilderEvent {
+  final MealSection section;
+  final int index;
+  final double quantityG;
+  const NutritionUpdateMealItemQty(this.section, this.index, this.quantityG);
 }
 
 class NutritionLoadIngredientLibrary extends NutritionBuilderEvent {}
@@ -75,8 +88,15 @@ class NutritionUpdateSchedule extends NutritionBuilderEvent {
 
 class NutritionAssignPlan extends NutritionBuilderEvent {}
 
-class NutritionSaveTemplate extends NutritionBuilderEvent {
-  
-}
+class NutritionSaveTemplate extends NutritionBuilderEvent {}
 
 class NutritionSaveDraft extends NutritionBuilderEvent {}
+
+class RestoreNutritionDraftFromLocal extends NutritionBuilderEvent {
+  const RestoreNutritionDraftFromLocal();
+}
+
+class RestoreNutritionTemplateFromLocal extends NutritionBuilderEvent {
+  final String templateId;
+  const RestoreNutritionTemplateFromLocal(this.templateId);
+}

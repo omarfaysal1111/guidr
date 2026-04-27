@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guidr/features/coach_builders/data/local/plan_builder_local_storage.dart';
 import 'package:guidr/features/coach_builders/data/repositories/builder_repository.dart';
 import 'package:guidr/features/coach_builders/domain/entities/builder_exercise.dart';
 import 'package:guidr/features/coach_builders/domain/entities/workout_plan_session_draft.dart';
@@ -13,11 +16,13 @@ class WorkoutBuilderBloc
   final BuildersRepository buildersRepository;
   final TraineesRepository traineesRepository;
   final GetCoachDataUseCase getCoachDataUseCase;
+  final PlanBuilderLocalStorage planBuilderLocalStorage;
 
   WorkoutBuilderBloc({
     required this.buildersRepository,
     required this.traineesRepository,
     required this.getCoachDataUseCase,
+    required this.planBuilderLocalStorage,
   }) : super(WorkoutBuilderState.initial()) {
     on<WorkoutBuilderInit>(_onInit);
     on<SetStep>((event, emit) => emit(state.copyWith(currentStep: event.step)));
@@ -37,6 +42,8 @@ class WorkoutBuilderBloc
     on<AssignWorkout>(_onAssignWorkout);
     on<SaveWorkoutTemplate>(_onSaveTemplate);
     on<SaveWorkoutDraft>(_onSaveDraft);
+    on<RestoreWorkoutDraftFromLocal>(_onRestoreDraft);
+    on<RestoreWorkoutTemplateFromLocal>(_onRestoreTemplate);
   }
 
   Future<void> _onInit(
@@ -316,41 +323,118 @@ class WorkoutBuilderBloc
     return '$y-$m-$day';
   }
 
-  Map<String, dynamic> _buildPayload() {
-    final workouts = <Map<String, dynamic>>[];
-    for (var i = 0; i < state.sessions.length; i++) {
-      final s = state.sessions[i];
-      final exerciseIds = s.exercises
-          .where((ex) => ex.exerciseId != null)
-          .map((ex) => ex.exerciseId!)
-          .toList();
-      final name = s.title.trim().isEmpty ? 'Session ${i + 1}' : s.title.trim();
-      final w = <String, dynamic>{
-        'name': name,
-        'exerciseIds': exerciseIds,
-      };
-      if (state.caution.isNotEmpty) {
-        w['notes'] = state.caution;
-      }
-      workouts.add(w);
+  /// Full snapshot for local template/draft (device storage only).
+  Map<String, dynamic> _workoutLocalSnapshot({required bool isDraft}) {
+    final sessionMaps = <Map<String, dynamic>>[];
+    for (final s in state.sessions) {
+      sessionMaps.add({
+        'title': s.title,
+        'expanded': s.expanded,
+        'exercises': s.exercises
+            .map(
+              (e) => {
+                'exerciseId': e.exerciseId,
+                'name': e.name,
+                'sets': e.sets,
+                'reps': e.reps,
+                'load': e.load,
+                'rest': e.rest,
+                'videoUrl': e.videoUrl,
+              },
+            )
+            .toList(),
+      });
     }
-
-    final payload = <String, dynamic>{
-      'title': state.planTitle.isEmpty ? 'Untitled plan' : state.planTitle,
-      'workouts': workouts,
+    return <String, dynamic>{
+      'schemaVersion': 1,
+      'planTitle': state.planTitle,
+      'difficulty': state.difficulty,
+      'instructions': state.instructions,
+      'caution': state.caution,
+      'sessions': sessionMaps,
+      'selectedDate': state.selectedDate?.toIso8601String(),
+      'recurrence': state.recurrence,
+      'remindTrainee': state.remindTrainee,
+      'alertIfMissed': state.alertIfMissed,
+      if (isDraft) 'selectedTraineeIds': state.selectedTraineeIds.toList(),
     };
-    if (state.instructions.isNotEmpty) {
-      payload['description'] = state.instructions;
-    }
+  }
 
-    return payload;
+  WorkoutBuilderState? _stateFromLocalSnapshot(
+    Map<String, dynamic> raw,
+  ) {
+    if (((raw['schemaVersion'] as num?)?.toInt() ?? 1) != 1) return null;
+    final sessionList = raw['sessions'];
+    if (sessionList is! List || sessionList.isEmpty) {
+      return null;
+    }
+    final sessions = <WorkoutPlanSessionDraft>[];
+    for (final item in sessionList) {
+      if (item is! Map) continue;
+      final m = Map<String, dynamic>.from(item);
+      final exs = <BuilderExercise>[];
+      final exList = m['exercises'];
+      if (exList is List) {
+        for (final x in exList) {
+          if (x is! Map) continue;
+          final b = Map<String, dynamic>.from(x);
+          exs.add(
+            BuilderExercise(
+              exerciseId: (b['exerciseId'] as num?)?.toInt(),
+              name: b['name'] as String? ?? '',
+              sets: (b['sets'] as num?)?.toInt() ?? 3,
+              reps: b['reps'] as String? ?? '10',
+              load: b['load'] as String?,
+              rest: b['rest'] as String?,
+              videoUrl: b['videoUrl'] as String?,
+            ),
+          );
+        }
+      }
+      sessions.add(
+        WorkoutPlanSessionDraft(
+          title: m['title'] as String? ?? '',
+          exercises: exs,
+          expanded: m['expanded'] as bool? ?? true,
+        ),
+      );
+    }
+    if (sessions.isEmpty) return null;
+    final sd = raw['selectedDate'] != null
+        ? DateTime.tryParse(raw['selectedDate'] as String)
+        : null;
+    final ids = raw['selectedTraineeIds'] as List?;
+    final selected = ids == null
+        ? <int>{}
+        : ids
+            .map((e) => (e as num).toInt())
+            .where((id) => state.allTrainees.any((t) => t.id == id))
+            .toSet();
+    return state.copyWith(
+      planTitle: raw['planTitle'] as String? ?? '',
+      difficulty: raw['difficulty'] as String? ?? state.difficulty,
+      instructions: raw['instructions'] as String? ?? '',
+      caution: raw['caution'] as String? ?? '',
+      sessions: sessions,
+      selectedDate: sd,
+      recurrence: raw['recurrence'] as String? ?? state.recurrence,
+      remindTrainee: raw['remindTrainee'] as bool? ?? state.remindTrainee,
+      alertIfMissed: raw['alertIfMissed'] as bool? ?? state.alertIfMissed,
+      selectedTraineeIds: selected,
+      currentStep: 5,
+      clearError: true,
+    );
   }
 
   Future<void> _onSaveTemplate(
       SaveWorkoutTemplate event, Emitter<WorkoutBuilderState> emit) async {
-    emit(state.copyWith(saving: true, clearError: true));
+    emit(state.copyWith(saving: true, clearError: true, templateSaved: false));
     try {
-      await buildersRepository.saveExercisePlanTemplate(_buildPayload());
+      final snap = _workoutLocalSnapshot(isDraft: false);
+      await planBuilderLocalStorage.saveWorkoutTemplate(
+        snap,
+        displayName: state.planTitle.trim().isEmpty ? null : state.planTitle.trim(),
+      );
       emit(state.copyWith(saving: false, templateSaved: true));
     } catch (e) {
       emit(state.copyWith(saving: false, error: e.toString()));
@@ -359,10 +443,80 @@ class WorkoutBuilderBloc
 
   Future<void> _onSaveDraft(
       SaveWorkoutDraft event, Emitter<WorkoutBuilderState> emit) async {
+    emit(state.copyWith(saving: true, clearError: true, draftSaved: false));
+    try {
+      await planBuilderLocalStorage
+          .saveWorkoutDraft(_workoutLocalSnapshot(isDraft: true));
+      emit(state.copyWith(saving: false, draftSaved: true));
+    } catch (e) {
+      emit(state.copyWith(saving: false, error: e.toString()));
+    }
+  }
+
+  Future<void> _onRestoreDraft(
+    RestoreWorkoutDraftFromLocal event,
+    Emitter<WorkoutBuilderState> emit,
+  ) async {
     emit(state.copyWith(saving: true, clearError: true));
     try {
-      await buildersRepository.saveExercisePlanDraft(_buildPayload());
-      emit(state.copyWith(saving: false, draftSaved: true));
+      final json = planBuilderLocalStorage.workoutDraftJson;
+      if (json == null || json.isEmpty) {
+        emit(state.copyWith(
+          saving: false,
+          error: 'No saved draft on this device.',
+        ));
+        return;
+      }
+      final decoded = jsonDecode(json);
+      if (decoded is! Map) {
+        emit(state.copyWith(
+          saving: false,
+          error: 'Could not read draft data.',
+        ));
+        return;
+      }
+      final data = Map<String, dynamic>.from(decoded);
+      final next = _stateFromLocalSnapshot(data);
+      if (next == null) {
+        emit(state.copyWith(
+          saving: false,
+          error: 'Draft data is not valid for this version.',
+        ));
+        return;
+      }
+      emit(next.copyWith(saving: false));
+    } catch (e) {
+      emit(state.copyWith(saving: false, error: e.toString()));
+    }
+  }
+
+  Future<void> _onRestoreTemplate(
+    RestoreWorkoutTemplateFromLocal event,
+    Emitter<WorkoutBuilderState> emit,
+  ) async {
+    emit(state.copyWith(saving: true, clearError: true));
+    try {
+      final data = planBuilderLocalStorage
+          .workoutTemplateDataById(event.templateId);
+      if (data == null) {
+        emit(state.copyWith(
+          saving: false,
+          error: 'Template not found.',
+        ));
+        return;
+      }
+      final next = _stateFromLocalSnapshot(data);
+      if (next == null) {
+        emit(state.copyWith(
+          saving: false,
+          error: 'Template data is not valid for this version.',
+        ));
+        return;
+      }
+      emit(next.copyWith(
+        saving: false,
+        selectedTraineeIds: const {},
+      ));
     } catch (e) {
       emit(state.copyWith(saving: false, error: e.toString()));
     }

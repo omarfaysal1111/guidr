@@ -8,6 +8,7 @@ import 'package:guidr/features/coach_comms/presentation/pages/coach_chat_system_
 import 'package:guidr/features/coach_settings/presentation/pages/coach_settings_screen.dart';
 import 'package:guidr/features/home/presentation/pages/home_page.dart';
 import 'package:guidr/features/trainees/presentation/pages/trainees_page.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 
 class MainLayoutPage extends StatefulWidget {
   const MainLayoutPage({super.key});
@@ -20,6 +21,7 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
   int _currentIndex = 0;
 
   void _showAddPlanOptions(BuildContext context) {
+    final l = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -53,8 +55,8 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
               ),
               const SizedBox(height: 20),
               Text(
-                'Create new plan',
-                style: TextStyle(
+                l.createNewPlan,
+                style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary,
@@ -64,15 +66,15 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
               _buildPlanOption(
                 context,
                 icon: Icons.fitness_center,
-                label: 'Exercises Plan',
+                label: l.exercisesPlan,
                 onTap: () {
     Navigator.pop(context); // Close the current bottom sheet/drawer
-    
+
     // Call the clean static route
     Navigator.push(
       context,
       WorkoutBuilderPage.route(
-        onBackPressed: () => Navigator.pop(context), 
+        onBackPressed: () => Navigator.pop(context),
       ),
     );
   },
@@ -81,7 +83,7 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
               _buildPlanOption(
                 context,
                 icon: Icons.restaurant,
-                label: 'Nutrition Plan',
+                label: l.nutritionPlan,
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
@@ -154,6 +156,7 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       body: _pages[_currentIndex],
       bottomNavigationBar: Container(
@@ -184,15 +187,15 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
           selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
           elevation: 0,
           items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Home',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home_outlined),
+              activeIcon: const Icon(Icons.home),
+              label: l.home,
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.people_outline),
-              activeIcon: Icon(Icons.people),
-              label: 'Trainees',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.people_outline),
+              activeIcon: const Icon(Icons.people),
+              label: l.trainees,
             ),
             BottomNavigationBarItem(
               icon: Stack(
@@ -213,12 +216,12 @@ class _MainLayoutPageState extends State<MainLayoutPage> {
                 ],
               ),
               activeIcon: const Icon(Icons.chat_bubble),
-              label: 'Chat',
+              label: l.chat,
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined),
-              activeIcon: Icon(Icons.settings),
-              label: 'More',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.settings_outlined),
+              activeIcon: const Icon(Icons.settings),
+              label: l.more,
             ),
           ],
         ),

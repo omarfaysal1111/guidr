@@ -20,11 +20,11 @@ class NutritionBuilderState {
   // Plan metadata
   final String planName;
 
-  // Meal content
-  final List<String> breakfast;
-  final List<String> lunch;
-  final List<String> dinner;
-  final List<String> snacks;
+  // Meal content (each entry carries ingredient + quantity)
+  final List<MealIngredientEntry> breakfast;
+  final List<MealIngredientEntry> lunch;
+  final List<MealIngredientEntry> dinner;
+  final List<MealIngredientEntry> snacks;
 
   // UI expansion state
   final bool breakfastExpanded;
@@ -101,17 +101,38 @@ class NutritionBuilderState {
         error: null,
       );
 
+  // ── Computed helpers ────────────────────────────────────────────────────────
+
   int get totalMeals =>
       breakfast.length + lunch.length + dinner.length + snacks.length;
 
-  int get estimatedKcal => totalMeals * 400;
+  List<MealIngredientEntry> get _allEntries =>
+      [...breakfast, ...lunch, ...dinner, ...snacks];
 
-  List<String> mealsFor(MealSection s) => switch (s) {
+  double get totalCalories =>
+      _allEntries.fold(0.0, (sum, e) => sum + e.calories);
+
+  double get totalProtein =>
+      _allEntries.fold(0.0, (sum, e) => sum + e.protein);
+
+  double get totalCarbs => _allEntries.fold(0.0, (sum, e) => sum + e.carbs);
+
+  double get totalFat => _allEntries.fold(0.0, (sum, e) => sum + e.fat);
+
+  /// Rounded kcal total — falls back to a rough estimate when no library items.
+  int get estimatedKcal {
+    final real = totalCalories;
+    return real > 0 ? real.round() : totalMeals * 400;
+  }
+
+  List<MealIngredientEntry> mealsFor(MealSection s) => switch (s) {
         MealSection.breakfast => breakfast,
         MealSection.lunch => lunch,
         MealSection.dinner => dinner,
         MealSection.snacks => snacks,
       };
+
+  // ── copyWith ────────────────────────────────────────────────────────────────
 
   NutritionBuilderState copyWith({
     int? currentStep,
@@ -124,10 +145,10 @@ class NutritionBuilderState {
     bool? templateSaved,
     bool? draftSaved,
     String? planName,
-    List<String>? breakfast,
-    List<String>? lunch,
-    List<String>? dinner,
-    List<String>? snacks,
+    List<MealIngredientEntry>? breakfast,
+    List<MealIngredientEntry>? lunch,
+    List<MealIngredientEntry>? dinner,
+    List<MealIngredientEntry>? snacks,
     bool? breakfastExpanded,
     bool? lunchExpanded,
     bool? dinnerExpanded,

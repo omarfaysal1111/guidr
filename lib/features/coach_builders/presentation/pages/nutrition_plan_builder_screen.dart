@@ -44,7 +44,7 @@ class NutritionPlanBuilderScreen extends StatelessWidget {
         if (state.templateSaved) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Saved as template!'),
+              content: Text('Template saved on this device'),
               backgroundColor: Color(0xFF3B82F6),
             ),
           );
@@ -52,7 +52,7 @@ class NutritionPlanBuilderScreen extends StatelessWidget {
         if (state.draftSaved) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Draft saved!'),
+              content: Text('Draft saved on this device'),
               backgroundColor: Color(0xFF3B82F6),
             ),
           );

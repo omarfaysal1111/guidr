@@ -12,6 +12,7 @@ ExerciseSetLogRequest _$ExerciseSetLogRequestFromJson(
   outcome: $enumDecode(_$SetLogOutcomeEnumMap, json['outcome']),
   reason: json['reason'] as String?,
   weightKg: (json['weightKg'] as num?)?.toDouble(),
+  reps: (json['reps'] as num?)?.toInt(),
 );
 
 Map<String, dynamic> _$ExerciseSetLogRequestToJson(
@@ -20,6 +21,7 @@ Map<String, dynamic> _$ExerciseSetLogRequestToJson(
   'outcome': _$SetLogOutcomeEnumMap[instance.outcome]!,
   'reason': ?instance.reason,
   'weightKg': ?instance.weightKg,
+  'reps': ?instance.reps,
 };
 
 const _$SetLogOutcomeEnumMap = {

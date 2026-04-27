@@ -17,11 +17,13 @@ class ExerciseSetLogRequest {
   final SetLogOutcome outcome;
   final String? reason;
   final double? weightKg;
+  final int? reps;
 
   const ExerciseSetLogRequest({
     required this.outcome,
     this.reason,
     this.weightKg,
+    this.reps,
   });
 
   factory ExerciseSetLogRequest.fromJson(Map<String, dynamic> json) =>

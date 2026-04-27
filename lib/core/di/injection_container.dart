@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:guidr/core/locale/locale_cubit.dart';
+import 'package:guidr/features/coach_builders/data/local/plan_builder_local_storage.dart';
 import 'package:guidr/core/messaging/fcm_service.dart';
 import 'package:guidr/features/chat/data/firestore_chat_repository.dart';
 import 'package:guidr/features/chat/domain/repositories/chat_repository.dart';
@@ -48,6 +49,11 @@ import '../../features/trainee_progress/data/datasources/trainee_progress_remote
 import '../../features/trainee_progress/domain/repositories/trainee_progress_repository.dart';
 import '../../features/trainee_progress/data/repositories/trainee_progress_repository_impl.dart';
 import '../../features/trainee_progress/presentation/bloc/trainee_progress_bloc.dart';
+
+import '../../features/subscription/data/datasources/subscription_remote_data_source.dart';
+import '../../features/subscription/domain/repositories/subscription_repository.dart';
+import '../../features/subscription/data/repositories/subscription_repository_impl.dart';
+import '../../features/subscription/presentation/bloc/subscription_bloc.dart';
 
 final sl = GetIt.instance;
 
@@ -137,17 +143,22 @@ Future<void> init() async {
   sl.registerLazySingleton<BuildersRepository>(
     () => BuildersRepositoryImpl(remoteDataSource: sl()),
   );
-sl.registerFactory(
+  sl.registerLazySingleton<PlanBuilderLocalStorage>(
+    () => PlanBuilderLocalStorage(sl()),
+  );
+  sl.registerFactory(
     () => WorkoutBuilderBloc(
       buildersRepository: sl(),
       traineesRepository: sl(),
       getCoachDataUseCase: sl(),
+      planBuilderLocalStorage: sl(),
     ),
   );
   sl.registerFactory(
     () => NutritionBuilderBloc(
       buildersRepository: sl(),
       traineesRepository: sl(),
+      planBuilderLocalStorage: sl(),
     ),
   );
   //! Features - Coach Home
@@ -168,5 +179,16 @@ sl.registerFactory(
   );
 
   sl.registerFactory(() => TraineeProgressBloc(repository: sl()));
+
+  //! Features - Subscription
+  sl.registerLazySingleton<SubscriptionRemoteDataSource>(
+    () => SubscriptionRemoteDataSourceImpl(apiClient: sl()),
+  );
+
+  sl.registerLazySingleton<SubscriptionRepository>(
+    () => SubscriptionRepositoryImpl(remoteDataSource: sl()),
+  );
+
+  sl.registerFactory(() => SubscriptionBloc(repository: sl()));
 }
 

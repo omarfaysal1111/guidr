@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 import 'register_trainee_screen.dart';
 import '../bloc/auth_bloc.dart';
 
@@ -72,16 +73,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildRoleSelection() {
+    final l = AppLocalizations.of(context);
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildLogoHeader('Train smarter. Together.'),
+        _buildLogoHeader(l.trainSmarter),
         const SizedBox(height: 48),
         _buildRoleCard(
           role: 'coach',
-          title: "I'm a Coach",
-          description: "Manage clients, create plans & track progress",
+          title: l.iAmACoach,
+          description: l.coachRoleDescription,
           icon: Icons.group,
           gradient: const LinearGradient(
             colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
@@ -90,8 +92,8 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 16),
         _buildRoleCard(
           role: 'trainee',
-          title: "I'm a Trainee",
-          description: "Follow plans, log workouts & hit your goals",
+          title: l.iAmATrainee,
+          description: l.traineeRoleDescription,
           icon: Icons.fitness_center,
           gradient: const LinearGradient(
             colors: [Color(0xFF059669), Color(0xFF10B981)],
@@ -115,7 +117,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
           child: Text(
-            'Continue →',
+            l.continueBtn,
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -206,6 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildLoginForm() {
+    final l = AppLocalizations.of(context);
     return Form(
       key: _formKey,
       child: Column(
@@ -226,23 +229,23 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 16),
           _buildLogoHeader(
-            _selectedRole == 'coach' ? 'Welcome back, Coach' : 'Welcome back',
+            _selectedRole == 'coach' ? l.welcomeBackCoach : l.welcomeBack,
           ),
           const SizedBox(height: 48),
           _buildTextField(
             controller: _emailController,
-            label: 'Email Address',
+            label: l.emailAddress,
             icon: Icons.email_outlined,
             obscureText: false,
-            validator: (value) => value == null || value.isEmpty ? 'Please enter your email' : null,
+            validator: (value) => value == null || value.isEmpty ? l.pleaseEnterEmail : null,
           ),
           const SizedBox(height: 16),
           _buildTextField(
             controller: _passwordController,
-            label: 'Password',
+            label: l.password,
             icon: Icons.lock_outline,
             obscureText: true,
-            validator: (value) => value == null || value.isEmpty ? 'Please enter your password' : null,
+            validator: (value) => value == null || value.isEmpty ? l.pleaseEnterPassword : null,
           ),
           const SizedBox(height: 32),
           BlocBuilder<AuthBloc, AuthState>(
@@ -260,7 +263,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                child: const Text('Log In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                child: Text(l.logIn, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               );
             },
           ),
@@ -278,9 +281,9 @@ class _LoginScreenState extends State<LoginScreen> {
               style: TextButton.styleFrom(
                 foregroundColor: Colors.white.withOpacity(0.8),
               ),
-              child: const Text(
-                "Don't have an account? Register",
-                style: TextStyle(
+              child: Text(
+                l.dontHaveAccount,
+                style: const TextStyle(
                   fontSize: 14,
                   decoration: TextDecoration.underline,
                   decorationColor: Colors.white54,

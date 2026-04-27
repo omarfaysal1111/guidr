@@ -1,6 +1,9 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/features/coach_builders/domain/entities/ingredient.dart';
 import '../../bloc/nutrition_builder_bloc.dart';
 import '../../bloc/nutrition_builder_event.dart';
 import '../../bloc/nutrition_builder_state.dart';
@@ -25,7 +28,7 @@ class NutritionMealsStep extends StatelessWidget {
             const SizedBox(height: 16),
             _PlanNameField(name: state.planName),
             const SizedBox(height: 20),
-            _StatsRow(totalMeals: state.totalMeals, kcal: state.estimatedKcal),
+            _StatsRow(state: state),
             const SizedBox(height: 24),
             _MealSection(
               section: MealSection.breakfast,
@@ -72,6 +75,8 @@ class NutritionMealsStep extends StatelessWidget {
   }
 }
 
+// ── Trainee banner ────────────────────────────────────────────────────────────
+
 class _TraineeBanner extends StatelessWidget {
   final String names;
   const _TraineeBanner({required this.names});
@@ -102,6 +107,8 @@ class _TraineeBanner extends StatelessWidget {
   }
 }
 
+// ── Plan name field ───────────────────────────────────────────────────────────
+
 class _PlanNameField extends StatelessWidget {
   final String name;
   const _PlanNameField({required this.name});
@@ -130,20 +137,42 @@ class _PlanNameField extends StatelessWidget {
   }
 }
 
+// ── Stats row ─────────────────────────────────────────────────────────────────
+
 class _StatsRow extends StatelessWidget {
-  final int totalMeals;
-  final int kcal;
-  const _StatsRow({required this.totalMeals, required this.kcal});
+  final NutritionBuilderState state;
+  const _StatsRow({required this.state});
 
   @override
   Widget build(BuildContext context) {
+    final hasRealData = state.totalCalories > 0;
     return Row(
       children: [
-        _StatBox(label: '$totalMeals MEALS'),
+        _StatBox(label: '${state.totalMeals}', sub: 'MEALS'),
         const SizedBox(width: 8),
-        _StatBox(label: '~$kcal KCAL'),
+        _StatBox(
+          label: hasRealData
+              ? state.totalCalories.toStringAsFixed(0)
+              : '~${state.estimatedKcal}',
+          sub: 'KCAL',
+          highlight: hasRealData,
+        ),
         const SizedBox(width: 8),
-        _StatBox(label: '3 MACROS'),
+        _StatBox(
+          label: hasRealData
+              ? '${state.totalProtein.toStringAsFixed(0)}g'
+              : '—',
+          sub: 'PROTEIN',
+          highlight: hasRealData,
+        ),
+        const SizedBox(width: 8),
+        _StatBox(
+          label: hasRealData
+              ? '${state.totalCarbs.toStringAsFixed(0)}g'
+              : '—',
+          sub: 'CARBS',
+          highlight: hasRealData,
+        ),
       ],
     );
   }
@@ -151,36 +180,53 @@ class _StatsRow extends StatelessWidget {
 
 class _StatBox extends StatelessWidget {
   final String label;
-  const _StatBox({required this.label});
+  final String sub;
+  final bool highlight;
+  const _StatBox({required this.label, required this.sub, this.highlight = false});
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: highlight ? AppColors.primaryLight : AppColors.surface,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.border),
+          border: Border.all(
+              color: highlight
+                  ? AppColors.primary.withValues(alpha: 0.3)
+                  : AppColors.border),
         ),
-        child: Center(
-          child: Text(label,
-              style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary)),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label,
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: highlight
+                        ? AppColors.primary
+                        : AppColors.textPrimary)),
+            Text(sub,
+                style: const TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted)),
+          ],
         ),
       ),
     );
   }
 }
 
+// ── Meal section ──────────────────────────────────────────────────────────────
+
 class _MealSection extends StatelessWidget {
   final MealSection section;
   final String label;
   final IconData icon;
   final Color iconColor;
-  final List<String> items;
+  final List<MealIngredientEntry> items;
   final bool expanded;
 
   const _MealSection({
@@ -194,6 +240,8 @@ class _MealSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Total kcal for this section
+    final sectionKcal = items.fold<double>(0, (s, e) => s + e.calories);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -223,11 +271,23 @@ class _MealSection extends StatelessWidget {
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text('$label (${items.length})',
-                        style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.textPrimary)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('$label (${items.length})',
+                            style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.textPrimary)),
+                        if (sectionKcal > 0)
+                          Text(
+                            '${sectionKcal.toStringAsFixed(0)} kcal',
+                            style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary),
+                          ),
+                      ],
+                    ),
                   ),
                   Icon(
                       expanded
@@ -244,7 +304,7 @@ class _MealSection extends StatelessWidget {
             ...items.asMap().entries.map((e) => _MealItemRow(
                 section: section,
                 index: e.key,
-                name: e.value,
+                entry: e.value,
                 dotColor: iconColor)),
             const SizedBox(height: 8),
           ],
@@ -254,48 +314,248 @@ class _MealSection extends StatelessWidget {
   }
 }
 
+// ── Meal item row ─────────────────────────────────────────────────────────────
+
 class _MealItemRow extends StatelessWidget {
   final MealSection section;
   final int index;
-  final String name;
+  final MealIngredientEntry entry;
   final Color dotColor;
 
   const _MealItemRow({
     required this.section,
     required this.index,
-    required this.name,
+    required this.entry,
     required this.dotColor,
   });
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      child: Row(
-        children: [
-          Container(
-            width: 6,
-            height: 6,
-            decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
+  void _updateQty(BuildContext context, double newQty) {
+    if (newQty <= 0) return;
+    context.read<NutritionBuilderBloc>().add(
+        NutritionUpdateMealItemQty(section, index, newQty));
+  }
+
+  void _showQtyDialog(BuildContext context) {
+    final ctrl =
+        TextEditingController(text: entry.quantityG.toStringAsFixed(0));
+    final bloc = context.read<NutritionBuilderBloc>();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(entry.name,
+            style: const TextStyle(fontSize: 15),
+            overflow: TextOverflow.ellipsis),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          keyboardType:
+              const TextInputType.numberWithOptions(decimal: false),
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          decoration: const InputDecoration(
+            suffixText: 'g',
+            border: OutlineInputBorder(),
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(name,
-                style: const TextStyle(
-                    fontSize: 14, color: AppColors.textPrimary)),
-          ),
-          InkWell(
-            onTap: () => context
-                .read<NutritionBuilderBloc>()
-                .add(NutritionRemoveMealItem(section, index)),
-            child:
-                const Icon(Icons.close, size: 16, color: AppColors.textMuted),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final v = double.tryParse(ctrl.text) ?? entry.quantityG;
+              if (v > 0) {
+                bloc.add(NutritionUpdateMealItemQty(section, index, v));
+              }
+              Navigator.pop(ctx);
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary),
+            child: const Text('Save',
+                style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
     );
   }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 5),
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration:
+                      BoxDecoration(color: dotColor, shape: BoxShape.circle),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(entry.name,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary)),
+              ),
+              // Remove button
+              InkWell(
+                onTap: () => context
+                    .read<NutritionBuilderBloc>()
+                    .add(NutritionRemoveMealItem(section, index)),
+                borderRadius: BorderRadius.circular(6),
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(Icons.close,
+                      size: 15, color: AppColors.textMuted),
+                ),
+              ),
+            ],
+          ),
+          if (entry.isFromLibrary) ...[
+            const SizedBox(height: 5),
+            Padding(
+              padding: const EdgeInsets.only(left: 16),
+              child: Row(
+                children: [
+                  // Macro chips
+                  Expanded(
+                    child: Wrap(
+                      spacing: 4,
+                      runSpacing: 4,
+                      children: [
+                        _MacroChip(
+                            '${entry.calories.toStringAsFixed(0)} kcal',
+                            const Color(0xFFF97316)),
+                        _MacroChip(
+                            'P ${entry.protein.toStringAsFixed(1)}g',
+                            const Color(0xFF8B5CF6)),
+                        _MacroChip(
+                            'C ${entry.carbs.toStringAsFixed(1)}g',
+                            const Color(0xFF0EA5E9)),
+                        _MacroChip(
+                            'F ${entry.fat.toStringAsFixed(1)}g',
+                            const Color(0xFFEF4444)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Quantity stepper
+                  _QtyPill(
+                    qty: entry.quantityG,
+                    onDecrement: () =>
+                        _updateQty(context, entry.quantityG - 10),
+                    onIncrement: () =>
+                        _updateQty(context, entry.quantityG + 10),
+                    onEdit: () => _showQtyDialog(context),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
+
+class _MacroChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _MacroChip(this.label, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: color)),
+    );
+  }
+}
+
+// ── Quantity pill ─────────────────────────────────────────────────────────────
+
+class _QtyPill extends StatelessWidget {
+  final double qty;
+  final VoidCallback onDecrement;
+  final VoidCallback onIncrement;
+  final VoidCallback onEdit;
+
+  const _QtyPill({
+    required this.qty,
+    required this.onDecrement,
+    required this.onIncrement,
+    required this.onEdit,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _PillBtn(icon: Icons.remove, onTap: onDecrement),
+          GestureDetector(
+            onTap: onEdit,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                '${qty.toStringAsFixed(0)}g',
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary),
+              ),
+            ),
+          ),
+          _PillBtn(icon: Icons.add, onTap: onIncrement),
+        ],
+      ),
+    );
+  }
+}
+
+class _PillBtn extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+  const _PillBtn({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(icon, size: 14, color: AppColors.textSecondary),
+      ),
+    );
+  }
+}
+
+// ── Add buttons ───────────────────────────────────────────────────────────────
 
 class _AddButtons extends StatelessWidget {
   final MealSection section;
@@ -312,7 +572,7 @@ class _AddButtons extends StatelessWidget {
             child: OutlinedButton.icon(
               onPressed: () => _showAddCustomDialog(context),
               icon: const Icon(Icons.add, size: 18),
-              label: const Text('Add'),
+              label: const Text('Add Custom'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 side: const BorderSide(color: AppColors.primary),
@@ -366,10 +626,9 @@ class _AddButtons extends StatelessWidget {
               }
               Navigator.pop(ctx);
             },
-            style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary),
-            child: const Text('Add',
-                style: TextStyle(color: Colors.white)),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            child: const Text('Add', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -387,8 +646,8 @@ class _AddButtons extends StatelessWidget {
           borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
         return DraggableScrollableSheet(
-          initialChildSize: 0.7,
-          maxChildSize: 0.9,
+          initialChildSize: 0.75,
+          maxChildSize: 0.95,
           minChildSize: 0.4,
           expand: false,
           builder: (_, scrollCtrl) {
@@ -405,6 +664,8 @@ class _AddButtons extends StatelessWidget {
     );
   }
 }
+
+// ── Library bottom sheet ──────────────────────────────────────────────────────
 
 class _LibraryContent extends StatefulWidget {
   final MealSection section;
@@ -474,7 +735,8 @@ class _LibraryContentState extends State<_LibraryContent> {
               const Expanded(
                   child: Center(
                       child: Text('No ingredients available.',
-                          style: TextStyle(color: AppColors.textSecondary))))
+                          style:
+                              TextStyle(color: AppColors.textSecondary))))
             else
               Expanded(
                 child: ListView.builder(
@@ -482,33 +744,9 @@ class _LibraryContentState extends State<_LibraryContent> {
                   itemCount: filtered.length,
                   itemBuilder: (ctx, i) {
                     final ing = filtered[i];
-                    return ListTile(
-                      leading: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(Icons.restaurant,
-                            size: 20, color: AppColors.primary),
-                      ),
-                      title: Text(ing.name,
-                          style:
-                              const TextStyle(fontWeight: FontWeight.w600)),
-                      subtitle: Text(
-                          '${ing.calories.toStringAsFixed(0)} kcal',
-                          style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary)),
-                      trailing: const Icon(Icons.add_circle_outline,
-                          color: AppColors.primary),
-                      onTap: () {
-                        context.read<NutritionBuilderBloc>().add(
-                            NutritionAddMealItem.fromLibrary(
-                                widget.section, ing));
-                        Navigator.pop(ctx);
-                      },
+                    return _IngredientLibraryTile(
+                      ingredient: ing,
+                      section: widget.section,
                     );
                   },
                 ),
@@ -519,6 +757,252 @@ class _LibraryContentState extends State<_LibraryContent> {
     );
   }
 }
+
+// ── Library tile with nutritional facts ──────────────────────────────────────
+
+class _IngredientLibraryTile extends StatelessWidget {
+  final Ingredient ingredient;
+  final MealSection section;
+  const _IngredientLibraryTile(
+      {required this.ingredient, required this.section});
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: () => _showQtyDialog(context),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.restaurant,
+                  size: 20, color: AppColors.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(ingredient.name,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  // Macro chips row
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
+                    children: [
+                      _FactChip(
+                          '${ingredient.calories.toStringAsFixed(0)} kcal',
+                          const Color(0xFFF97316)),
+                      _FactChip('P ${ingredient.protein.toStringAsFixed(1)}g',
+                          const Color(0xFF8B5CF6)),
+                      _FactChip(
+                          'C ${ingredient.carbohydrates.toStringAsFixed(1)}g',
+                          const Color(0xFF0EA5E9)),
+                      _FactChip('F ${ingredient.fat.toStringAsFixed(1)}g',
+                          const Color(0xFFEF4444)),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'per ${ingredient.servingQuantityG.toStringAsFixed(0)}g serving',
+                    style: const TextStyle(
+                        fontSize: 10, color: AppColors.textMuted),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text('Add',
+                  style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showQtyDialog(BuildContext context) {
+    final bloc = context.read<NutritionBuilderBloc>();
+    final defaultQty = ingredient.servingQuantityG;
+    final ctrl =
+        TextEditingController(text: defaultQty.toStringAsFixed(0));
+
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(ingredient.name,
+            style: const TextStyle(fontSize: 16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Nutritional facts card
+            _NutritionalFactsCard(ingredient: ingredient),
+            const SizedBox(height: 16),
+            const Text('Set quantity (grams):',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textSecondary)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: ctrl,
+              autofocus: true,
+              keyboardType:
+                  const TextInputType.numberWithOptions(decimal: false),
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                suffixText: 'g',
+                hintText:
+                    'Default: ${defaultQty.toStringAsFixed(0)}g',
+                border: const OutlineInputBorder(),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 10),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              final qty =
+                  double.tryParse(ctrl.text) ?? defaultQty;
+              bloc.add(NutritionAddMealItem.fromLibrary(
+                  section, ingredient, qty > 0 ? qty : defaultQty));
+              Navigator.pop(ctx);
+              Navigator.pop(context); // close the library sheet
+            },
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary),
+            child: const Text('Add to Meal',
+                style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Nutritional facts card (used in dialog) ───────────────────────────────────
+
+class _NutritionalFactsCard extends StatelessWidget {
+  final Ingredient ingredient;
+  const _NutritionalFactsCard({required this.ingredient});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Nutrition Facts · per ${ingredient.servingQuantityG.toStringAsFixed(0)}g',
+            style: const TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 8),
+          _FactRow('Calories',
+              '${ingredient.calories.toStringAsFixed(0)} kcal',
+              bold: true),
+          _FactRow('Protein',
+              '${ingredient.protein.toStringAsFixed(1)} g'),
+          _FactRow('Carbohydrates',
+              '${ingredient.carbohydrates.toStringAsFixed(1)} g'),
+          _FactRow(
+              'Fat', '${ingredient.fat.toStringAsFixed(1)} g'),
+          if (ingredient.water != null)
+            _FactRow('Water',
+                '${ingredient.water!.toStringAsFixed(2)} g'),
+        ],
+      ),
+    );
+  }
+}
+
+class _FactRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool bold;
+  const _FactRow(this.label, this.value, {this.bold = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight:
+                      bold ? FontWeight.w700 : FontWeight.normal,
+                  color: AppColors.textPrimary)),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight:
+                      bold ? FontWeight.w700 : FontWeight.w600,
+                  color: AppColors.textPrimary)),
+        ],
+      ),
+    );
+  }
+}
+
+class _FactChip extends StatelessWidget {
+  final String label;
+  final Color color;
+  const _FactChip(this.label, this.color);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(label,
+          style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: color)),
+    );
+  }
+}
+
+// ── Status banner ─────────────────────────────────────────────────────────────
 
 class _StatusBanner extends StatelessWidget {
   final String planName;
@@ -539,7 +1023,8 @@ class _StatusBanner extends StatelessWidget {
       child: Row(
         children: [
           Icon(ready ? Icons.check_circle : Icons.info_outline,
-              size: 20, color: ready ? AppColors.success : AppColors.warning),
+              size: 20,
+              color: ready ? AppColors.success : AppColors.warning),
           const SizedBox(width: 10),
           Text(
             ready ? 'Nutrition plan ready' : 'Add a nutrition plan name',

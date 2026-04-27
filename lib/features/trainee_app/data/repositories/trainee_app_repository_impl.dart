@@ -6,6 +6,7 @@ import '../../domain/entities/trainee_exercise_plan_detail.dart';
 import '../../domain/entities/nutrition_plan_detail.dart';
 import '../../domain/entities/ingredient_library_item.dart';
 import '../../domain/entities/extra_meal_log.dart';
+import '../../domain/entities/water_intake_day.dart';
 import '../../../coach_settings/domain/entities/coach_profile.dart';
 import 'package:guidr/features/coach_builders/domain/entities/plans.dart';
 import '../../domain/repositories/trainee_app_repository.dart';
@@ -93,4 +94,15 @@ class TraineeAppRepositoryImpl implements TraineeAppRepository {
   @override
   Future<void> uploadInBodyReport(List<int> fileBytes, String fileName) =>
       remoteDataSource.uploadInBodyReport(fileBytes, fileName);
+
+  @override
+  Future<WaterIntakeDay> getMyWaterIntake({DateTime? date}) =>
+      remoteDataSource.getMyWaterIntake(date: date);
+
+  @override
+  Future<WaterIntakeDay> setMyWaterIntake({
+    required double liters,
+    required String dateIso,
+  }) =>
+      remoteDataSource.setMyWaterIntake(liters: liters, dateIso: dateIso);
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
+import 'package:guidr/l10n/app_localizations.dart';
 import '../bloc/workout_builder_bloc.dart';
 import '../bloc/workout_builder_event.dart';
 import '../bloc/workout_builder_state.dart';
@@ -32,28 +33,29 @@ class WorkoutBuilderPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<WorkoutBuilderBloc, WorkoutBuilderState>(
       listener: (context, state) {
+        final l = AppLocalizations.of(context);
         if (state.assignSuccess) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Plan assigned successfully!'),
-              backgroundColor: Color(0xFF10B981),
+            SnackBar(
+              content: Text(l.planAssignedSuccess),
+              backgroundColor: const Color(0xFF10B981),
             ),
           );
           onBackPressed();
         }
         if (state.templateSaved) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Saved as template!'),
-              backgroundColor: Color(0xFF3B82F6),
+            SnackBar(
+              content: Text(l.templateSavedMsg),
+              backgroundColor: const Color(0xFF3B82F6),
             ),
           );
         }
         if (state.draftSaved) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Draft saved!'),
-              backgroundColor: Color(0xFF3B82F6),
+            SnackBar(
+              content: Text(l.draftSavedMsg),
+              backgroundColor: const Color(0xFF3B82F6),
             ),
           );
         }

@@ -6,6 +6,7 @@ import 'package:guidr/core/theme/app_colors.dart';
 import 'package:guidr/features/trainees/presentation/pages/trainee_profile_screen.dart';
 import 'package:guidr/features/trainees/presentation/widgets/invite_trainee_dialog.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
+import 'package:guidr/l10n/app_localizations.dart';
 import '../bloc/trainees_bloc.dart';
 
 class TraineesPage extends StatelessWidget {
@@ -25,11 +26,12 @@ class TraineesView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Trainees',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+        title: Text(
+          l.trainees,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
         ),
         actions: [
           IconButton(icon: const Icon(Icons.search), onPressed: () {}),
@@ -60,13 +62,13 @@ class TraineesView extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      _buildFilterChip(context, 'All', 'all', state),
+                      _buildFilterChip(context, l.allFilter, 'all', state),
                       const SizedBox(width: 12),
-                      _buildFilterChip(context, 'Active', 'active', state),
+                      _buildFilterChip(context, l.active, 'active', state),
                       const SizedBox(width: 12),
-                      _buildFilterChip(context, 'Attention', 'attention', state),
+                      _buildFilterChip(context, l.attentionFilter, 'attention', state),
                       const SizedBox(width: 12),
-                      _buildFilterChip(context, 'Pending', 'pending', state),
+                      _buildFilterChip(context, l.pending, 'pending', state),
                     ],
                   ),
                 ),
@@ -81,7 +83,7 @@ class TraineesView extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '${state.filteredTrainees.length} trainees',
+                        l.traineeCount(state.filteredTrainees.length),
                         style: const TextStyle(
                           color: AppColors.textMuted,
                           fontSize: 13,
@@ -91,7 +93,7 @@ class TraineesView extends StatelessWidget {
                       TextButton.icon(
                         onPressed: () => _showSortSheet(context),
                         icon: const Icon(Icons.swap_vert, size: 16),
-                        label: const Text('Sort'),
+                        label: Text(l.sort),
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.primary,
                           textStyle: const TextStyle(
@@ -221,7 +223,7 @@ class TraineesView extends StatelessWidget {
                                             borderRadius: BorderRadius.circular(6),
                                           ),
                                           child: Text(
-                                            isPending ? 'Pending' : 'Active',
+                                            isPending ? l.pending : l.active,
                                             style: TextStyle(
                                               fontSize: 10,
                                               fontWeight: FontWeight.bold,
@@ -253,9 +255,9 @@ class TraineesView extends StatelessWidget {
                                           runSpacing: 6,
                                           children: [
                                             if (trainee.missedMealCount > 0)
-                                              _buildAlertBadge('${trainee.missedMealCount} Missed Meals'),
+                                              _buildAlertBadge(l.missedMeals(trainee.missedMealCount)),
                                             if (trainee.missedWorkoutCount > 0)
-                                              _buildAlertBadge('${trainee.missedWorkoutCount} Missed Workouts'),
+                                              _buildAlertBadge(l.missedWorkouts(trainee.missedWorkoutCount)),
                                             ...trainee.alerts.map((a) => _buildAlertBadge(a)),
                                           ],
                                         ),
@@ -282,9 +284,9 @@ class TraineesView extends StatelessWidget {
                                               : AppColors.warning,
                                         ),
                                       ),
-                                      const Text(
-                                        'adherence',
-                                        style: TextStyle(
+                                      Text(
+                                        l.adherenceWord,
+                                        style: const TextStyle(
                                           fontSize: 10,
                                           color: AppColors.textMuted,
                                         ),
@@ -333,9 +335,9 @@ class TraineesView extends StatelessWidget {
                         );
                       },
                       icon: const Icon(Icons.person_add),
-                      label: const Text(
-                        'Invite Trainee',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      label: Text(
+                        l.inviteTrainee,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size(double.infinity, 54),
@@ -372,7 +374,7 @@ class TraineesView extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                '${state.selectedIds.length} selected',
+                                l.traineesSelected(state.selectedIds.length),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 14,
@@ -389,7 +391,7 @@ class TraineesView extends StatelessWidget {
                                   padding: EdgeInsets.zero,
                                   minimumSize: const Size(50, 30),
                                 ),
-                                child: const Text('Cancel'),
+                                child: Text(l.cancel),
                               ),
                             ],
                           ),
@@ -399,13 +401,13 @@ class TraineesView extends StatelessWidget {
                             child: Row(
                               children: [
                                 _bulkActionButton(
-                                  'Assign Workout',
+                                  l.assignWorkout,
                                   Icons.fitness_center,
                                   AppColors.primary,
                                 ),
                                 const SizedBox(width: 12),
                                 _bulkActionButton(
-                                  'Assign Nutrition',
+                                  l.assignNutrition,
                                   Icons.restaurant,
                                   AppColors.success,
                                 ),
@@ -426,6 +428,7 @@ class TraineesView extends StatelessWidget {
   }
 
   void _showSortSheet(BuildContext context) {
+    final l = AppLocalizations.of(context);
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -436,19 +439,19 @@ class TraineesView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 20, 20, 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
               child: Text(
-                'Sort Trainees',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                l.sortTrainees,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
               ),
             ),
-            _sortTile(ctx, 'Name A–Z', TraineeSortField.name, ascending: true),
-            _sortTile(ctx, 'Name Z–A', TraineeSortField.name, ascending: false),
-            _sortTile(ctx, 'Highest Adherence', TraineeSortField.adherence, ascending: false),
-            _sortTile(ctx, 'Lowest Adherence', TraineeSortField.adherence, ascending: true),
-            _sortTile(ctx, 'Longest Streak', TraineeSortField.streak, ascending: false),
-            _sortTile(ctx, 'Shortest Streak', TraineeSortField.streak, ascending: true),
+            _sortTile(ctx, l.nameAZ, TraineeSortField.name, ascending: true),
+            _sortTile(ctx, l.nameZA, TraineeSortField.name, ascending: false),
+            _sortTile(ctx, l.highestAdherence, TraineeSortField.adherence, ascending: false),
+            _sortTile(ctx, l.lowestAdherence, TraineeSortField.adherence, ascending: true),
+            _sortTile(ctx, l.longestStreak, TraineeSortField.streak, ascending: false),
+            _sortTile(ctx, l.shortestStreak, TraineeSortField.streak, ascending: true),
             const SizedBox(height: 12),
           ],
         ),

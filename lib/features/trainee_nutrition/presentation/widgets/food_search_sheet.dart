@@ -3,12 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:guidr/core/di/injection_container.dart' as di;
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/features/trainee_app/domain/entities/extra_meal_log.dart';
 import 'package:guidr/features/trainee_app/domain/entities/ingredient_library_item.dart';
 import 'package:guidr/features/trainee_app/domain/repositories/trainee_app_repository.dart';
 
 /// Bottom sheet: search `GET /ingredients`, optional custom name, calories, date → `POST /trainees/me/extra-meals`.
 class FoodSearchSheet extends StatefulWidget {
-  final VoidCallback? onLogged;
+  final void Function(ExtraMealLog meal)? onLogged;
 
   const FoodSearchSheet({super.key, this.onLogged});
 
@@ -131,7 +132,7 @@ class _FoodSearchSheetState extends State<FoodSearchSheet> {
 
     setState(() => _submitting = true);
     try {
-      await _repo.logExtraMeal(
+      final logged = await _repo.logExtraMeal(
         ingredientId: ingredientId,
         name: freeName,
         calories: cal,
@@ -139,7 +140,7 @@ class _FoodSearchSheetState extends State<FoodSearchSheet> {
       );
       if (!mounted) return;
       final messenger = ScaffoldMessenger.of(context);
-      widget.onLogged?.call();
+      widget.onLogged?.call(logged);
       Navigator.of(context).pop();
       messenger.showSnackBar(
         SnackBar(

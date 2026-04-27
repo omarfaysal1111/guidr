@@ -52,4 +52,22 @@ class TraineeProfileCubit extends Cubit<TraineeProfileState> {
       ));
     }
   }
+
+  Future<void> updateProfile({
+    String? fullName,
+    String? fitnessGoal,
+  }) async {
+    emit(TraineeProfileLoading());
+    try {
+      final profile = await repository.updateMyProfile(
+        fullName: fullName,
+        fitnessGoal: fitnessGoal,
+      );
+      emit(TraineeProfileLoaded(profile));
+    } catch (e) {
+      emit(TraineeProfileError(
+        e.toString().replaceFirst('Exception: ', ''),
+      ));
+    }
+  }
 }

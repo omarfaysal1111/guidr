@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/trainee_health_history.dart';
 
@@ -18,6 +19,7 @@ class _HealthTrainingHistorySheetBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     final bottom = MediaQuery.paddingOf(context).bottom;
     final maxH = MediaQuery.sizeOf(context).height * 0.92;
 
@@ -46,10 +48,10 @@ class _HealthTrainingHistorySheetBody extends StatelessWidget {
                   padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Health & Training History',
-                          style: TextStyle(
+                          l.healthTrainingHistory,
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                             color: AppColors.textPrimary,
@@ -70,56 +72,56 @@ class _HealthTrainingHistorySheetBody extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                     children: [
                       _HistoryCard(
-                        label: 'GOAL',
+                        label: l.goal.toUpperCase(),
                         value: data.goal,
                         icon: Icons.track_changes_rounded,
                         accent: const Color(0xFF0D9488),
                       ),
                       const SizedBox(height: 12),
                       _HistoryCard(
-                        label: 'TRAINING EXPERIENCE',
+                        label: l.trainingExperience,
                         value: data.trainingExperience,
                         icon: Icons.fitness_center_rounded,
                         accent: const Color(0xFF14B8A6),
                       ),
                       const SizedBox(height: 12),
                       _HistoryCard(
-                        label: 'PREVIOUS TRAINING',
+                        label: l.previousTraining,
                         value: data.previousTraining,
                         icon: Icons.history_rounded,
                         accent: const Color(0xFF7C3AED),
                       ),
                       const SizedBox(height: 12),
                       _HistoryCard(
-                        label: 'REASON FOR STOPPING',
+                        label: l.reasonForStopping,
                         value: data.reasonForStopping,
                         icon: Icons.warning_amber_rounded,
                         accent: const Color(0xFFD97706),
                       ),
                       const SizedBox(height: 12),
                       _HistoryCard(
-                        label: 'DISEASES / CONDITIONS',
+                        label: l.diseasesConditions,
                         value: data.diseasesOrConditions,
                         icon: Icons.monitor_heart_outlined,
                         accent: const Color(0xFFDC2626),
                       ),
                       const SizedBox(height: 12),
                       _HistoryCard(
-                        label: 'ALLERGIES',
+                        label: l.allergiesLabel,
                         value: data.allergies,
                         icon: Icons.warning_amber_rounded,
                         accent: const Color(0xFFCA8A04),
                       ),
                       const SizedBox(height: 12),
                       _HistoryCard(
-                        label: 'INJURIES',
+                        label: l.injuriesLabel,
                         value: data.injuries,
                         icon: Icons.shield_outlined,
                         accent: const Color(0xFFB91C1C),
                       ),
                       const SizedBox(height: 12),
                       _HistoryCard(
-                        label: 'MEDICATIONS',
+                        label: l.medicationsLabel,
                         value: data.medications,
                         icon: Icons.description_outlined,
                         accent: const Color(0xFF2563EB),

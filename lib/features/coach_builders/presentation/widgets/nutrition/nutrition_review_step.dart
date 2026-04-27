@@ -1,6 +1,10 @@
+// ignore_for_file: deprecated_member_use
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guidr/core/di/injection_container.dart' as di;
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/features/coach_builders/data/local/plan_builder_local_storage.dart';
+import 'package:guidr/features/coach_builders/domain/entities/ingredient.dart';
 import '../../bloc/nutrition_builder_bloc.dart';
 import '../../bloc/nutrition_builder_event.dart';
 import '../../bloc/nutrition_builder_state.dart';
@@ -55,7 +59,7 @@ class NutritionReviewStep extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: allMeals
                     .map((item) => _MealReviewRow(
-                        meal: item.$2, category: item.$1))
+                        entry: item.$2, category: item.$1))
                     .toList(),
               ),
             ),
@@ -144,6 +148,37 @@ class NutritionReviewStep extends StatelessWidget {
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold)),
                   ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Saved on this device (no cloud sync)',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary.withValues(alpha: 0.9),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                TextButton.icon(
+                  onPressed: state.saving
+                      ? null
+                      : () => context
+                          .read<NutritionBuilderBloc>()
+                          .add(const RestoreNutritionDraftFromLocal()),
+                  icon: const Icon(Icons.download_outlined, size: 18),
+                  label: const Text('Load draft'),
+                ),
+                TextButton.icon(
+                  onPressed: state.saving
+                      ? null
+                      : () => _showNutritionTemplatePicker(context),
+                  icon: const Icon(Icons.bookmarks_outlined, size: 18),
+                  label: const Text('Load template…'),
                 ),
               ],
             ),
@@ -367,9 +402,9 @@ class _ReviewCard extends StatelessWidget {
 }
 
 class _MealReviewRow extends StatelessWidget {
-  final String meal;
+  final MealIngredientEntry entry;
   final String category;
-  const _MealReviewRow({required this.meal, required this.category});
+  const _MealReviewRow({required this.entry, required this.category});
 
   @override
   Widget build(BuildContext context) {
@@ -390,15 +425,33 @@ class _MealReviewRow extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(meal,
+                Text(entry.name,
                     style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.bold,
                         color: AppColors.textPrimary)),
-                Text(category,
-                    style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary)),
+                Row(
+                  children: [
+                    Text(category,
+                        style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary)),
+                    if (entry.isFromLibrary) ...[
+                      const Text(' · ',
+                          style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textMuted)),
+                      Text(
+                        '${entry.quantityG.toStringAsFixed(0)}g · '
+                        '${entry.calories.toStringAsFixed(0)} kcal',
+                        style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
           ),
@@ -406,4 +459,53 @@ class _MealReviewRow extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showNutritionTemplatePicker(BuildContext context) {
+  final store = di.sl<PlanBuilderLocalStorage>();
+  final list = store.listNutritionTemplates();
+  if (list.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('No saved templates on this device yet.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+    return;
+  }
+  showModalBottomSheet<void>(
+    context: context,
+    showDragHandle: true,
+    builder: (ctx) => SafeArea(
+      child: ListView(
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
+            child: Text(
+              'Nutrition templates (device storage)',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          ...list.map(
+            (m) {
+              final id = m['id'] as String? ?? '';
+              final name = m['name'] as String? ?? 'Untitled';
+              return ListTile(
+                title: Text(name),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.read<NutritionBuilderBloc>().add(
+                        RestoreNutritionTemplateFromLocal(id),
+                      );
+                },
+              );
+            },
+          ),
+        ],
+      ),
+    ),
+  );
 }

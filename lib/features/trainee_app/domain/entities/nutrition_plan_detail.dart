@@ -3,18 +3,55 @@ import 'package:equatable/equatable.dart';
 class NutritionIngredient extends Equatable {
   final int id;
   final String name;
+  final double servingQuantityG;
+  final double calories;
+  final double protein;
+  final double carbs;
+  final double fat;
 
-  const NutritionIngredient({required this.id, required this.name});
+  const NutritionIngredient({
+    required this.id,
+    required this.name,
+    this.servingQuantityG = 100.0,
+    this.calories = 0.0,
+    this.protein = 0.0,
+    this.carbs = 0.0,
+    this.fat = 0.0,
+  });
 
   factory NutritionIngredient.fromJson(Map<String, dynamic> json) {
     return NutritionIngredient(
       id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
       name: json['name'] as String? ?? '',
+      servingQuantityG:
+          (json['servingQuantityG'] as num?)?.toDouble() ?? 100.0,
+      calories: (json['calories'] as num?)?.toDouble() ?? 0.0,
+      protein: (json['protein'] as num?)?.toDouble() ?? 0.0,
+      carbs: (json['carbohydrates'] as num?)?.toDouble() ??
+          (json['carbs'] as num?)?.toDouble() ??
+          0.0,
+      fat: (json['fat'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
+  bool get hasMacros => calories > 0 || protein > 0 || carbs > 0 || fat > 0;
+
+  /// Calories for a given quantity (scales linearly from servingQuantityG).
+  double caloriesForQty(double qty) =>
+      servingQuantityG > 0 ? calories * qty / servingQuantityG : 0;
+
+  double proteinForQty(double qty) =>
+      servingQuantityG > 0 ? protein * qty / servingQuantityG : 0;
+
+  double carbsForQty(double qty) =>
+      servingQuantityG > 0 ? carbs * qty / servingQuantityG : 0;
+
+  double fatForQty(double qty) =>
+      servingQuantityG > 0 ? fat * qty / servingQuantityG : 0;
+
   @override
-  List<Object?> get props => [id, name];
+  List<Object?> get props =>
+      [id, name, servingQuantityG, calories, protein, carbs, fat];
 }
 
 class NutritionMealDetail extends Equatable {
@@ -52,7 +89,8 @@ class NutritionMealDetail extends Equatable {
   }
 
   @override
-  List<Object?> get props => [id, name, calories, protein, carbs, fat, ingredients];
+  List<Object?> get props =>
+      [id, name, calories, protein, carbs, fat, ingredients];
 }
 
 class NutritionPlanDetail extends Equatable {

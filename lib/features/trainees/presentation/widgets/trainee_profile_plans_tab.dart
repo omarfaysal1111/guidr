@@ -1,5 +1,9 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guidr/features/trainee_app/domain/entities/water_intake_day.dart';
+import 'package:intl/intl.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../domain/entities/coach_trainee_detail.dart';
 import '../../domain/entities/coach_trainee_plans_data.dart';
@@ -232,12 +236,14 @@ class TraineeProfilePlansTab extends StatefulWidget {
   final CoachTraineeDetail? detail;
   final bool loading;
   final String traineeId;
+  final WaterIntakeDay? waterIntake;
 
   const TraineeProfilePlansTab({
     super.key,
     required this.detail,
     required this.loading,
     required this.traineeId,
+    this.waterIntake,
   });
 
   @override
@@ -547,6 +553,53 @@ class _TraineeProfilePlansTabState extends State<TraineeProfilePlansTab> {
                   ],
                 ),
               ],
+              ...() {
+                final w = widget.waterIntake;
+                if (w == null) return <Widget>[];
+                return <Widget>[
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.water_drop, size: 18, color: Color(0xFF0EA5E9)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text.rich(
+                          TextSpan(
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                              height: 1.3,
+                            ),
+                            children: [
+                              const TextSpan(
+                                text: "Today's total: ",
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              TextSpan(
+                                text: '${w.liters.toStringAsFixed(2)} L',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF0EA5E9),
+                                ),
+                              ),
+                              if (w.updatedAt != null)
+                                TextSpan(
+                                  text:
+                                      ' · ${DateFormat('MMM d, HH:mm').format(w.updatedAt!.toLocal())}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textMuted,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ];
+              }(),
               if (mealHistoryGroups.isNotEmpty) ...[
                 const SizedBox(height: 14),
                 ...mealHistoryGroups.map((group) {
@@ -1455,6 +1508,19 @@ class _WorkoutExerciseLogRow extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 8),
+                      SizedBox(
+                        width: 44,
+                        child: Text(
+                          'Reps',
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.textMuted.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           'Status',
@@ -1484,6 +1550,7 @@ class _WorkoutExerciseLogRow extends StatelessWidget {
                       : ((w - w.round()).abs() < 1e-6
                           ? '${w.round()}'
                           : w.toStringAsFixed(1));
+                  final repsLabel = s.reps != null ? '${s.reps}' : '—';
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Row(
@@ -1504,6 +1571,19 @@ class _WorkoutExerciseLogRow extends StatelessWidget {
                           width: 52,
                           child: Text(
                             weightLabel,
+                            textAlign: TextAlign.end,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 44,
+                          child: Text(
+                            repsLabel,
                             textAlign: TextAlign.end,
                             style: const TextStyle(
                               fontSize: 12,
@@ -2216,37 +2296,81 @@ class _WeightStatCard extends StatelessWidget {
   }
 }
 
-class _WeightLineChart extends StatelessWidget {
+class _WeightLineChart extends StatefulWidget {
   final List<_WeightDataPoint> dataPoints;
 
   const _WeightLineChart({required this.dataPoints});
 
   @override
+  State<_WeightLineChart> createState() => _WeightLineChartState();
+}
+
+class _WeightLineChartState extends State<_WeightLineChart> {
+  int? _selectedIndex;
+
+  void _handleTouch(Offset localPos, Size chartSize) {
+    final n = widget.dataPoints.length;
+    if (n == 0) return;
+    const hPad = 12.0;
+    final usableW = chartSize.width - hPad * 2;
+    int closest = 0;
+    double minDist = double.infinity;
+    for (int i = 0; i < n; i++) {
+      final x = hPad + (n == 1 ? usableW / 2 : usableW * i / (n - 1));
+      final dist = (localPos.dx - x).abs();
+      if (dist < minDist) {
+        minDist = dist;
+        closest = i;
+      }
+    }
+    setState(() => _selectedIndex = closest);
+  }
+
+  void _clearTouch() => setState(() => _selectedIndex = null);
+
+  @override
   Widget build(BuildContext context) {
-    final weights = dataPoints.map((p) => p.weightKg).toList();
-    final labels = dataPoints.map((p) => p.sessionLabel).toList();
-    final lastWeight = weights.last;
+    final weights = widget.dataPoints.map((p) => p.weightKg).toList();
+    final labels = widget.dataPoints.map((p) => p.sessionLabel).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          height: 140,
-          child: CustomPaint(
-            painter: _WeightLinePainter(
-              weights: weights,
-              lastLabel: '${_formatKg(lastWeight)}kg',
+        GestureDetector(
+          onTapDown: (d) {
+            _handleTouch(d.localPosition, Size(MediaQuery.of(context).size.width - 40, 140));
+          },
+          onPanUpdate: (d) {
+            _handleTouch(d.localPosition, Size(MediaQuery.of(context).size.width - 40, 140));
+          },
+          onPanEnd: (_) => _clearTouch(),
+          onTapUp: (_) {}, // keep tooltip on tap (don't clear)
+          child: SizedBox(
+            height: 140,
+            child: LayoutBuilder(
+              builder: (_, constraints) => CustomPaint(
+                size: Size(constraints.maxWidth, 140),
+                painter: _WeightLinePainter(
+                  weights: weights,
+                  selectedIndex: _selectedIndex,
+                ),
+              ),
             ),
           ),
         ),
         const SizedBox(height: 4),
         Row(
-          children: labels.map((l) {
+          children: labels.asMap().entries.map((e) {
+            final isSelected = _selectedIndex == e.key;
             return Expanded(
               child: Text(
-                l,
+                e.value,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w400,
+                  color: isSelected ? AppColors.success : AppColors.textSecondary,
+                ),
               ),
             );
           }).toList(),
@@ -2258,36 +2382,65 @@ class _WeightLineChart extends StatelessWidget {
 
 class _WeightLinePainter extends CustomPainter {
   final List<double> weights;
-  final String lastLabel;
+  final int? selectedIndex;
 
-  const _WeightLinePainter({required this.weights, required this.lastLabel});
+  const _WeightLinePainter({required this.weights, this.selectedIndex});
 
   static const _lineColor = AppColors.success;
+  static const _topPad = 28.0;
+  static const _hPad = 12.0;
+
+  List<Offset> _buildPoints(Size size) {
+    final n = weights.length;
+    final chartH = size.height - _topPad - 4;
+    final usableW = size.width - _hPad * 2;
+    final minW = weights.reduce((a, b) => a < b ? a : b);
+    final maxW = weights.reduce((a, b) => a > b ? a : b);
+    final range = (maxW - minW).abs();
+    return List.generate(n, (i) {
+      final x = _hPad + (n == 1 ? usableW / 2 : usableW * i / (n - 1));
+      final y = _topPad + (range > 0 ? chartH * (1 - (weights[i] - minW) / range) : chartH * 0.5);
+      return Offset(x, y);
+    });
+  }
+
+  Path _smoothPath(List<Offset> pts) {
+    final path = Path()..moveTo(pts.first.dx, pts.first.dy);
+    if (pts.length == 2) {
+      path.lineTo(pts[1].dx, pts[1].dy);
+      return path;
+    }
+    const tension = 0.35;
+    for (int i = 0; i < pts.length - 1; i++) {
+      final prev = i > 0 ? pts[i - 1] : pts[i];
+      final curr = pts[i];
+      final next = pts[i + 1];
+      final after = i < pts.length - 2 ? pts[i + 2] : pts[i + 1];
+      final cp1 = Offset(
+        curr.dx + (next.dx - prev.dx) * tension,
+        curr.dy + (next.dy - prev.dy) * tension,
+      );
+      final cp2 = Offset(
+        next.dx - (after.dx - curr.dx) * tension,
+        next.dy - (after.dy - curr.dy) * tension,
+      );
+      path.cubicTo(cp1.dx, cp1.dy, cp2.dx, cp2.dy, next.dx, next.dy);
+    }
+    return path;
+  }
 
   @override
   void paint(Canvas canvas, Size size) {
     if (weights.isEmpty) return;
+    final pts = _buildPoints(size);
+    final bottomY = size.height - 4;
 
-    const topPad = 24.0;
-    final chartH = size.height - topPad;
-    final chartW = size.width;
-    final n = weights.length;
-
-    final minW = weights.reduce((a, b) => a < b ? a : b);
-    final maxW = weights.reduce((a, b) => a > b ? a : b);
-    final range = (maxW - minW).abs();
-
-    final pts = List.generate(n, (i) {
-      final x = n == 1 ? chartW / 2 : chartW * i / (n - 1);
-      final y = topPad + (range > 0 ? chartH * (1 - (weights[i] - minW) / range) : chartH * 0.5);
-      return Offset(x, y);
-    });
-
-    // Gradient fill
-    final fillPath = Path()..moveTo(pts.first.dx, topPad + chartH);
-    for (final p in pts) { fillPath.lineTo(p.dx, p.dy); }
-    fillPath.lineTo(pts.last.dx, topPad + chartH);
-    fillPath.close();
+    // Gradient fill under curve
+    final curvePath = _smoothPath(pts);
+    final fillPath = Path.from(curvePath)
+      ..lineTo(pts.last.dx, bottomY)
+      ..lineTo(pts.first.dx, bottomY)
+      ..close();
     canvas.drawPath(
       fillPath,
       Paint()
@@ -2295,17 +2448,15 @@ class _WeightLinePainter extends CustomPainter {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            _lineColor.withValues(alpha: 0.22),
-            _lineColor.withValues(alpha: 0.03),
+            _lineColor.withValues(alpha: 0.20),
+            _lineColor.withValues(alpha: 0.02),
           ],
-        ).createShader(Rect.fromLTWH(0, topPad, chartW, chartH)),
+        ).createShader(Rect.fromLTWH(0, _topPad, size.width, size.height - _topPad)),
     );
 
-    // Line
-    final linePath = Path()..moveTo(pts.first.dx, pts.first.dy);
-    for (int i = 1; i < n; i++) { linePath.lineTo(pts[i].dx, pts[i].dy); }
+    // Smooth line
     canvas.drawPath(
-      linePath,
+      curvePath,
       Paint()
         ..color = _lineColor
         ..strokeWidth = 2.5
@@ -2314,31 +2465,98 @@ class _WeightLinePainter extends CustomPainter {
         ..strokeJoin = StrokeJoin.round,
     );
 
-    // Dots
-    final dotPaint = Paint()
-      ..color = _lineColor
-      ..style = PaintingStyle.fill;
-    for (final p in pts) { canvas.drawCircle(p, 4, dotPaint); }
+    // Last-point label (always shown, hidden when another point is selected)
+    if (selectedIndex == null || selectedIndex == pts.length - 1) {
+      _drawLabel(canvas, pts.last, '${_formatKg(weights.last)}kg', size);
+    }
 
-    // Last-point weight label
+    // Dots (small for unselected, large for selected)
+    for (int i = 0; i < pts.length; i++) {
+      final isSelected = selectedIndex == i;
+      if (isSelected) {
+        // Outer ring
+        canvas.drawCircle(pts[i], 9,
+            Paint()..color = _lineColor.withValues(alpha: 0.18)..style = PaintingStyle.fill);
+        // Filled dot
+        canvas.drawCircle(pts[i], 5,
+            Paint()..color = _lineColor..style = PaintingStyle.fill);
+        // White inner
+        canvas.drawCircle(pts[i], 2.5,
+            Paint()..color = Colors.white..style = PaintingStyle.fill);
+        // Tooltip
+        _drawTooltip(canvas, pts[i], '${_formatKg(weights[i])}kg', size);
+      } else {
+        // White ring + filled dot
+        canvas.drawCircle(pts[i], 4.5,
+            Paint()..color = Colors.white..style = PaintingStyle.fill);
+        canvas.drawCircle(pts[i], 3.5,
+            Paint()..color = _lineColor..style = PaintingStyle.fill);
+      }
+    }
+  }
+
+  void _drawLabel(Canvas canvas, Offset pt, String text, Size size) {
     final tp = TextPainter(
       text: TextSpan(
-        text: lastLabel,
+        text: text,
         style: const TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w800,
           color: _lineColor,
         ),
       ),
-      textDirection: TextDirection.ltr,
+      textDirection: ui.TextDirection.ltr,
     )..layout();
-    final lastPt = pts.last;
-    tp.paint(canvas, Offset(lastPt.dx - tp.width / 2, lastPt.dy - tp.height - 6));
+    final dx = (pt.dx - tp.width / 2).clamp(0.0, size.width - tp.width);
+    tp.paint(canvas, Offset(dx, pt.dy - tp.height - 8));
+  }
+
+  void _drawTooltip(Canvas canvas, Offset pt, String text, Size size) {
+    const hPadding = 10.0;
+    const vPadding = 5.0;
+    const radius = 8.0;
+
+    final tp = TextPainter(
+      text: TextSpan(
+        text: text,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w800,
+          color: Colors.white,
+        ),
+      ),
+      textDirection: ui.TextDirection.ltr,
+    )..layout();
+
+    final tooltipW = tp.width + hPadding * 2;
+    final tooltipH = tp.height + vPadding * 2;
+    const arrowH = 5.0;
+    final totalH = tooltipH + arrowH;
+
+    double left = pt.dx - tooltipW / 2;
+    left = left.clamp(0.0, size.width - tooltipW);
+    final top = pt.dy - totalH - 6;
+
+    final bgRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(left, top, tooltipW, tooltipH),
+      const Radius.circular(radius),
+    );
+    canvas.drawRRect(bgRect, Paint()..color = _lineColor);
+
+    // Arrow
+    final arrowPath = Path()
+      ..moveTo(pt.dx - 5, top + tooltipH)
+      ..lineTo(pt.dx, top + tooltipH + arrowH)
+      ..lineTo(pt.dx + 5, top + tooltipH)
+      ..close();
+    canvas.drawPath(arrowPath, Paint()..color = _lineColor);
+
+    tp.paint(canvas, Offset(left + hPadding, top + vPadding));
   }
 
   @override
   bool shouldRepaint(covariant _WeightLinePainter old) =>
-      old.weights != weights || old.lastLabel != lastLabel;
+      old.weights != weights || old.selectedIndex != selectedIndex;
 }
 
 // ─── Meal Completion History Widgets ─────────────────────────────────────────

@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 import '../bloc/auth_bloc.dart';
 
 class RegisterTraineeScreen extends StatefulWidget {
@@ -53,6 +54,7 @@ class _RegisterTraineeScreenState extends State<RegisterTraineeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
     return Scaffold(
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
@@ -96,32 +98,32 @@ class _RegisterTraineeScreenState extends State<RegisterTraineeScreen> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      _buildLogoHeader('Create your account'),
+                      _buildLogoHeader(l.createYourAccount),
                       const SizedBox(height: 32),
                       _buildTextField(
                         controller: _fullNameController,
-                        label: 'Full Name',
+                        label: l.fullName,
                         icon: Icons.person_outline,
                         obscureText: false,
                         validator: (v) =>
                             v == null || v.trim().isEmpty
-                                ? 'Please enter your name'
+                                ? l.pleaseEnterName
                                 : null,
                       ),
                       const SizedBox(height: 16),
                       _buildTextField(
                         controller: _emailController,
-                        label: 'Email Address',
+                        label: l.emailAddress,
                         icon: Icons.email_outlined,
                         obscureText: false,
                         keyboardType: TextInputType.emailAddress,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) {
-                            return 'Please enter your email';
+                            return l.pleaseEnterEmail;
                           }
                           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
                               .hasMatch(v.trim())) {
-                            return 'Please enter a valid email';
+                            return l.pleaseEnterValidEmail;
                           }
                           return null;
                         },
@@ -129,15 +131,15 @@ class _RegisterTraineeScreenState extends State<RegisterTraineeScreen> {
                       const SizedBox(height: 16),
                       _buildTextField(
                         controller: _passwordController,
-                        label: 'Password',
+                        label: l.password,
                         icon: Icons.lock_outline,
                         obscureText: true,
                         validator: (v) {
                           if (v == null || v.isEmpty) {
-                            return 'Please enter a password';
+                            return l.pleaseEnterAPassword;
                           }
                           if (v.length < 6) {
-                            return 'Password must be at least 6 characters';
+                            return l.passwordMinLength;
                           }
                           return null;
                         },
@@ -145,16 +147,16 @@ class _RegisterTraineeScreenState extends State<RegisterTraineeScreen> {
                       const SizedBox(height: 16),
                       _buildTextField(
                         controller: _invitationTokenController,
-                        label: 'Invitation Code',
+                        label: l.invitationCode,
                         icon: Icons.card_giftcard_outlined,
                         obscureText: false,
                         validator: (v) =>
                             v == null || v.trim().isEmpty
-                                ? 'Please enter your invitation code'
+                                ? l.pleaseEnterInvitationCode
                                 : null,
                       ),
                       const SizedBox(height: 16),
-                      _buildFitnessGoalDropdown(),
+                      _buildFitnessGoalDropdown(l),
                       const SizedBox(height: 32),
                       BlocBuilder<AuthBloc, AuthState>(
                         builder: (context, state) {
@@ -173,9 +175,9 @@ class _RegisterTraineeScreenState extends State<RegisterTraineeScreen> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            child: const Text(
-                              'Register',
-                              style: TextStyle(
+                            child: Text(
+                              l.register,
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -243,12 +245,12 @@ class _RegisterTraineeScreenState extends State<RegisterTraineeScreen> {
     );
   }
 
-  Widget _buildFitnessGoalDropdown() {
+  Widget _buildFitnessGoalDropdown(AppLocalizations l) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'FITNESS GOAL'.toUpperCase(),
+          l.fitnessGoal.toUpperCase(),
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.bold,

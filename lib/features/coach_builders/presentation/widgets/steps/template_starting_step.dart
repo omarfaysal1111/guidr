@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:guidr/core/di/injection_container.dart' as di;
 import 'package:guidr/core/theme/app_colors.dart';
+import 'package:guidr/features/coach_builders/data/local/plan_builder_local_storage.dart';
+import 'package:guidr/l10n/app_localizations.dart';
 import '../../bloc/workout_builder_bloc.dart';
 import '../../bloc/workout_builder_event.dart';
 
@@ -9,6 +12,10 @@ class TemplateStartingStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context);
+    final savedTemplates =
+        di.sl<PlanBuilderLocalStorage>().listWorkoutTemplates();
+
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -18,14 +25,85 @@ class TemplateStartingStep extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         _DraftsCard(
-          onTap: () =>
-              context.read<WorkoutBuilderBloc>().add(const SetStep(3)),
+          onTap: () => context
+              .read<WorkoutBuilderBloc>()
+              .add(const RestoreWorkoutDraftFromLocal()),
         ),
         const SizedBox(height: 24),
-        const _SectionHeader(title: 'SAVED TEMPLATES'),
+        _SectionHeader(title: l.savedTemplates),
         const SizedBox(height: 12),
-        const _EmptyTemplates(),
+        if (savedTemplates.isEmpty)
+          const _EmptyTemplates()
+        else
+          ...savedTemplates.map(
+            (m) => _SavedTemplateCard(
+              id: m['id'] as String? ?? '',
+              name: m['name'] as String? ?? 'Untitled',
+              savedAt: m['savedAt'] as String?,
+            ),
+          ),
       ],
+    );
+  }
+}
+
+class _SavedTemplateCard extends StatelessWidget {
+  final String id;
+  final String name;
+  final String? savedAt;
+
+  const _SavedTemplateCard({
+    required this.id,
+    required this.name,
+    this.savedAt,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    String subtitle = '';
+    if (savedAt != null) {
+      final dt = DateTime.tryParse(savedAt!);
+      if (dt != null) {
+        subtitle =
+            'Saved ${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: ListTile(
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFF3B82F6).withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: const Icon(Icons.bookmark,
+              color: Color(0xFF3B82F6), size: 22),
+        ),
+        title: Text(name,
+            style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 15,
+                color: AppColors.textPrimary)),
+        subtitle: subtitle.isNotEmpty
+            ? Text(subtitle,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textSecondary))
+            : null,
+        trailing: const Icon(Icons.chevron_right, color: AppColors.textMuted),
+        onTap: () => context
+            .read<WorkoutBuilderBloc>()
+            .add(RestoreWorkoutTemplateFromLocal(id)),
+      ),
     );
   }
 }
@@ -67,19 +145,19 @@ class _StartFromScratchCard extends StatelessWidget {
               child: const Icon(Icons.add, color: Colors.white, size: 28),
             ),
             const SizedBox(width: 16),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Start from Scratch',
-                      style: TextStyle(
+                  Text(AppLocalizations.of(context).startFromScratch,
+                      style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: Colors.white)),
-                  SizedBox(height: 4),
-                  Text('Build a completely custom workout',
+                  const SizedBox(height: 4),
+                  Text(AppLocalizations.of(context).buildCustomWorkout,
                       style:
-                          TextStyle(fontSize: 14, color: Colors.white70)),
+                          const TextStyle(fontSize: 14, color: Colors.white70)),
                 ],
               ),
             ),
@@ -120,15 +198,15 @@ class _DraftsCard extends StatelessWidget {
                   color: AppColors.warning, size: 22),
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('My Drafts',
-                      style: TextStyle(
+                  Text(AppLocalizations.of(context).myDrafts,
+                      style: const TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 16)),
-                  Text('Continue editing saved plans',
-                      style: TextStyle(
+                  Text(AppLocalizations.of(context).continueEditingPlans,
+                      style: const TextStyle(
                           fontSize: 13, color: AppColors.textSecondary)),
                 ],
               ),
@@ -157,14 +235,14 @@ class _EmptyTemplates extends StatelessWidget {
         children: [
           Icon(Icons.bookmark_border, size: 40, color: AppColors.textMuted),
           const SizedBox(height: 8),
-          const Text('No saved templates yet',
-              style: TextStyle(
+          Text(AppLocalizations.of(context).noSavedTemplatesYet,
+              style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   color: AppColors.textSecondary)),
           const SizedBox(height: 4),
-          const Text('Templates you save will appear here',
+          Text(AppLocalizations.of(context).templatesSavedWillAppearHere,
               style:
-                  TextStyle(fontSize: 13, color: AppColors.textMuted)),
+                  const TextStyle(fontSize: 13, color: AppColors.textMuted)),
         ],
       ),
     );

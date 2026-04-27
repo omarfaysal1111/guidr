@@ -6,6 +6,7 @@ import '../entities/trainee_exercise_plan_detail.dart';
 import '../entities/nutrition_plan_detail.dart';
 import '../entities/ingredient_library_item.dart';
 import '../entities/extra_meal_log.dart';
+import '../entities/water_intake_day.dart';
 import '../../../coach_settings/domain/entities/coach_profile.dart';
 import 'package:guidr/features/coach_builders/domain/entities/plans.dart';
 
@@ -36,4 +37,9 @@ abstract class TraineeAppRepository {
   });
   Future<void> uploadProgressPhoto(List<int> fileBytes, String fileName);
   Future<void> uploadInBodyReport(List<int> fileBytes, String fileName);
+  Future<WaterIntakeDay> getMyWaterIntake({DateTime? date});
+  Future<WaterIntakeDay> setMyWaterIntake({
+    required double liters,
+    required String dateIso,
+  });
 }

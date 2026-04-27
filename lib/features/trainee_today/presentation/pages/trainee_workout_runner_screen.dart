@@ -1232,7 +1232,7 @@ class _TraineeWorkoutRunnerScreenState
           final parsedKg = numMatch != null
               ? double.tryParse(numMatch.group(1) ?? '')
               : null;
-          _setLogs[i].add(_RunnerSetLog.completed(weightKg: parsedKg));
+          _setLogs[i].add(_RunnerSetLog.completed(weightKg: parsedKg, reps: _repsCount));
         case SetLogOutcome.skipped:
           _setLogs[i].add(_RunnerSetLog.skipped(reason));
         case SetLogOutcome.missed:
@@ -1303,6 +1303,7 @@ class _TraineeWorkoutRunnerScreenState
           row.add(ExerciseSetLogRequest(
             outcome: SetLogOutcome.completed,
             weightKg: entry.weightKg,
+            reps: entry.reps,
           ));
         } else {
           final r = (entry.reason ?? '').trim();
@@ -1681,14 +1682,15 @@ class _RunnerSetLog {
   final SetLogOutcome outcome;
   final String? reason;
   final double? weightKg;
+  final int? reps;
 
-  _RunnerSetLog.completed({this.weightKg})
+  _RunnerSetLog.completed({this.weightKg, this.reps})
       : outcome = SetLogOutcome.completed,
         reason = null;
 
-  _RunnerSetLog.skipped(this.reason) : outcome = SetLogOutcome.skipped, weightKg = null;
+  _RunnerSetLog.skipped(this.reason) : outcome = SetLogOutcome.skipped, weightKg = null, reps = null;
 
-  _RunnerSetLog.missed(this.reason) : outcome = SetLogOutcome.missed, weightKg = null;
+  _RunnerSetLog.missed(this.reason) : outcome = SetLogOutcome.missed, weightKg = null, reps = null;
 
   bool get isCompleted => outcome == SetLogOutcome.completed;
 }

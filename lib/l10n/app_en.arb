@@ -387,5 +387,671 @@
   "@progressUpdates": { "description": "Progress updates toggle" },
 
   "chatMessages": "Chat Messages",
-  "@chatMessages": { "description": "Chat messages toggle" }
+  "@chatMessages": { "description": "Chat messages toggle" },
+
+  "trainSmarter": "Train smarter. Together.",
+  "@trainSmarter": { "description": "Login screen tagline" },
+
+  "iAmACoach": "I'm a Coach",
+  "@iAmACoach": { "description": "Role selection - coach" },
+
+  "coachRoleDescription": "Manage clients, create plans & track progress",
+  "@coachRoleDescription": { "description": "Coach role description" },
+
+  "iAmATrainee": "I'm a Trainee",
+  "@iAmATrainee": { "description": "Role selection - trainee" },
+
+  "traineeRoleDescription": "Follow plans, log workouts & hit your goals",
+  "@traineeRoleDescription": { "description": "Trainee role description" },
+
+  "continueBtn": "Continue →",
+  "@continueBtn": { "description": "Continue button" },
+
+  "welcomeBackCoach": "Welcome back, Coach",
+  "@welcomeBackCoach": { "description": "Welcome back for coach" },
+
+  "emailAddress": "Email Address",
+  "@emailAddress": { "description": "Email address field label" },
+
+  "pleaseEnterEmail": "Please enter your email",
+  "@pleaseEnterEmail": { "description": "Email validation message" },
+
+  "pleaseEnterPassword": "Please enter your password",
+  "@pleaseEnterPassword": { "description": "Password validation message" },
+
+  "logIn": "Log In",
+  "@logIn": { "description": "Log in button label" },
+
+  "dontHaveAccount": "Don't have an account? Register",
+  "@dontHaveAccount": { "description": "Register link text" },
+
+  "createYourAccount": "Create your account",
+  "@createYourAccount": { "description": "Register screen subtitle" },
+
+  "invitationCode": "Invitation Code",
+  "@invitationCode": { "description": "Invitation code field label" },
+
+  "fitnessGoal": "Fitness Goal",
+  "@fitnessGoal": { "description": "Fitness goal field label" },
+
+  "pleaseEnterName": "Please enter your name",
+  "@pleaseEnterName": { "description": "Name validation message" },
+
+  "pleaseEnterValidEmail": "Please enter a valid email",
+  "@pleaseEnterValidEmail": { "description": "Email format validation" },
+
+  "pleaseEnterAPassword": "Please enter a password",
+  "@pleaseEnterAPassword": { "description": "Password required validation" },
+
+  "passwordMinLength": "Password must be at least 6 characters",
+  "@passwordMinLength": { "description": "Password length validation" },
+
+  "pleaseEnterInvitationCode": "Please enter your invitation code",
+  "@pleaseEnterInvitationCode": { "description": "Invitation code validation" },
+
+  "createNewPlan": "Create new plan",
+  "@createNewPlan": { "description": "Create new plan sheet title" },
+
+  "exercisesPlan": "Exercises Plan",
+  "@exercisesPlan": { "description": "Exercises plan option" },
+
+  "nutritionPlan": "Nutrition Plan",
+  "@nutritionPlan": { "description": "Nutrition plan option" },
+
+  "more": "More",
+  "@more": { "description": "More tab label" },
+
+  "goodMorning": "Good morning",
+  "@goodMorning": { "description": "Morning greeting" },
+
+  "goodAfternoon": "Good afternoon",
+  "@goodAfternoon": { "description": "Afternoon greeting" },
+
+  "goodEvening": "Good evening",
+  "@goodEvening": { "description": "Evening greeting" },
+
+  "sessionsToday": "{count} sessions today",
+  "@sessionsToday": {
+    "description": "Sessions today count",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "needAttention": "{count} need attention",
+  "@needAttention": {
+    "description": "Needs attention count",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "freePlan": "Free Plan",
+  "@freePlan": { "description": "Free plan label" },
+
+  "upgrade": "Upgrade",
+  "@upgrade": { "description": "Upgrade button" },
+
+  "clients": "Clients",
+  "@clients": { "description": "Clients label" },
+
+  "clientLimitReached": "Client limit reached — upgrade to add more",
+  "@clientLimitReached": { "description": "Client limit warning" },
+
+  "todaysSessions": "Today's Sessions",
+  "@todaysSessions": { "description": "Today's sessions section" },
+
+  "noSessionsToday": "No sessions scheduled for today.",
+  "@noSessionsToday": { "description": "No sessions today message" },
+
+  "topPerformers": "Top Performers",
+  "@topPerformers": { "description": "Top performers section" },
+
+  "topPerformersEmpty": "Your most engaged clients will appear here.",
+  "@topPerformersEmpty": { "description": "Top performers empty state" },
+
+  "recentActivity": "Recent Activity",
+  "@recentActivity": { "description": "Recent activity section" },
+
+  "recentActivityEmpty": "Activity from your clients will appear here.",
+  "@recentActivityEmpty": { "description": "Recent activity empty state" },
+
+  "pendingInvitations": "Pending Invitations",
+  "@pendingInvitations": { "description": "Pending invitations section" },
+
+  "noPendingInvites": "No pending invites. Invite a trainee to get started.",
+  "@noPendingInvites": { "description": "No pending invites message" },
+
+  "expires": "Expires {date}",
+  "@expires": {
+    "description": "Expiry date label",
+    "placeholders": {
+      "date": { "type": "String" }
+    }
+  },
+
+  "pendingInvitation": "Pending invitation",
+  "@pendingInvitation": { "description": "Pending invitation label" },
+
+  "invited": "Invited: {email}",
+  "@invited": {
+    "description": "Invited email label",
+    "placeholders": {
+      "email": { "type": "String" }
+    }
+  },
+
+  "noItemsNeedAttention": "No items need attention right now.",
+  "@noItemsNeedAttention": { "description": "No attention items message" },
+
+  "viewAllBtn": "View all",
+  "@viewAllBtn": { "description": "View all button variant" },
+
+  "traineeCount": "{count} trainees",
+  "@traineeCount": {
+    "description": "Trainee count label",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "sort": "Sort",
+  "@sort": { "description": "Sort button" },
+
+  "sortTrainees": "Sort Trainees",
+  "@sortTrainees": { "description": "Sort trainees sheet title" },
+
+  "nameAZ": "Name A–Z",
+  "@nameAZ": { "description": "Sort name ascending" },
+
+  "nameZA": "Name Z–A",
+  "@nameZA": { "description": "Sort name descending" },
+
+  "highestAdherence": "Highest Adherence",
+  "@highestAdherence": { "description": "Sort highest adherence" },
+
+  "lowestAdherence": "Lowest Adherence",
+  "@lowestAdherence": { "description": "Sort lowest adherence" },
+
+  "longestStreak": "Longest Streak",
+  "@longestStreak": { "description": "Sort longest streak" },
+
+  "shortestStreak": "Shortest Streak",
+  "@shortestStreak": { "description": "Sort shortest streak" },
+
+  "adherenceWord": "adherence",
+  "@adherenceWord": { "description": "Adherence label lowercase" },
+
+  "missedMeals": "{count} Missed Meals",
+  "@missedMeals": {
+    "description": "Missed meals badge",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "missedWorkouts": "{count} Missed Workouts",
+  "@missedWorkouts": {
+    "description": "Missed workouts badge",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "overview": "Overview",
+  "@overview": { "description": "Overview tab" },
+
+  "traineeLevel": "Trainee Level",
+  "@traineeLevel": { "description": "Trainee level label" },
+
+  "directionGoal": "DIRECTION / GOAL",
+  "@directionGoal": { "description": "Direction / goal section label" },
+
+  "adherenceLabel": "ADHERENCE",
+  "@adherenceLabel": { "description": "Adherence metric label uppercase" },
+
+  "dayStreak": "DAY STREAK",
+  "@dayStreak": { "description": "Day streak metric label uppercase" },
+
+  "weightLabel": "WEIGHT",
+  "@weightLabel": { "description": "Weight metric label uppercase" },
+
+  "viewHealthHistory": "View Health & Training History",
+  "@viewHealthHistory": { "description": "View health history link" },
+
+  "weeklySummary": "Weekly Summary",
+  "@weeklySummary": { "description": "Weekly summary section" },
+
+  "workouts": "Workouts",
+  "@workouts": { "description": "Workouts label" },
+
+  "details": "Details",
+  "@details": { "description": "Details section" },
+
+  "lastActive": "Last Active",
+  "@lastActive": { "description": "Last active label" },
+
+  "nextSession": "Next Session",
+  "@nextSession": { "description": "Next session label" },
+
+  "missedWorkoutsAlert": "Missed workouts",
+  "@missedWorkoutsAlert": { "description": "Missed workouts alert message" },
+
+  "lowNutritionAdherence": "Low nutrition adherence",
+  "@lowNutritionAdherence": { "description": "Low nutrition adherence alert" },
+
+  "weightPlateau": "Weight plateau (3+ weeks)",
+  "@weightPlateau": { "description": "Weight plateau alert" },
+
+  "healthTrainingHistory": "Health & Training History",
+  "@healthTrainingHistory": { "description": "Health & training history sheet title" },
+
+  "trainingExperience": "TRAINING EXPERIENCE",
+  "@trainingExperience": { "description": "Training experience label" },
+
+  "previousTraining": "PREVIOUS TRAINING",
+  "@previousTraining": { "description": "Previous training label" },
+
+  "reasonForStopping": "REASON FOR STOPPING",
+  "@reasonForStopping": { "description": "Reason for stopping label" },
+
+  "diseasesConditions": "DISEASES / CONDITIONS",
+  "@diseasesConditions": { "description": "Diseases/conditions label" },
+
+  "allergiesLabel": "ALLERGIES",
+  "@allergiesLabel": { "description": "Allergies label" },
+
+  "injuriesLabel": "INJURIES",
+  "@injuriesLabel": { "description": "Injuries label" },
+
+  "medicationsLabel": "MEDICATIONS",
+  "@medicationsLabel": { "description": "Medications label" },
+
+  "weightTrend": "Weight Trend",
+  "@weightTrend": { "description": "Weight trend section" },
+
+  "noWeightLogs": "No weight logs yet.",
+  "@noWeightLogs": { "description": "No weight logs message" },
+
+  "thisWeek": "This Week",
+  "@thisWeek": { "description": "This week label" },
+
+  "bodyMeasurements": "Body Measurements",
+  "@bodyMeasurements": { "description": "Body measurements section" },
+
+  "fromTrainee": "From Trainee",
+  "@fromTrainee": { "description": "From trainee badge" },
+
+  "poseCheckIns": "Pose check-ins",
+  "@poseCheckIns": { "description": "Pose check-ins section" },
+
+  "allDates": "All dates",
+  "@allDates": { "description": "All dates filter option" },
+
+  "clear": "Clear",
+  "@clear": { "description": "Clear button" },
+
+  "noPhotosInRange": "No photos in this range.",
+  "@noPhotosInRange": { "description": "No photos message" },
+
+  "front": "Front",
+  "@front": { "description": "Front photo label" },
+
+  "sideLabel": "Side",
+  "@sideLabel": { "description": "Side photo label" },
+
+  "backLabel": "Back",
+  "@backLabel": { "description": "Back photo label" },
+
+  "traineeFeedback": "Trainee Feedback",
+  "@traineeFeedback": { "description": "Trainee feedback section" },
+
+  "noFeedbackYet": "No feedback entries yet.",
+  "@noFeedbackYet": { "description": "No feedback message" },
+
+  "latest": "Latest",
+  "@latest": { "description": "Latest badge" },
+
+  "feedbackForTrainee": "Feedback for {name}",
+  "@feedbackForTrainee": {
+    "description": "Feedback for trainee label",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "feedbackHint": "Write your feedback here... This will be visible to the trainee.",
+  "@feedbackHint": { "description": "Feedback hint text" },
+
+  "cautionMedicalNotes": "Caution / Medical Notes",
+  "@cautionMedicalNotes": { "description": "Caution/medical notes label" },
+
+  "cautionHint": "Injuries, restrictions, things to watch out for...",
+  "@cautionHint": { "description": "Caution hint text" },
+
+  "saveNotes": "Save Notes",
+  "@saveNotes": { "description": "Save notes button" },
+
+  "saving": "Saving…",
+  "@saving": { "description": "Saving label" },
+
+  "uploading": "Uploading…",
+  "@uploading": { "description": "Uploading label" },
+
+  "uploadImageOrPdf": "Upload image or PDF",
+  "@uploadImageOrPdf": { "description": "Upload image/PDF button" },
+
+  "noInBodyReports": "No InBody reports yet.",
+  "@noInBodyReports": { "description": "No InBody reports message" },
+
+  "inBodyReportsSubtitle": "Upload scans or PDFs from the device. Expand a row to preview.",
+  "@inBodyReportsSubtitle": { "description": "InBody reports subtitle" },
+
+  "noGoalsYet": "No goals listed yet.",
+  "@noGoalsYet": { "description": "No goals message" },
+
+  "tapToMarkDone": "Tap to mark done · Tap ✏ to edit · Swipe left to delete",
+  "@tapToMarkDone": { "description": "Goals hint text" },
+
+  "addNewGoal": "Add a new goal...",
+  "@addNewGoal": { "description": "Add new goal hint" },
+
+  "editGoal": "Edit Goal",
+  "@editGoal": { "description": "Edit goal sheet title" },
+
+  "goalDescription": "Goal description…",
+  "@goalDescription": { "description": "Goal description hint" },
+
+  "levelAndGoal": "Level & Goal",
+  "@levelAndGoal": { "description": "Level & goal card title" },
+
+  "traineeLevelLabel": "TRAINEE LEVEL",
+  "@traineeLevelLabel": { "description": "Trainee level label uppercase" },
+
+  "goalHint": "e.g. Lose 5 kg, Build muscle...",
+  "@goalHint": { "description": "Goal input hint" },
+
+  "saveChanges": "Save Changes",
+  "@saveChanges": { "description": "Save changes button" },
+
+  "traineeInfo": "Trainee Info",
+  "@traineeInfo": { "description": "Trainee info card title" },
+
+  "archiveTraineeQuestion": "Archive trainee?",
+  "@archiveTraineeQuestion": { "description": "Archive trainee dialog title" },
+
+  "archiveTraineeBody": "{name} will be archived. You can restore them later if your app supports it.",
+  "@archiveTraineeBody": {
+    "description": "Archive trainee dialog body",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "archive": "Archive",
+  "@archive": { "description": "Archive button" },
+
+  "deleteTraineePermanently": "Delete trainee permanently?",
+  "@deleteTraineePermanently": { "description": "Delete trainee dialog title" },
+
+  "deleteTraineeBody": "This will remove {name} and their data. This action cannot be undone.",
+  "@deleteTraineeBody": {
+    "description": "Delete trainee dialog body",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "deleteTraineePermanentlyBtn": "Delete Trainee Permanently",
+  "@deleteTraineePermanentlyBtn": { "description": "Delete trainee permanently button" },
+
+  "planAssignedSuccess": "Plan assigned successfully!",
+  "@planAssignedSuccess": { "description": "Plan assigned success message" },
+
+  "templateSavedMsg": "Template saved on this device",
+  "@templateSavedMsg": { "description": "Template saved message" },
+
+  "draftSavedMsg": "Draft saved on this device",
+  "@draftSavedMsg": { "description": "Draft saved message" },
+
+  "savedTemplates": "SAVED TEMPLATES",
+  "@savedTemplates": { "description": "Saved templates section label" },
+
+  "startFromScratch": "Start from Scratch",
+  "@startFromScratch": { "description": "Start from scratch option" },
+
+  "searchTrainees": "Search trainees...",
+  "@searchTrainees": { "description": "Search trainees hint" },
+
+  "noActiveTraineesFound": "No active trainees found",
+  "@noActiveTraineesFound": { "description": "No trainees message" },
+
+  "inviteTraineesFirst": "Invite trainees first to create a plan",
+  "@inviteTraineesFirst": { "description": "No trainees suggestion" },
+
+  "selectAll": "Select All",
+  "@selectAll": { "description": "Select all option" },
+
+  "assignmentDate": "ASSIGNMENT DATE",
+  "@assignmentDate": { "description": "Assignment date label" },
+
+  "recurrence": "RECURRENCE",
+  "@recurrence": { "description": "Recurrence label" },
+
+  "selectDateOrAssignImmediately": "Select date (or assign immediately)",
+  "@selectDateOrAssignImmediately": { "description": "Date picker placeholder" },
+
+  "planLabel": "PLAN",
+  "@planLabel": { "description": "Plan section label uppercase" },
+
+  "sessionsLabel": "SESSIONS",
+  "@sessionsLabel": { "description": "Sessions label uppercase" },
+
+  "addSession": "Add session",
+  "@addSession": { "description": "Add session button" },
+
+  "nameDayHint": "Name each day (e.g. Leg Day) and add exercises from the library.",
+  "@nameDayHint": { "description": "Session naming hint" },
+
+  "traineesSelected": "{count} trainees selected",
+  "@traineesSelected": {
+    "description": "Trainees selected count",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "planAndSessions": "Plan & sessions",
+  "@planAndSessions": { "description": "Plan & sessions review card title" },
+
+  "untitledPlan": "Untitled plan",
+  "@untitledPlan": { "description": "Untitled plan label" },
+
+  "assignedTo": "Assigned to",
+  "@assignedTo": { "description": "Assigned to label" },
+
+  "schedule": "Schedule",
+  "@schedule": { "description": "Schedule label" },
+
+  "meals": "Meals",
+  "@meals": { "description": "Meals label" },
+
+  "breakfast": "Breakfast",
+  "@breakfast": { "description": "Breakfast meal label" },
+
+  "lunch": "Lunch",
+  "@lunch": { "description": "Lunch meal label" },
+
+  "dinner": "Dinner",
+  "@dinner": { "description": "Dinner meal label" },
+
+  "snacks": "Snacks",
+  "@snacks": { "description": "Snacks meal label" },
+
+  "mySavedTemplates": "MY SAVED TEMPLATES",
+  "@mySavedTemplates": { "description": "My saved templates section label" },
+
+  "starterTemplates": "STARTER TEMPLATES",
+  "@starterTemplates": { "description": "Starter templates section label" },
+
+  "workoutComplete": "Workout Complete!",
+  "@workoutComplete": { "description": "Workout complete title" },
+
+  "amazingEffort": "Amazing effort!",
+  "@amazingEffort": { "description": "Workout complete subtitle" },
+
+  "coachNotified": "Your coach has been notified of your results.",
+  "@coachNotified": { "description": "Coach notified message" },
+
+  "backToHome": "Back to Home",
+  "@backToHome": { "description": "Back to home button" },
+
+  "shareResults": "Share Results",
+  "@shareResults": { "description": "Share results button" },
+
+  "duration": "Duration",
+  "@duration": { "description": "Duration label" },
+
+  "minutes": "{count} min",
+  "@minutes": {
+    "description": "Minutes label",
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+
+  "setsCompleted": "Sets Completed",
+  "@setsCompleted": { "description": "Sets completed label" },
+
+  "exercisesCompleted": "Exercises Completed",
+  "@exercisesCompleted": { "description": "Exercises completed label" },
+
+  "workoutSummary": "Workout Summary",
+  "@workoutSummary": { "description": "Workout summary section" },
+
+  "noWorkoutPlan": "No Workout Plan",
+  "@noWorkoutPlan": { "description": "No workout plan title" },
+
+  "noWorkoutPlanDesc": "Your coach hasn't assigned a workout plan yet.",
+  "@noWorkoutPlanDesc": { "description": "No workout plan description" },
+
+  "caloriesRemaining": "{cal} cal remaining",
+  "@caloriesRemaining": {
+    "description": "Calories remaining label",
+    "placeholders": {
+      "cal": { "type": "int" }
+    }
+  },
+
+  "mealsLogged": "{logged}/{total} meals logged",
+  "@mealsLogged": {
+    "description": "Meals logged label",
+    "placeholders": {
+      "logged": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "logFood": "Log Food",
+  "@logFood": { "description": "Log food button" },
+
+  "addCustomMeal": "Add Custom Meal",
+  "@addCustomMeal": { "description": "Add custom meal option" },
+
+  "customMealName": "Custom meal name",
+  "@customMealName": { "description": "Custom meal name hint" },
+
+  "logMealBtn": "Log Meal",
+  "@logMealBtn": { "description": "Log meal button label" },
+
+  "searchFoodHint": "Search food...",
+  "@searchFoodHint": { "description": "Search food input hint" },
+
+  "weeklyGoals": "Weekly Goals",
+  "@weeklyGoals": { "description": "Weekly goals section" },
+
+  "water": "Water",
+  "@water": { "description": "Water label" },
+
+  "liters": "{amount}L",
+  "@liters": {
+    "description": "Liters label",
+    "placeholders": {
+      "amount": { "type": "String" }
+    }
+  },
+
+  "couldNotLoadProgress": "Could not load progress data.",
+  "@couldNotLoadProgress": { "description": "Progress load error message" },
+
+  "setXofY": "Set {current} of {total}",
+  "@setXofY": {
+    "description": "Set X of Y label",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "completeSet": "Complete Set",
+  "@completeSet": { "description": "Complete set button" },
+
+  "skipSet": "Skip Set",
+  "@skipSet": { "description": "Skip set button" },
+
+  "nextExercise": "Next Exercise",
+  "@nextExercise": { "description": "Next exercise button" },
+
+  "finishWorkout": "Finish Workout",
+  "@finishWorkout": { "description": "Finish workout button" },
+
+  "exerciseXofY": "Exercise {current} of {total}",
+  "@exerciseXofY": {
+    "description": "Exercise X of Y label",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "couldNotReadFile": "Could not read the selected file. Try a smaller file or re-save the export.",
+  "@couldNotReadFile": { "description": "File read error message" },
+
+  "allFilter": "All",
+  "@allFilter": { "description": "All filter chip" },
+
+  "attentionFilter": "Attention",
+  "@attentionFilter": { "description": "Attention filter chip" },
+
+  "notesForTrainee": "Notes saved for {name}",
+  "@notesForTrainee": {
+    "description": "Notes saved success message",
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+
+  "comingSoonSettings": "Coming soon — settings update not yet available",
+  "@comingSoonSettings": { "description": "Coming soon settings message" },
+
+  "notificationsLabel": "NOTIFICATIONS",
+  "@notificationsLabel": { "description": "Notifications section label uppercase" },
+
+  "remindTrainee": "Remind trainee",
+  "@remindTrainee": { "description": "Remind trainee toggle" },
+
+  "alertIfMissed": "Alert if missed",
+  "@alertIfMissed": { "description": "Alert if missed toggle" },
+
+  "timeLabel": "TIME",
+  "@timeLabel": { "description": "Time section label" },
+
+  "dateLabel": "DATE",
+  "@dateLabel": { "description": "Date section label" },
+
+  "goalsLabel": "Goals",
+  "@goalsLabel": { "description": "Goals card title" },
+
+  "doneSuffix": "done",
+  "@doneSuffix": { "description": "Done count suffix" }
 }
